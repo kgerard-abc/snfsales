@@ -9,7 +9,7 @@ Prints "NOTHING NEW" and exits 0 if that CMS month is already in the history.
 Exits 1 with a plain message if anything looks wrong, so nothing is published.
 Usage: update_history.py [--force]
 """
-import csv, gzip, io, json, os, re, sys, urllib.request
+import csv, gzip, io, json, os, re, sys, time, urllib.error, urllib.request
 from datetime import datetime
 import pandas as pd
 
@@ -27,10 +27,28 @@ def die(msg):
     sys.exit(1)
 
 
-def get(url):
-    req = urllib.request.Request(url, headers={"User-Agent": "abc-ri-update/1.0"})
-    with urllib.request.urlopen(req, timeout=300) as r:
-        return r.read()
+def get(url, tries=4):
+    """Fetch a URL, retrying a few times (CMS's site has short outages). CMS refuses requests that
+    don't look like a normal web request, so send a browser-style User-Agent and Accept header.
+    On final failure, stop with a one-line error that says what CMS answered."""
+    waits = [20, 60, 180]
+    last = None
+    for n in range(tries):
+        req = urllib.request.Request(url, headers={
+            "User-Agent": "Mozilla/5.0 (compatible; abc-ri-update/1.1; +https://snfsales.abc-ri.org)",
+            "Accept": "application/json, text/csv, */*"})
+        try:
+            with urllib.request.urlopen(req, timeout=300) as r:
+                return r.read()
+        except urllib.error.HTTPError as e:
+            body = e.read()[:300].decode("utf-8", errors="replace").replace("\n", " ")
+            last = f"CMS answered HTTP {e.code} {e.reason} for {url[:90]} ({body.strip()[:200]})"
+        except Exception as e:
+            last = f"{type(e).__name__}: {e} for {url[:90]}"
+        print(f"try {n + 1} of {tries} failed: {last}", flush=True)
+        if n < tries - 1:
+            time.sleep(waits[min(n, len(waits) - 1)])
+    die(last)
 
 
 def norm_col(c):
