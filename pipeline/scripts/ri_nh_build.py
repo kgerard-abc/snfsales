@@ -1886,7 +1886,7 @@ $('#fac-q').addEventListener('input', facSearch);
 const KIND_LBL = { mgmt: 'Buyer took over management', closed: 'Closed', sale: 'Sold / new operator', parent: 'Chain reorganization', internal: 'Internal restructuring', realestate: 'Real estate only', cms: 'CMS data' };
 let curFac = null;
 function showFacility(id, scroll) {
-  const f = D.facilities.find(x => x.id === id); if (!f) return; curFac = id; const box = $('#profile'); box.replaceChildren();
+  const f = D.facilities.find(x => x.id === id); if (!f) return; if (curFac !== id) gcEvent(f.name); curFac = id; const box = $('#profile'); box.replaceChildren();
   const gsec = $('#groups'); if (gsec) gsec.classList.add('hidden');            // statewide owner-group table is not about this home
   const closeFac = () => { curFac = null; box.replaceChildren(); if (gsec) gsec.classList.remove('hidden'); if (location.hash.startsWith('#home=')) history.replaceState(null, '', location.pathname + location.search + '#lookup'); };
   const nowB = (label, v, fmt) => el('div', { class: 'badge' }, label, el('b', {}, v == null ? '\u2013' : (fmt ? fmt(v) : v)));
@@ -1950,6 +1950,8 @@ let lastW = window.innerWidth; let rz = null;
 window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (Math.abs(window.innerWidth - lastW) < 30) return; lastW = window.innerWidth; drawTrend(); drawStudy(); drawMoney(); barChart($('#ser-chart'), yl, D.state_years.serious, css('--s1'), v => String(Math.round(v)), 'Serious citations per year', true); barChart($('#fine-chart'), yl, D.state_years.fines, css('--sold'), v => v >= 1e6 ? '$' + (v / 1e6).toFixed(1) + 'M' : '$' + Math.round(v / 1e3) + 'K', 'Federal fines per year'); if (curFac) showFacility(curFac, false); }, 200); });
 if (location.hash.startsWith('#home=')) { showFacility(decodeURIComponent(location.hash.slice(6))); }
 </script>
+<script data-goatcounter="https://abc-ri-snf.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+<script>function gcEvent(n){try{var g=window.goatcounter;if(g&&g.count)g.count({path:'home/'+n,title:n,event:true});}catch(e){}}</script>
 <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "91c84447763744a2814a6a4a5b62a9b5"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>
