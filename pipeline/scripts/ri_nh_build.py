@@ -16,7 +16,7 @@ DEFAULT_CONFIG = dict(
     ],
     max_plausible_turnover=90,      # nursing staff turnover (%) at or above this is CMS's 'lowest possible score' for missing payroll data: blanked and flagged
     ccn_notes_seed={'Pawtuxet Village Care and Rehabilitation Center': 'Closed April 2012. No CCN exists.'},   # notes added to the CCN Map the first time a name appears
-    closed_seed={'415107': 'Closed January 2025'},   # homes CMS still lists that have closed (CCN: 'Closed <Month> <Year>'); a 'Closed ...' note in the CCN Map does the same and wins
+    closed_seed={'415107': 'Closed January 2025', '415051': 'Closed 2025'},   # homes CMS still lists that have closed (CCN: 'Closed <Month> <Year>' or 'Closed <Year>'); a 'Closed ...' note in the CCN Map does the same and wins
     max_gap_days=45,
     series_start='2019-04-09',      # first CMS file after the April 2019 star-rating method change (statewide average fell 3.8 -> 3.35 in one month)                # a grid date needs a CMS file within this many days
     page_title='Rhode Island nursing homes: quality trends and what happened when homes were sold',
@@ -386,13 +386,19 @@ def build_ccn_map(cec, M):
 MONTHS_ = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december']
 
 def closed_notes(mp, cfg):
-    """CCN -> (label, first day of the month) for homes marked 'Closed <Month> <Year>' in the CCN Map notes or cfg closed_seed.
-    Used for homes CMS keeps listing after they close."""
+    """CCN -> (label, first day of the month, year_only) for homes marked 'Closed <Month> <Year>' or 'Closed <Year>'
+    in the CCN Map notes or cfg closed_seed. Used for homes CMS keeps listing after they close.
+    With only a year, the date is December 1 of that year and year_only is True."""
     out = {}
     def take(ccn, text):
-        m = re.match(r'\s*closed\s+([a-z]+)\s+(\d{4})', str(text or ''), re.I)
+        t = str(text or '')
+        m = re.match(r'\s*closed\s+([a-z]+)\s+(\d{4})', t, re.I)
         if ccn and m and m.group(1).lower() in MONTHS_:
-            out[str(ccn)] = (f'Closed {m.group(1).title()} {m.group(2)}', f'{m.group(2)}-{MONTHS_.index(m.group(1).lower()) + 1:02d}-01')
+            out[str(ccn)] = (f'Closed {m.group(1).title()} {m.group(2)}', f'{m.group(2)}-{MONTHS_.index(m.group(1).lower()) + 1:02d}-01', False)
+            return
+        m = re.match(r'\s*closed\s+(?:in\s+)?(\d{4})\b', t, re.I)
+        if ccn and m:
+            out[str(ccn)] = (f'Closed {m.group(1)}', f'{m.group(1)}-12-01', True)
     for c, t in (cfg.get('closed_seed') or {}).items(): take(c, t)
     for r in mp: take(r.get('ccn'), r.get('note'))
     return out
@@ -710,7 +716,8 @@ def build_public_data(M, S, val, cec, mp, ccn_of, fn, cfg):
         if not any(e['kind'] == 'closed' for e in events_by.get(r.ccn, [])):
             ev_add(r.ccn, dict(date=r.snap, kind='cms', label='No longer in the CMS files', who='closed, merged or decertified; the data does not say which', buyer=None, outcome=None, src='CMS Care Compare files (first monthly file without the home)', date_note='First CMS file without the home'))
     closed_map = closed_notes(mp, cfg)
-    for c_, (lab_c, d_c) in closed_map.items():
+    for c_, (lab_c, d_c, yo_c) in closed_map.items():
+        if yo_c: continue   # no month known, so no dated timeline event; the status still says "Closed <Year>"
         if c_ in fac.index and not any(e['kind'] == 'closed' for e in events_by.get(c_, [])):
             ev_add(c_, dict(date=d_c, kind='closed', cec='', label=lab_c, who='', buyer=None, outcome=None, src='Note from the workbook owner', date_note='Month from the workbook note'))
     hu, pu = M['hu'], M['pu']
@@ -719,6 +726,9 @@ def build_public_data(M, S, val, cec, mp, ccn_of, fn, cfg):
         row = fac.loc[c]; d = piv[c]; lr = d.iloc[-1]
         if c in closed_map:   # a closed home CMS still lists: show it as of the last CMS file before it closed
             upto = pd.Timestamp(closed_map[c][1]) + pd.offsets.MonthEnd(0); d_b = d[pd.to_datetime(d.index) <= upto]
+            if closed_map[c][2]:   # year only: the last file that year that still reported residents
+                d_r = d_b[pd.to_numeric(d_b['average_number_of_residents_per_day'], errors='coerce').notna()]
+                if len(d_r): d_b = d_r
             if len(d_b): lr = d_b.iloc[-1]
         def ser(col, sc=1.0, nd=2): return [(_r(d[col].get(s) * sc, nd) if nz(d[col].get(s)) is not None else None) for s in dates]
         yrs = M['years']
@@ -1412,7 +1422,7 @@ def run(out_dir, cec_path=None, config=None, std_dir=None, verbose=True):
     if not cec['overrides_present']:
         cec['overrides'] = {c: dict(treat=t, date=pd.Timestamp(d) if d else None, label=l, note=n) for c, t, d, l, n in cfg.get('event_overrides_seed', [])}
     mp = build_ccn_map(cec, M); ccn_of = {r['name']: r['ccn'] for r in mp}
-    for c_, (lab_c, _d_c) in closed_notes(mp, cfg).items():   # closed homes CMS still lists
+    for c_, (lab_c, _d_c, _yo) in closed_notes(mp, cfg).items():   # closed homes CMS still lists
         if c_ in M['fac'].index: M['fac'].loc[c_, 'active'] = False; M['fac'].loc[c_, 'status'] = lab_c
     S, val, snaps_by = compute_sales(M, cec, ccn_of); fn = former_names(M, cec, ccn_of)
     say(f'  {len(cec["tracker"])} tracker rows, {sum(1 for r in mp if not r["ccn"])} facilities with no CCN, {int(S.before.notna().sum())} sales with a CMS "before" snapshot')
