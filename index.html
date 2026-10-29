@@ -501,5 +501,6 @@ let lastW = window.innerWidth; let rz = null;
 window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (Math.abs(window.innerWidth - lastW) < 30) return; lastW = window.innerWidth; drawTrend(); drawStudy(); drawMoney(); barChart($('#ser-chart'), yl, D.state_years.serious, css('--s1'), v => String(Math.round(v)), 'Serious citations per year', true); barChart($('#fine-chart'), yl, D.state_years.fines, css('--sold'), v => v >= 1e6 ? '$' + (v / 1e6).toFixed(1) + 'M' : '$' + Math.round(v / 1e3) + 'K', 'Federal fines per year'); if (curFac) showFacility(curFac, false); }, 200); });
 if (location.hash.startsWith('#home=')) { showFacility(decodeURIComponent(location.hash.slice(6))); }
 </script>
+<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "91c84447763744a2814a6a4a5b62a9b5"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>
