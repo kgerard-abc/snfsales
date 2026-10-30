@@ -64,6 +64,7 @@ ol.timeline .kind.closed{background:#e4e4e4;color:#222;border-color:#999}
 .callout p{margin:0 0 6px}.callout p:last-child{margin:0}
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
 .small{font-size:.86rem;color:var(--muted)}
+sup.datemark{font-size:.75em;margin-left:2px}
 table{border-collapse:collapse;width:100%;font-size:.9rem}
 caption{text-align:left;color:var(--muted);font-size:.86rem;padding:4px 0}
 th,td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
@@ -150,7 +151,7 @@ footer a{color:var(--fg)}
 
 <h3>Every sale, one row each</h3>
 <div class="row"><input type="search" id="sale-q" placeholder="Search by home, town or owner" aria-label="Search sales"><label class="chk"><input type="checkbox" id="sale-parent" checked> Include chain reorganizations</label><label class="chk"><input type="checkbox" id="sale-cms"> Only homes with CMS data</label><button class="btn" id="dl-sales">Download this table (CSV)</button></div>
-<div class="tblwrap"><table id="sales-tbl"><caption>Dates are the CMS takeover date where CMS lists one, otherwise the state's decision date. Stars are CMS overall ratings (5 is best).</caption><thead></thead><tbody></tbody></table></div>
+<div class="tblwrap"><table id="sales-tbl"><caption>Dates are the CMS takeover date where CMS lists one, otherwise the state's decision date. Stars are CMS overall ratings (5 is best).</caption><thead></thead><tbody></tbody></table></div><p class="small" id="date-legend"></p>
 <p class="small">Blank cells mean CMS data is not available for that period: the sale was before CMS data starts in April 2019, is too recent for a year to have passed, or the home left the CMS files.</p>
 </section>
 
@@ -182,6 +183,9 @@ const NS = 'http://www.w3.org/2000/svg';
 const sv = (tag, attrs, ...kids) => { const n = document.createElementNS(NS, tag); for (const k in (attrs || {})) n.setAttribute(k, attrs[k]); for (const c of kids.flat()) { if (c) n.append(c.nodeType ? c : document.createTextNode(String(c))); } return n; };
 const MS = d => Date.parse(d + 'T00:00:00Z');
 const fmtMon = d => new Date(MS(d)).toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+const DATE_MARK = { 'First CMS file showing it': ['\u2020', 'First CMS file showing it'], 'CMS takeover date': ['\u2021', 'CMS takeover date'], 'First CMS file without the home': ['\u00a7', 'First CMS file without the home'], 'Month from the workbook note': ['*', 'Taken from the note in the sales workbook'], 'Date from the workbook note': ['*', 'Taken from the note in the sales workbook'] };
+const dateMark = note => DATE_MARK[note] ? el('sup', { class: 'datemark', text: DATE_MARK[note][0] }) : null;
+const dateLegend = () => 'Dates are the RIDOH decision date unless marked: ' + [...new Map(Object.values(DATE_MARK).map(v => [v[0], v[1]])).entries()].map(([k, v]) => k + ' ' + v).join('; ') + '.';
 const fmtDay = d => new Date(MS(d)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
 const f1 = v => v == null ? '\u2013' : v.toFixed(1), f2 = v => v == null ? '\u2013' : v.toFixed(2), money = v => v == null ? '\u2013' : '$' + Math.round(v).toLocaleString('en-US');
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
@@ -419,9 +423,10 @@ function drawSales() {
     const hrs = el('td', { class: 'num' }, r.has_cms && m.hours.before != null ? [f2(m.hours.before), el('span', { class: 'arrow', text: '\u2192' }), f2(m.hours.y1)] : '\u2013');
     const ser = el('td', { class: 'num' }, r.ser.before != null ? [String(r.ser.before), el('span', { class: 'arrow', text: '\u2192' }), r.ser.y1 == null ? '\u2013' : String(r.ser.y1)] : '\u2013');
     const fin = el('td', { class: 'num' }, r.fines.before != null ? [money(r.fines.before), el('span', { class: 'arrow', text: '\u2192' }), r.fines.y1 == null ? '\u2013' : money(r.fines.y1)] : '\u2013');
-    tb.append(el('tr', {}, el('td', { class: 'num', title: r.date_note }, fmtDay(r.date), r.mgmt_start ? el('div', { class: 'small', text: 'Buyer managing from ' + fmtMon(r.mgmt_start) }) : null, r.cms_op ? el('div', { class: 'small', text: 'CMS records updated ' + fmtMon(r.cms_op) }) : null), el('td', {}, D.facilities.some(f => f.id === r.fid) ? el('button', { class: 'linkbtn', text: r.name, onclick: () => showFacility(r.fid, true) }) : r.name, r.town ? el('div', { class: 'small', text: r.town }) : null), el('td', {}, r.label, r.outcome === 'Pending' ? el('div', { class: 'small', text: 'Pending' }) : null), newOwner, stars, hrs, ser, fin)); });
+    tb.append(el('tr', {}, el('td', { class: 'num', title: r.date_note }, fmtDay(r.date), dateMark(r.date_note), r.mgmt_start ? el('div', { class: 'small', text: 'Buyer managing from ' + fmtMon(r.mgmt_start) }) : null, r.cms_op ? el('div', { class: 'small', text: 'CMS records updated ' + fmtMon(r.cms_op) }) : null), el('td', {}, D.facilities.some(f => f.id === r.fid) ? el('button', { class: 'linkbtn', text: r.name, onclick: () => showFacility(r.fid, true) }) : r.name, r.town ? el('div', { class: 'small', text: r.town }) : null), el('td', {}, r.label, r.outcome === 'Pending' ? el('div', { class: 'small', text: 'Pending' }) : null), newOwner, stars, hrs, ser, fin)); });
   if (!rows.length) tb.append(el('tr', {}, el('td', { colspan: 8, text: 'No sales match.' })));
 }
+$('#date-legend').textContent = dateLegend();
 ['#sale-q', '#sale-parent', '#sale-cms'].forEach(s => $(s).addEventListener('input', drawSales)); drawSales();
 
 /* ---------- facility lookup ---------- */
@@ -448,7 +453,7 @@ function showFacility(id, scroll) {
       nowB('Nurse hours / resident / day', f.now.hours, f2), nowB('Nursing staff turnover', f.now.turnover, v => Math.round(v) + '%')));
     head.append(el('p', { class: 'small', text: `As of the ${fmtMon(f.now.asof)} CMS file.` + (f.sff ? ` CMS special focus status: ${f.sff}.` : '') + (f.abuse ? ' CMS displays an abuse icon for this home.' : '') })); }
   box.append(head);
-  if (f.events.length) { const ol = el('ol', { class: 'timeline' }); f.events.forEach(e => ol.append(el('li', {}, el('div', { class: 'small', title: e.date_note || '', text: fmtDay(e.date) }), el('div', {}, el('span', { class: 'kind ' + (e.kind === 'cms' ? 'cms' : e.kind === 'sale' ? 'sale' : e.kind === 'parent' ? 'parent' : e.kind === 'closed' ? 'closed' : e.kind === 'mgmt' ? 'mgmt' : ''), text: KIND_LBL[e.kind] || e.label }), e.kind === 'closed' ? el('span', { text: e.label }) : e.label && e.kind !== 'cms' ? el('span', { text: [e.buyer, e.who].filter(Boolean).join(' \u2014 ') }) : el('span', { text: e.label + (e.who ? ': ' + e.who : '') }), e.outcome ? el('span', { class: 'small', text: ' \u00B7 ' + e.outcome }) : null, el('div', { class: 'small', text: e.src }))))); box.append(el('div', { class: 'panel' }, el('h3', { style: 'margin-top:0', text: 'Ownership timeline' }), el('p', { class: 'small', text: 'State-reviewed changes and changes visible in CMS data, newest first.' }), ol)); }
+  if (f.events.length) { const ol = el('ol', { class: 'timeline' }); f.events.forEach(e => ol.append(el('li', {}, el('div', { class: 'small', title: e.date_note || '' }, fmtDay(e.date), dateMark(e.date_note)), el('div', {}, el('span', { class: 'kind ' + (e.kind === 'cms' ? 'cms' : e.kind === 'sale' ? 'sale' : e.kind === 'parent' ? 'parent' : e.kind === 'closed' ? 'closed' : e.kind === 'mgmt' ? 'mgmt' : ''), text: KIND_LBL[e.kind] || e.label }), e.kind === 'closed' ? el('span', { text: e.label }) : e.label && e.kind !== 'cms' ? el('span', { text: [e.buyer, e.who].filter(Boolean).join(' \u2014 ') }) : el('span', { text: e.label + (e.who ? ': ' + e.who : '') }), e.outcome ? el('span', { class: 'small', text: ' \u00B7 ' + e.outcome }) : null, el('div', { class: 'small', text: e.src }))))); box.append(el('div', { class: 'panel' }, el('h3', { style: 'margin-top:0', text: 'Ownership timeline' }), el('p', { class: 'small', text: 'State-reviewed changes and changes visible in CMS data, newest first.' }), ol, el('p', { class: 'small', text: dateLegend() }))); }
   else box.append(el('div', { class: 'panel' }, el('p', { text: 'No ownership changes on record for this home.' })));
   if (f.has_cms) {
     const mk = []; f.events.forEach(e => { if (e.kind === 'cms' || e.kind === 'realestate') return; const x = MS(e.date); mk.push({ x, color: e.kind === 'sale' ? css('--sold') : (e.kind === 'closed' ? css('--fg') : css('--accent')), dash: e.kind === 'internal' ? '3 3' : '', title: KIND_LBL[e.kind] + ', ' + fmtDay(e.date) }); });
