@@ -19,7 +19,7 @@ DEFAULT_CONFIG = dict(
     closed_seed={'415107': 'Closed January 2025', '415051': 'Closed 2025'},   # homes CMS still lists that have closed (CCN: 'Closed <Month> <Year>' or 'Closed <Year>'); a 'Closed ...' note in the CCN Map does the same and wins
     max_gap_days=45,
     series_start='2019-04-09',      # first CMS file after the April 2019 star-rating method change (statewide average fell 3.8 -> 3.35 in one month)                # a grid date needs a CMS file within this many days
-    page_title='Rhode Island nursing homes: quality trends and what happened when homes were sold',
+    page_title='What happened when Rhode Island nursing homes were sold',
     page_credit='Built and maintained by ABC-RI from CMS and RIDOH public records',   # shown in the page footer
     page_contact='corrections@abc-ri.org',   # shown on the page for corrections
     data_cautions=[                 # (title, text) shown on the workbook Read Me
@@ -1406,7 +1406,7 @@ def write_read_me(wb, M, S, cec, mp, cfg, ctx):
                  ('Stars down, serious citations and fines down', "The health inspection rating is built from the last three years of inspections, with the most recent weighted most, and it counts all deficiencies by scope and severity, not just serious ones (G-L). The citation tabs here count by inspection date, so a rating can fall in a year with fewer serious citations. Fines are not part of the star rating at all."),
                  ('Hours vs staffing stars', "The hours columns are CMS's reported (unadjusted) hours per resident per day. The staffing star compares case-mix-adjusted hours with national thresholds, so the two do not always move together.")]: line(a, b)
     sec('Public page')
-    line('public/index.html', 'A single self-contained web page (no server needed): statewide trends, the sold-vs-not-sold comparison, a searchable table of every sale, a facility lookup (searchable by former names) with ownership timelines and sale markers, owner groups, and CSV downloads. It shows companies only by default (no individuals\' names); set public_show_principals=True in the notebook to change that. Homes with no CCN appear with their state review record only.')
+    line('public/index.html', 'A single self-contained web page (no server needed): the sold-vs-not-sold comparison, a searchable table of every sale, a facility lookup (searchable by former names) with ownership timelines and sale markers, owner groups, and CSV downloads. It shows companies only by default (no individuals\' names); set public_show_principals=True in the notebook to change that. Homes with no CCN appear with their state review record only.')
     ws.sheet_view.zoomScale = 100
 
 def run(out_dir, cec_path=None, config=None, std_dir=None, verbose=True):
@@ -1513,6 +1513,7 @@ ol.timeline .kind.closed{background:#e4e4e4;color:#222;border-color:#999}
 .callout p{margin:0 0 6px}.callout p:last-child{margin:0}
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
 .small{font-size:.86rem;color:var(--muted)}
+sup.datemark{font-size:.75em;margin-left:2px}
 table{border-collapse:collapse;width:100%;font-size:.9rem}
 caption{text-align:left;color:var(--muted);font-size:.86rem;padding:4px 0}
 th,td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
@@ -1538,6 +1539,17 @@ ul.results .sub{color:var(--muted);font-size:.84rem}
 .badges{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
 .badge{border:1px solid var(--line);border-radius:10px;padding:6px 10px;background:var(--card);font-size:.88rem}
 .badge b{display:block;font-size:1.1rem}
+.eras{display:grid;gap:10px;margin:10px 0}
+.era{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--sold);padding:12px 14px}
+.era.parent{border-left-color:var(--teal)}.era.earlier{border-left-color:var(--muted)}
+.era h4{margin:0 0 2px;font-size:1.05rem;line-height:1.3}
+.era .tag{display:inline-block;font-size:.75rem;padding:1px 7px;border:1px solid var(--line);margin-left:6px;vertical-align:middle;font-weight:500}
+.era .when{font-size:.92rem;margin:0}
+.era .mets{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px 18px;margin-top:10px}
+.era .met b.lbl{display:block;font-size:.82rem;color:var(--muted);font-weight:600}
+.era .met .arrow{margin:0 6px}
+.era .chg{display:block;font-size:.88rem;font-weight:700}
+.era ul.notes{margin:10px 0 0;padding-left:18px;font-size:.88rem}
 ol.timeline{list-style:none;padding:0;margin:8px 0}
 ol.timeline li{display:grid;grid-template-columns:96px 1fr;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
 ol.timeline .kind{display:inline-block;font-size:.75rem;padding:1px 7px;border-radius:999px;border:1px solid var(--line);margin-right:6px}
@@ -1563,23 +1575,13 @@ footer a{color:var(--fg)}
 <header class="masthead"><div class="wrap">
 <a class="site-logo-link" href="https://abc-ri.org"><img class="site-logo" src="abcri-logo.png" width="420" height="160" alt="ABC-RI: Advocates for Better Care in Rhode Island"></a>
 <h1 id="ttl"></h1>
-<p>What CMS's public data shows about Rhode Island nursing homes since 2019, and how homes' ratings, staffing and inspections changed after they were sold.</p>
+<p>What CMS's public data shows about how Rhode Island nursing homes' ratings, staffing and inspections changed after the homes were sold, and who has owned each home over time.</p>
 <span class="asof" id="asof"></span>
 </div></header>
 <nav class="jump" aria-label="Sections"><div class="wrap">
-<a href="#glance">At a glance</a><a href="#trends">Statewide trends</a><a href="#sold">When homes were sold</a><a href="#lookup">Look up a home</a><a href="#groups">Owner groups</a><a href="#about">About the data</a>
+<a href="#sold">When homes were sold</a><a href="#lookup">Look up a home</a><a href="#groups">Owner groups</a><a href="#about">About the data</a>
 </div></nav>
 <main class="wrap">
-<section id="glance"><h2>At a glance</h2><p class="lede" id="glance-lede"></p><div class="cards" id="cards"></div></section>
-
-<section id="trends"><h2>Statewide trends</h2>
-<p class="lede">Every Rhode Island nursing home in CMS's monthly Care Compare files. Charts start in April 2019, the first month after CMS changed how star ratings are calculated.</p>
-<div class="panel"><div class="tabs" role="group" aria-label="Choose a measure" id="trend-tabs"></div>
-<div class="chartbox" id="trend-chart"></div><div class="legend" id="trend-legend"></div><p class="small" id="trend-note"></p></div>
-<div class="grid2"><div class="panel"><h3 style="margin-top:0">Serious citations per year</h3><div class="chartbox" id="ser-chart"></div><p class="small">Citations for actual harm or immediate jeopardy (scope/severity G-L), by inspection date. The latest year is partial.</p></div>
-<div class="panel"><h3 style="margin-top:0">Federal fines per year</h3><div class="chartbox" id="fine-chart"></div><p class="small">Fines by penalty date, latest version of each fine. The latest year is partial.</p></div></div>
-</section>
-
 <section id="sold"><h2>What happened when homes were sold</h2>
 <p class="lede">Rhode Island's Health Department reviews each change in a nursing home's effective control. This compares each home's ratings and staffing before and after such a change, using the last CMS rating before the sale as the starting point, and compares them with homes that were not sold over the same periods.</p>
 <div class="grid2"><div class="panel"><h3 style="margin-top:0;font-size:1rem">Changes of control approved, by year</h3><div class="chartbox" id="peryear-chart" style="max-width:420px"></div><p class="small" id="peryear-note"></p></div>
@@ -1599,7 +1601,7 @@ footer a{color:var(--fg)}
 
 <h3>Every sale, one row each</h3>
 <div class="row"><input type="search" id="sale-q" placeholder="Search by home, town or owner" aria-label="Search sales"><label class="chk"><input type="checkbox" id="sale-parent" checked> Include chain reorganizations</label><label class="chk"><input type="checkbox" id="sale-cms"> Only homes with CMS data</label><button class="btn" id="dl-sales">Download this table (CSV)</button></div>
-<div class="tblwrap"><table id="sales-tbl"><caption>Dates are the CMS takeover date where CMS lists one, otherwise the state's decision date. Stars are CMS overall ratings (5 is best).</caption><thead></thead><tbody></tbody></table></div>
+<div class="tblwrap"><table id="sales-tbl"><caption>Dates are the CMS takeover date where CMS lists one, otherwise the state's decision date. Stars are CMS overall ratings (5 is best).</caption><thead></thead><tbody></tbody></table></div><p class="small" id="date-legend"></p>
 <p class="small">Blank cells mean CMS data is not available for that period: the sale was before CMS data starts in April 2019, is too recent for a year to have passed, or the home left the CMS files.</p>
 </section>
 
@@ -1631,6 +1633,9 @@ const NS = 'http://www.w3.org/2000/svg';
 const sv = (tag, attrs, ...kids) => { const n = document.createElementNS(NS, tag); for (const k in (attrs || {})) n.setAttribute(k, attrs[k]); for (const c of kids.flat()) { if (c) n.append(c.nodeType ? c : document.createTextNode(String(c))); } return n; };
 const MS = d => Date.parse(d + 'T00:00:00Z');
 const fmtMon = d => new Date(MS(d)).toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+const DATE_MARK = { 'First CMS file showing it': ['\u2020', 'First CMS file showing it'], 'CMS takeover date': ['\u2021', 'CMS takeover date'], 'First CMS file without the home': ['\u00a7', 'First CMS file without the home'], 'Month from the workbook note': ['*', 'Taken from the note in the sales workbook'], 'Date from the workbook note': ['*', 'Taken from the note in the sales workbook'] };
+const dateMark = note => DATE_MARK[note] ? el('sup', { class: 'datemark', text: DATE_MARK[note][0] }) : null;
+const dateLegend = () => 'Dates are the RIDOH decision date unless marked: ' + [...new Map(Object.values(DATE_MARK).map(v => [v[0], v[1]])).entries()].map(([k, v]) => k + ' ' + v).join('; ') + '.';
 const fmtDay = d => new Date(MS(d)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
 const f1 = v => v == null ? '\u2013' : v.toFixed(1), f2 = v => v == null ? '\u2013' : v.toFixed(2), money = v => v == null ? '\u2013' : '$' + Math.round(v).toLocaleString('en-US');
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
@@ -1739,35 +1744,8 @@ function barChart(box, labels, values, color, fmt, aria, integer, opts) {
 $('#ttl').textContent = D.meta.title; document.title = D.meta.title; $('#asof').textContent = 'CMS data through ' + D.meta.updated;
 { const bh = D.meta.behind || {}, ks = Object.keys(bh);
   if (ks.length) { const p = el('p', { class: 'small', style: 'margin:10px 0 0;opacity:.9;color:inherit' }, 'Not every CMS file is updated in the same month. Latest here: ' + ks.map(k => k.toLowerCase() + ' ' + bh[k]).join(', ') + '.'); $('#asof').parentNode.append(p); } }
-const H0 = D.head;
-$('#glance-lede').textContent = `Comparing CMS's ${fmtMon(D.dates[0])} and ${fmtMon(D.dates[D.dates.length - 1])} files.`;
-[[H0.low_now + '%', 'of homes rated 0, 1 or 2 stars overall (0 = special focus facility, not rated)', `${H0.low_then}% in ${fmtMon(D.dates[0])}`],
- [f2(H0.avg_now), 'average overall star rating (5 is best; special focus facilities count as 0)', `${f2(H0.avg_then)} in ${fmtMon(D.dates[0])}`],
- [f2(H0.hours_now), 'nurse staffing hours per resident per day', `${f2(H0.hours_then)} in ${fmtMon(D.dates[0])}; RN hours ${f2(H0.rn_then)} \u2192 ${f2(H0.rn_now)}`],
- [H0.turnover_now == null ? '\u2013' : Math.round(H0.turnover_now) + '%', 'average nursing staff turnover', H0.turnover_first ? Math.round(H0.turnover_first.value) + '% when CMS began publishing it in ' + fmtMon(H0.turnover_first.date) : 'CMS began publishing this in 2022'],
- [String(H0.n_now), 'homes in the latest CMS file', `${H0.n_then} in ${fmtMon(D.dates[0])}; ${H0.homes_left} left the files`],
- [String(H0.sales_since), 'changes of control approved since April 2019', 'See the count for each year below']].forEach(c => $('#cards').append(el('div', { class: 'card' }, el('div', { class: 'big', text: c[0] }), el('div', { class: 'lbl', text: c[1] }), el('div', { class: 'cmp', text: c[2] }))));
-
-/* ---------- statewide trends ---------- */
-const X = D.dates.map(MS), st = D.state; let trendKey = 'mix';
-const TRENDS = { mix: { label: 'Star ratings mix' }, avg: { label: 'Average stars' }, hours: { label: 'Nurse staffing hours' }, turn: { label: 'Staff turnover' } };
-function drawTrend() {
-  const box = $('#trend-chart'), lg = $('#trend-legend'), note = $('#trend-note'); lg.replaceChildren(); const xl = (v, i) => fmtMon(D.dates[i]);
-  if (trendKey === 'mix') { drawChart(box, { x: X, stack: st.dist.map((d, i) => [st.nr[i]].concat(d)), stackColors: [0, 1, 2, 3, 4, 5].map(k => css('--s' + k)), stackLabels: ['0 stars (not rated: special focus facility)', '1 star', '2 stars', '3 stars', '4 stars', '5 stars'], ymin: 0, ymax: 100, yfmt: v => v + '%', xlabel: xl, aria: 'Share of homes at each star rating over time' });
-    [0, 1, 2, 3, 4, 5].forEach(k => lg.append(el('span', {}, el('i', { style: `border-color:var(--s${k});border-top-width:9px` }), k === 0 ? '0 = not rated (special focus facility)' : k + (k === 1 ? ' star' : ' stars')))); note.textContent = 'One point per monthly CMS file; the band breaks where the archive has no file for a month (CMS did not publish one, or it is missing). Share of Rhode Island homes at each overall star rating in each file. Gray at the bottom is homes CMS did not rate because they are in its Special Focus Facility program, counted as 0 stars. Rating calculations have been revised by CMS over time.'; }
-  if (trendKey === 'avg') { drawChart(box, { x: X, ymin: 1, ymax: 5, yfmt: v => v.toFixed(1), xlabel: xl, tfmt: v => v.toFixed(2), aria: 'Average star ratings over time', series: [
-      { name: 'Overall', color: css('--accent'), values: st.avg_overall, width: 3 }, { name: 'Health inspection', color: css('--s2'), values: st.avg_hi }, { name: 'Staffing', color: css('--s4'), values: st.avg_staffing }, { name: 'Quality measures', color: css('--ctrl'), values: st.avg_qm, dash: '5 4' }] });
-    [['Overall', '--accent'], ['Health inspection', '--s2'], ['Staffing', '--s4'], ['Quality measures (dashed)', '--ctrl']].forEach(a => lg.append(el('span', {}, el('i', { class: a[0].includes('dashed') ? 'dash' : '', style: `border-color:var(${a[1]})` }), a[0]))); note.textContent = 'Average of the four CMS star ratings across homes in each file (5 is best). Special focus facilities, which CMS leaves unrated, count as 0.'; }
-  if (trendKey === 'hours') { drawChart(box, { x: X, ymin: 0, yfmt: v => v.toFixed(1), tfmt: v => v.toFixed(2), xlabel: xl, aria: 'Average nurse staffing hours per resident per day', series: [{ name: 'All nurses (RN + LPN + aides)', color: css('--accent'), values: st.avg_hours, width: 3 }, { name: 'Registered nurses (RN)', color: css('--s2'), values: st.avg_rn }] });
-    lg.append(el('span', {}, el('i', { style: 'border-color:var(--accent)' }), 'All nurses (RN + LPN + aides)'), el('span', {}, el('i', { style: 'border-color:var(--s2)' }), 'Registered nurses (RN)')); note.textContent = 'Average hours of nursing care per resident per day reported to CMS through payroll records.'; }
-  if (trendKey === 'turn') { drawChart(box, { x: X, ymin: 0, yfmt: v => Math.round(v) + '%', tfmt: v => Math.round(v) + '%', xlabel: xl, aria: 'Average nursing staff turnover', series: [{ name: 'Nursing staff turnover', color: css('--sold'), values: st.avg_turnover, width: 3 }] });
-    lg.append(el('span', {}, el('i', { style: 'border-color:var(--sold)' }), 'Average nursing staff turnover')); note.textContent = 'CMS began publishing turnover in 2022, so earlier months are blank.'; }
-  [...$('#trend-tabs').children].forEach(b => b.setAttribute('aria-pressed', b.dataset.k === trendKey));
-}
-Object.keys(TRENDS).forEach(k => $('#trend-tabs').append(el('button', { class: 'tab', 'data-k': k, 'aria-pressed': 'false', text: TRENDS[k].label, onclick: () => { trendKey = k; drawTrend(); } })));
+const X = D.dates.map(MS), st = D.state;
 const yl = D.state_years.years.map((y, i) => i === D.state_years.years.length - 1 && D.state_years.last_year_quarters < 4 ? y + '*' : String(y));
-barChart($('#ser-chart'), yl, D.state_years.serious, css('--s1'), v => String(Math.round(v)), 'Serious citations per year', true); barChart($('#fine-chart'), yl, D.state_years.fines, css('--sold'), v => v >= 1e6 ? '$' + (v / 1e6).toFixed(1) + 'M' : '$' + Math.round(v / 1e3) + 'K', 'Federal fines per year');
-drawTrend();
 
 /* ---------- when homes were sold ---------- */
 const METRICS = { overall: { label: 'Overall stars', unit: 'stars', scale: 1, d: 2, hb: true }, staffing: { label: 'Staffing stars', unit: 'staffing stars', scale: 1, d: 2, hb: true }, hours: { label: 'Nurse hours per resident per day', unit: 'nurse hours per resident per day', scale: 1, d: 2, hb: true }, turnover: { label: 'Staff turnover', unit: 'percentage points of nursing staff turnover', scale: 100, d: 0, hb: false } };
@@ -1868,9 +1846,10 @@ function drawSales() {
     const hrs = el('td', { class: 'num' }, r.has_cms && m.hours.before != null ? [f2(m.hours.before), el('span', { class: 'arrow', text: '\u2192' }), f2(m.hours.y1)] : '\u2013');
     const ser = el('td', { class: 'num' }, r.ser.before != null ? [String(r.ser.before), el('span', { class: 'arrow', text: '\u2192' }), r.ser.y1 == null ? '\u2013' : String(r.ser.y1)] : '\u2013');
     const fin = el('td', { class: 'num' }, r.fines.before != null ? [money(r.fines.before), el('span', { class: 'arrow', text: '\u2192' }), r.fines.y1 == null ? '\u2013' : money(r.fines.y1)] : '\u2013');
-    tb.append(el('tr', {}, el('td', { class: 'num', title: r.date_note }, fmtDay(r.date), r.mgmt_start ? el('div', { class: 'small', text: 'Buyer managing from ' + fmtMon(r.mgmt_start) }) : null, r.cms_op ? el('div', { class: 'small', text: 'CMS records updated ' + fmtMon(r.cms_op) }) : null), el('td', {}, D.facilities.some(f => f.id === r.fid) ? el('button', { class: 'linkbtn', text: r.name, onclick: () => showFacility(r.fid, true) }) : r.name, r.town ? el('div', { class: 'small', text: r.town }) : null), el('td', {}, r.label, r.outcome === 'Pending' ? el('div', { class: 'small', text: 'Pending' }) : null), newOwner, stars, hrs, ser, fin)); });
+    tb.append(el('tr', {}, el('td', { class: 'num', title: r.date_note }, fmtDay(r.date), dateMark(r.date_note), r.mgmt_start ? el('div', { class: 'small', text: 'Buyer managing from ' + fmtMon(r.mgmt_start) }) : null, r.cms_op ? el('div', { class: 'small', text: 'CMS records updated ' + fmtMon(r.cms_op) }) : null), el('td', {}, D.facilities.some(f => f.id === r.fid) ? el('button', { class: 'linkbtn', text: r.name, onclick: () => showFacility(r.fid, true) }) : r.name, r.town ? el('div', { class: 'small', text: r.town }) : null), el('td', {}, r.label, r.outcome === 'Pending' ? el('div', { class: 'small', text: 'Pending' }) : null), newOwner, stars, hrs, ser, fin)); });
   if (!rows.length) tb.append(el('tr', {}, el('td', { colspan: 8, text: 'No sales match.' })));
 }
+$('#date-legend').textContent = dateLegend();
 ['#sale-q', '#sale-parent', '#sale-cms'].forEach(s => $(s).addEventListener('input', drawSales)); drawSales();
 
 /* ---------- facility lookup ---------- */
@@ -1884,6 +1863,69 @@ function facSearch() {
 }
 $('#fac-q').addEventListener('input', facSearch);
 const KIND_LBL = { mgmt: 'Buyer took over management', closed: 'Closed', sale: 'Sold / new operator', parent: 'Chain reorganization', internal: 'Internal restructuring', realestate: 'Real estate only', cms: 'CMS data' };
+
+/* ---------- who ran this home over time ---------- */
+function ownerEras(f) {
+  const dates = D.dates, latest = D.meta.latest, ev = f.events.slice().sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+  const starters = ev.filter(e => e.kind === 'sale' || e.kind === 'parent'), closed = ev.find(e => e.kind === 'closed');
+  if (!starters.length) return [];
+  const groups = []; starters.forEach(e => { const g = groups[groups.length - 1]; if (g && g.date === e.date) g.evs.push(e); else groups.push({ date: e.date, evs: [e] }); });
+  const eras = []; const firstDate = groups[0].date;
+  if (f.has_cms && dates[0] < firstDate) eras.push({ kind: 'earlier', start: null, end: firstDate, evs: [] });
+  groups.forEach((g, i) => eras.push({ kind: g.evs.some(e => e.kind === 'sale') ? 'sale' : 'parent', start: g.date, end: i + 1 < groups.length ? groups[i + 1].date : (closed ? closed.date : null), evs: g.evs }));
+  const lastBefore = d => { let k = -1; dates.forEach((x, i) => { if (x < d) k = i; }); return k; };
+  const lastWith = () => { let k = -1; (f.s ? f.s.overall : []).forEach((v, i) => { if (v != null || (f.s.nr && f.s.nr[i])) k = i; }); return k; };
+  eras.forEach(r => {
+    r.notes = ev.filter(e => ['mgmt', 'realestate', 'internal'].includes(e.kind) && (r.start === null ? e.date < r.end : (e.date >= r.start && (r.end === null || e.date < r.end))));
+    if (!f.s) return;
+    let i0 = r.start === null ? 0 : lastBefore(r.start), fromFirst = false;
+    if (i0 < 0) { i0 = 0; fromFirst = true; }
+    const i1 = r.end === null ? lastWith() : lastBefore(r.end);
+    if (i1 > i0) { r.i0 = i0; r.i1 = i1; r.fromFirst = fromFirst || r.start === null; }
+  });
+  return eras.reverse();
+}
+function spanText(a, b) {
+  const m = Math.max(0, Math.round((MS(b) - MS(a)) / 86400000 / 30.44)), y = Math.floor(m / 12), mo = m % 12;
+  return [y ? y + (y === 1 ? ' year' : ' years') : null, mo || !y ? mo + (mo === 1 ? ' month' : ' months') : null].filter(Boolean).join(' ');
+}
+function eraPanel(f) {
+  const eras = ownerEras(f); if (!eras.length) return null;
+  const val = (arr, i) => arr ? arr[i] : null, st0 = (i) => { const v = val(f.s.overall, i); return v != null ? v : (f.s.nr && f.s.nr[i] ? 0 : null); };
+  const wrap = el('div', { class: 'panel' }, el('h3', { style: 'margin-top:0', text: 'Who ran this home, and what happened' }),
+    el('p', { class: 'small', text: 'Each block is a period under one owner, newest first. Ratings are taken from the last CMS file before the owner changed and the last CMS file before the next change, so each block shows how the home moved while that owner was in charge. CMS can be slow to show a new owner, and a change in ratings may reflect problems that started earlier.' }));
+  const list = el('div', { class: 'eras' }); wrap.append(list);
+  eras.forEach(r => {
+    const first = r.evs[0] || {}, names = r.kind === 'earlier' ? 'Earlier owner' : (first.buyer || first.who || 'New owner');
+    const op = r.kind === 'earlier' ? 'Not named in the state records shown here' : r.evs.map(e => e.who).filter((x, i, a) => x && a.indexOf(x) === i && x !== names).join('; ');
+    const tag = r.kind === 'sale' ? 'Sold to a new operator' : r.kind === 'parent' ? 'Chain reorganization' : 'Before the first recorded change';
+    const endTxt = r.end === null ? 'still in charge as of ' + fmtMon(D.meta.latest) : 'until ' + fmtDay(r.end);
+    const whenTxt = r.start === null ? 'Before ' + fmtDay(r.end) : 'From ' + fmtDay(r.start) + (r.end === null ? ', ' : ' ') + endTxt;
+    const dur = r.start === null ? null : spanText(r.start, r.end === null ? D.meta.latest : r.end);
+    const card = el('div', { class: 'era ' + r.kind }, el('h4', {}, names, el('span', { class: 'tag', text: tag })),
+      op ? el('p', { class: 'small', style: 'margin:0', text: op }) : null,
+      el('p', { class: 'when', text: whenTxt + (dur ? ' (' + dur + ')' : '') }),
+      r.start !== null && first.date_note ? el('p', { class: 'small', style: 'margin:0', text: 'Start date: ' + first.date_note + '.' }) : null);
+    if (r.i1 != null) {
+      const mets = el('div', { class: 'mets' });
+      const s0 = st0(r.i0), s1 = st0(r.i1);
+      if (s0 != null && s1 != null) {
+        const d = s1 - s0, word = (s0 === 0 || s1 === 0) ? 'CMS did not rate the home at one end (special focus facility), so no change is shown' : d === 0 ? 'No change' : (d > 0 ? 'Up ' : 'Down ') + Math.abs(d) + (Math.abs(d) === 1 ? ' star' : ' stars');
+        mets.append(el('div', { class: 'met' }, el('b', { class: 'lbl', text: 'Overall stars (5 is best)' }), chip(s0), el('span', { class: 'arrow', text: '→' }), chip(s1), el('span', { class: 'chg', text: word })));
+      }
+      const h0 = val(f.s.hours, r.i0), h1 = val(f.s.hours, r.i1);
+      if (h0 != null && h1 != null) { const d = h1 - h0; mets.append(el('div', { class: 'met' }, el('b', { class: 'lbl', text: 'Nurse hours per resident per day' }), el('span', { text: f2(h0) }), el('span', { class: 'arrow', text: '→' }), el('span', { text: f2(h1) }), el('span', { class: 'chg', text: Math.abs(d) < 0.005 ? 'No change' : (d > 0 ? 'Up ' : 'Down ') + Math.abs(d).toFixed(2) + ' hours' }))); }
+      const t0 = val(f.s.turnover, r.i0), t1 = val(f.s.turnover, r.i1);
+      if (t0 != null && t1 != null) { const d = Math.round(t1) - Math.round(t0); mets.append(el('div', { class: 'met' }, el('b', { class: 'lbl', text: 'Nursing staff turnover' }), el('span', { text: Math.round(t0) + '%' }), el('span', { class: 'arrow', text: '→' }), el('span', { text: Math.round(t1) + '%' }), el('span', { class: 'chg', text: d === 0 ? 'No change' : (d > 0 ? 'Up ' : 'Down ') + Math.abs(d) + ' points' }))); }
+      if (mets.children.length) card.append(mets);
+      card.append(el('p', { class: 'small', style: 'margin:8px 0 0', text: 'Measured from the ' + fmtMon(D.dates[r.i0]) + ' CMS file' + (r.fromFirst ? ' (the earliest CMS file on this page)' : ' (last file before this owner)') + ' to the ' + fmtMon(D.dates[r.i1]) + ' CMS file' + (r.end === null ? ' (latest)' : ' (last file before the next change)') + '.' }));
+    } else if (!f.has_cms) card.append(el('p', { class: 'small', style: 'margin:8px 0 0', text: 'No CMS ratings on this page for this home.' }));
+    else card.append(el('p', { class: 'small', style: 'margin:8px 0 0', text: 'Too short, or too long ago, for CMS ratings on this page to show a change (CMS files here start in ' + fmtMon(D.dates[0]) + ').' }));
+    if (r.notes && r.notes.length) card.append(el('ul', { class: 'notes' }, r.notes.map(n => el('li', { text: fmtDay(n.date) + ': ' + (KIND_LBL[n.kind] || n.label) + (n.who ? ' (' + [n.buyer, n.who].filter(Boolean).join(', ') + ')' : '') }))));
+    list.append(card);
+  });
+  return wrap;
+}
 let curFac = null;
 function showFacility(id, scroll) {
   const f = D.facilities.find(x => x.id === id); if (!f) return; if (curFac !== id) gcEvent(f.name); curFac = id; const box = $('#profile'); box.replaceChildren();
@@ -1897,7 +1939,8 @@ function showFacility(id, scroll) {
       nowB('Nurse hours / resident / day', f.now.hours, f2), nowB('Nursing staff turnover', f.now.turnover, v => Math.round(v) + '%')));
     head.append(el('p', { class: 'small', text: `As of the ${fmtMon(f.now.asof)} CMS file.` + (f.sff ? ` CMS special focus status: ${f.sff}.` : '') + (f.abuse ? ' CMS displays an abuse icon for this home.' : '') })); }
   box.append(head);
-  if (f.events.length) { const ol = el('ol', { class: 'timeline' }); f.events.forEach(e => ol.append(el('li', {}, el('div', { class: 'small', title: e.date_note || '', text: fmtDay(e.date) }), el('div', {}, el('span', { class: 'kind ' + (e.kind === 'cms' ? 'cms' : e.kind === 'sale' ? 'sale' : e.kind === 'parent' ? 'parent' : e.kind === 'closed' ? 'closed' : e.kind === 'mgmt' ? 'mgmt' : ''), text: KIND_LBL[e.kind] || e.label }), e.kind === 'closed' ? el('span', { text: e.label }) : e.label && e.kind !== 'cms' ? el('span', { text: [e.buyer, e.who].filter(Boolean).join(' \u2014 ') }) : el('span', { text: e.label + (e.who ? ': ' + e.who : '') }), e.outcome ? el('span', { class: 'small', text: ' \u00B7 ' + e.outcome }) : null, el('div', { class: 'small', text: e.src }))))); box.append(el('div', { class: 'panel' }, el('h3', { style: 'margin-top:0', text: 'Ownership timeline' }), el('p', { class: 'small', text: 'State-reviewed changes and changes visible in CMS data, newest first.' }), ol)); }
+  const eraP = eraPanel(f); if (eraP) box.append(eraP);
+  if (f.events.length) { const ol = el('ol', { class: 'timeline' }); f.events.forEach(e => ol.append(el('li', {}, el('div', { class: 'small', title: e.date_note || '' }, fmtDay(e.date), dateMark(e.date_note)), el('div', {}, el('span', { class: 'kind ' + (e.kind === 'cms' ? 'cms' : e.kind === 'sale' ? 'sale' : e.kind === 'parent' ? 'parent' : e.kind === 'closed' ? 'closed' : e.kind === 'mgmt' ? 'mgmt' : ''), text: KIND_LBL[e.kind] || e.label }), e.kind === 'closed' ? el('span', { text: e.label }) : e.label && e.kind !== 'cms' ? el('span', { text: [e.buyer, e.who].filter(Boolean).join(' \u2014 ') }) : el('span', { text: e.label + (e.who ? ': ' + e.who : '') }), e.outcome ? el('span', { class: 'small', text: ' \u00B7 ' + e.outcome }) : null, el('div', { class: 'small', text: e.src }))))); box.append(el('details', { class: 'panel', open: eraP ? null : '' }, el('summary', { text: 'Every record behind this, in date order' }), el('p', { class: 'small', text: 'State-reviewed changes and changes visible in CMS data, newest first.' }), ol, el('p', { class: 'small', text: dateLegend() }))); }
   else box.append(el('div', { class: 'panel' }, el('p', { text: 'No ownership changes on record for this home.' })));
   if (f.has_cms) {
     const mk = []; f.events.forEach(e => { if (e.kind === 'cms' || e.kind === 'realestate') return; const x = MS(e.date); mk.push({ x, color: e.kind === 'sale' ? css('--sold') : (e.kind === 'closed' ? css('--fg') : css('--accent')), dash: e.kind === 'internal' ? '3 3' : '', title: KIND_LBL[e.kind] + ', ' + fmtDay(e.date) }); });
@@ -1947,7 +1990,7 @@ function download(name, rows) { const esc = v => { v = v == null ? '' : String(v
 $('#dl-sales').addEventListener('click', () => download('ri_nursing_home_sales.csv', [['cec_id', 'date', 'date_source', 'home', 'town', 'type', 'outcome', 'buyer_group', 'applicant', 'stars_before', 'stars_1yr', 'stars_2yr', 'nurse_hrs_before', 'nurse_hrs_1yr', 'serious_cites_before', 'serious_cites_after', 'fines_before', 'fines_after']].concat(D.sales.map(r => [r.cec, r.date, r.date_note, r.name, r.town, r.label, r.outcome, r.buyer, r.who, r.m.overall.before, r.m.overall.y1, r.m.overall.y2, r.m.hours.before, r.m.hours.y1, r.ser.before, r.ser.y1, r.fines.before, r.fines.y1]))));
 $('#dl-monthly').addEventListener('click', () => { const rows = [['ccn', 'home', 'file_date', 'overall_stars', 'health_inspection_stars', 'staffing_stars', 'quality_measure_stars', 'nurse_hours_per_resident_day', 'rn_hours_per_resident_day', 'nursing_staff_turnover_pct']]; D.facilities.filter(f => f.has_cms).forEach(f => D.dates.forEach((d, i) => { if (f.s.overall[i] != null || f.s.hours[i] != null) rows.push([f.ccn, f.name, d, f.s.overall[i], f.s.hi[i], f.s.staffing[i], f.s.qm[i], f.s.hours[i], f.s.rn[i], f.s.turnover[i]]); })); download('ri_nursing_home_monthly.csv', rows); });
 let lastW = window.innerWidth; let rz = null;
-window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (Math.abs(window.innerWidth - lastW) < 30) return; lastW = window.innerWidth; drawTrend(); drawStudy(); drawMoney(); barChart($('#ser-chart'), yl, D.state_years.serious, css('--s1'), v => String(Math.round(v)), 'Serious citations per year', true); barChart($('#fine-chart'), yl, D.state_years.fines, css('--sold'), v => v >= 1e6 ? '$' + (v / 1e6).toFixed(1) + 'M' : '$' + Math.round(v / 1e3) + 'K', 'Federal fines per year'); if (curFac) showFacility(curFac, false); }, 200); });
+window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (Math.abs(window.innerWidth - lastW) < 30) return; lastW = window.innerWidth; drawStudy(); drawMoney(); if (curFac) showFacility(curFac, false); }, 200); });
 if (location.hash.startsWith('#home=')) { showFacility(decodeURIComponent(location.hash.slice(6))); }
 </script>
 <script data-goatcounter="https://abc-ri-snf.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
