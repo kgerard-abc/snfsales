@@ -694,12 +694,19 @@ def build_public_data(M, S, val, cec, mp, ccn_of, fn, cfg):
     piv = {c: d.set_index('snapshot_date') for c, d in p.groupby('ccn_std')}
     events_by = {}
     def ev_add(key, e): events_by.setdefault(key, []).append(e)
-    OVR = cec.get('overrides', {})
+    OVR = cec.get('overrides', {}); undated_by = {}
     for r in log.itertuples():
         d = T(r.chow) or T(r.decision); ovr = OVR.get(r.cec)
         if ovr and ovr.get('date'): d = T(ovr['date'])
-        if d is None: continue
         key = cec_ccn.get(r.facility) or ('cec:' + str(r.facility))
+        if d is None:   # no usable date (for example "decision date not recorded", or still pending): keep it for the home's owner history, by year
+            if not (ovr and ovr['treat'] in ('closure', 'not a sale')):
+                yr_ = nz(r.year)
+                try: yr_ = int(float(yr_)) if yr_ is not None else None
+                except Exception: yr_ = None
+                k_ = 'sale' if r.type == 'Ownership/operator change' else ('parent' if r.type == 'Corporate parent change (multi-facility deal)' else ('internal' if r.type == 'Estate / internal ownership restructuring' else 'realestate'))
+                undated_by.setdefault(key, []).append(dict(year=yr_, kind=k_, cec=r.cec, label=TYPE_LABEL.get(r.type, r.type or 'CEC'), who=pubtxt(r.applicant, True) or '', buyer=pubtxt(r.buyer), outcome=nz(r.outcome), pending=(nz(r.outcome) == 'Pending')))
+            continue
         rtype = r.type
         if ovr and ovr['treat'] == 'sale': rtype = 'Ownership/operator change'
         if ovr and ovr['treat'] == 'parent company change': rtype = 'Corporate parent change (multi-facility deal)'
@@ -761,7 +768,8 @@ def build_public_data(M, S, val, cec, mp, ccn_of, fn, cfg):
             if len(lr):
                 fid_ = cec_ccn.get(lr.iloc[0].facility) or ('cec:' + str(lr.iloc[0].facility)); f_ = next((x for x in facs if x['id'] == fid_), None)
                 if f_ is not None and o['treat'] == 'closure': f_['status'] = o['label']
-    facs = [f for f in facs if f['has_cms'] or f['events']]
+    for f_ in facs: f_['undated'] = sorted(undated_by.get(f_['id'], []), key=lambda u: (u['year'] or 0))
+    facs = [f for f in facs if f['has_cms'] or f['events'] or f['undated']]
     # sales table
     rows = []; pub = S[S.counts & S.type.isin(cfg['public_include_types'])].sort_values('evd', ascending=False)
     fid = lambda r: (r.ccn if nz(r.ccn) and r.ccn in fac.index else 'cec:' + str(r.facility))
@@ -1866,18 +1874,22 @@ const KIND_LBL = { mgmt: 'Buyer took over management', closed: 'Closed', sale: '
 
 /* ---------- who ran this home over time ---------- */
 function ownerEras(f) {
-  const dates = D.dates, latest = D.meta.latest, ev = f.events.slice().sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
-  const starters = ev.filter(e => e.kind === 'sale' || e.kind === 'parent'), closed = ev.find(e => e.kind === 'closed');
+  const dates = D.dates, ev = f.events.slice().sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+  const notPend = e => e.outcome !== 'Pending';
+  const closed = ev.find(e => e.kind === 'closed');
+  const starters = ev.filter(e => (e.kind === 'sale' || e.kind === 'parent') && notPend(e)).map(e => ({ date: e.date, approx: false, e }))
+    .concat((f.undated || []).filter(u => (u.kind === 'sale' || u.kind === 'parent') && !u.pending && u.year).map(u => ({ date: u.year + '-07-01', approx: true, year: u.year, e: u })));
   if (!starters.length) return [];
-  const groups = []; starters.forEach(e => { const g = groups[groups.length - 1]; if (g && g.date === e.date) g.evs.push(e); else groups.push({ date: e.date, evs: [e] }); });
-  const eras = []; const firstDate = groups[0].date;
-  if (f.has_cms && dates[0] < firstDate) eras.push({ kind: 'earlier', start: null, end: firstDate, evs: [] });
-  groups.forEach((g, i) => eras.push({ kind: g.evs.some(e => e.kind === 'sale') ? 'sale' : 'parent', start: g.date, end: i + 1 < groups.length ? groups[i + 1].date : (closed ? closed.date : null), evs: g.evs }));
+  starters.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+  const groups = []; starters.forEach(x => { const g = groups[groups.length - 1]; if (g && !x.approx && !g.approx && g.date === x.date) g.evs.push(x.e); else groups.push({ date: x.date, approx: x.approx, year: x.year, evs: [x.e] }); });
+  const eras = []; const g0 = groups[0];
+  if (f.has_cms && !g0.approx && dates[0] < g0.date) eras.push({ kind: 'earlier', start: null, end: g0.date, evs: [] });
+  groups.forEach((g, i) => { const nx = groups[i + 1]; eras.push({ kind: g.evs.some(e => e.kind === 'sale') ? 'sale' : 'parent', start: g.date, startApprox: g.approx, year: g.year, end: nx ? nx.date : (closed ? closed.date : null), endApprox: nx ? nx.approx : false, endYear: nx ? nx.year : null, evs: g.evs }); });
   const lastBefore = d => { let k = -1; dates.forEach((x, i) => { if (x < d) k = i; }); return k; };
   const lastWith = () => { let k = -1; (f.s ? f.s.overall : []).forEach((v, i) => { if (v != null || (f.s.nr && f.s.nr[i])) k = i; }); return k; };
   eras.forEach(r => {
     r.notes = ev.filter(e => ['mgmt', 'realestate', 'internal'].includes(e.kind) && (r.start === null ? e.date < r.end : (e.date >= r.start && (r.end === null || e.date < r.end))));
-    if (!f.s) return;
+    if (!f.s || r.startApprox || r.endApprox) return;
     let i0 = r.start === null ? 0 : lastBefore(r.start), fromFirst = false;
     if (i0 < 0) { i0 = 0; fromFirst = true; }
     const i1 = r.end === null ? lastWith() : lastBefore(r.end);
@@ -1890,22 +1902,27 @@ function spanText(a, b) {
   return [y ? y + (y === 1 ? ' year' : ' years') : null, mo || !y ? mo + (mo === 1 ? ' month' : ' months') : null].filter(Boolean).join(' ');
 }
 function eraPanel(f) {
-  const eras = ownerEras(f); if (!eras.length) return null;
+  const eras = ownerEras(f); if (!eras.length && !(f.events.some(e => e.outcome === 'Pending') || (f.undated || []).some(u => u.pending))) return null;
   const val = (arr, i) => arr ? arr[i] : null, st0 = (i) => { const v = val(f.s.overall, i); return v != null ? v : (f.s.nr && f.s.nr[i] ? 0 : null); };
   const wrap = el('div', { class: 'panel' }, el('h3', { style: 'margin-top:0', text: 'Who ran this home, and what happened' }),
     el('p', { class: 'small', text: 'Each block is a period under one owner, newest first. Ratings are taken from the last CMS file before the owner changed and the last CMS file before the next change, so each block shows how the home moved while that owner was in charge. CMS can be slow to show a new owner, and a change in ratings may reflect problems that started earlier.' }));
+  const nApproved = f.events.filter(e => ['sale', 'parent', 'internal'].includes(e.kind) && e.outcome !== 'Pending').length + (f.undated || []).filter(u => ['sale', 'parent', 'internal'].includes(u.kind) && !u.pending).length;
+  if (nApproved) wrap.append(el('p', { style: 'margin:6px 0', text: 'The state has approved ' + nApproved + (nApproved === 1 ? ' change' : ' changes') + ' of control for this home since 2007.' }));
+  const pend = f.events.filter(e => e.outcome === 'Pending').concat((f.undated || []).filter(u => u.pending));
+  pend.forEach(p => wrap.append(el('div', { class: 'note', text: 'Pending with the state: ' + ([p.buyer, p.who].filter(Boolean).join(', ') || 'application not yet decided') + '. Not included in the history below until it is decided.' })));
   const list = el('div', { class: 'eras' }); wrap.append(list);
   eras.forEach(r => {
     const first = r.evs[0] || {}, names = r.kind === 'earlier' ? 'Earlier owner' : (first.buyer || first.who || 'New owner');
     const op = r.kind === 'earlier' ? 'Not named in the state records shown here' : r.evs.map(e => e.who).filter((x, i, a) => x && a.indexOf(x) === i && x !== names).join('; ');
     const tag = r.kind === 'sale' ? 'Sold to a new operator' : r.kind === 'parent' ? 'Chain reorganization' : 'Before the first recorded change';
-    const endTxt = r.end === null ? 'still in charge as of ' + fmtMon(D.meta.latest) : 'until ' + fmtDay(r.end);
-    const whenTxt = r.start === null ? 'Before ' + fmtDay(r.end) : 'From ' + fmtDay(r.start) + (r.end === null ? ', ' : ' ') + endTxt;
-    const dur = r.start === null ? null : spanText(r.start, r.end === null ? D.meta.latest : r.end);
+    const NR = ' (exact date not recorded)';
+    const endTxt = r.end === null ? 'still in charge as of ' + fmtMon(D.meta.latest) : 'until ' + (r.endApprox ? r.endYear + NR : fmtDay(r.end));
+    const whenTxt = r.start === null ? 'Before ' + fmtDay(r.end) : 'From ' + (r.startApprox ? r.year + NR : fmtDay(r.start)) + (r.end === null ? ', ' : ' ') + endTxt;
+    const dur = (r.start === null || r.startApprox || r.endApprox) ? null : spanText(r.start, r.end === null ? D.meta.latest : r.end);
     const card = el('div', { class: 'era ' + r.kind }, el('h4', {}, names, el('span', { class: 'tag', text: tag })),
       op ? el('p', { class: 'small', style: 'margin:0', text: op }) : null,
       el('p', { class: 'when', text: whenTxt + (dur ? ' (' + dur + ')' : '') }),
-      r.start !== null && first.date_note ? el('p', { class: 'small', style: 'margin:0', text: 'Start date: ' + first.date_note + '.' }) : null);
+      r.start !== null && !r.startApprox && first.date_note ? el('p', { class: 'small', style: 'margin:0', text: 'Start date: ' + first.date_note + '.' }) : null);
     if (r.i1 != null) {
       const mets = el('div', { class: 'mets' });
       const s0 = st0(r.i0), s1 = st0(r.i1);
@@ -1920,6 +1937,7 @@ function eraPanel(f) {
       if (mets.children.length) card.append(mets);
       card.append(el('p', { class: 'small', style: 'margin:8px 0 0', text: 'Measured from the ' + fmtMon(D.dates[r.i0]) + ' CMS file' + (r.fromFirst ? ' (the earliest CMS file on this page)' : ' (last file before this owner)') + ' to the ' + fmtMon(D.dates[r.i1]) + ' CMS file' + (r.end === null ? ' (latest)' : ' (last file before the next change)') + '.' }));
     } else if (!f.has_cms) card.append(el('p', { class: 'small', style: 'margin:8px 0 0', text: 'No CMS ratings on this page for this home.' }));
+    else if (r.startApprox || r.endApprox) card.append(el('p', { class: 'small', style: 'margin:8px 0 0', text: 'The state record does not give an exact date, so no rating change is shown for this period.' }));
     else card.append(el('p', { class: 'small', style: 'margin:8px 0 0', text: 'Too short, or too long ago, for CMS ratings on this page to show a change (CMS files here start in ' + fmtMon(D.dates[0]) + ').' }));
     if (r.notes && r.notes.length) card.append(el('ul', { class: 'notes' }, r.notes.map(n => el('li', { text: fmtDay(n.date) + ': ' + (KIND_LBL[n.kind] || n.label) + (n.who ? ' (' + [n.buyer, n.who].filter(Boolean).join(', ') + ')' : '') }))));
     list.append(card);
