@@ -704,7 +704,7 @@ def build_public_data(M, S, val, cec, mp, ccn_of, fn, cfg):
                 yr_ = nz(r.year)
                 try: yr_ = int(float(yr_)) if yr_ is not None else None
                 except Exception: yr_ = None
-                k_ = 'sale' if r.type == 'Ownership/operator change' else ('parent' if r.type == 'Corporate parent change (multi-facility deal)' else ('internal' if r.type == 'Estate / internal ownership restructuring' else 'realestate'))
+                k_ = 'sale' if r.type == 'Ownership/operator change' else ('parent' if r.type == 'Corporate parent change (multi-facility deal)' else ('internal' if r.type == 'Estate / internal ownership restructuring' else ('unclear' if r.type == 'Unclear from report' else 'realestate')))
                 undated_by.setdefault(key, []).append(dict(year=yr_, kind=k_, cec=r.cec, label=TYPE_LABEL.get(r.type, r.type or 'CEC'), who=pubtxt(r.applicant, True) or '', buyer=pubtxt(r.buyer), outcome=nz(r.outcome), pending=(nz(r.outcome) == 'Pending')))
             continue
         rtype = r.type
@@ -713,7 +713,7 @@ def build_public_data(M, S, val, cec, mp, ccn_of, fn, cfg):
         if ovr and ovr['treat'] in ('closure', 'not a sale'):
             ev_add(key, dict(date=_d(d), kind='closed', cec=r.cec, label=nz(ovr.get('label')) or 'Closed (not a sale)', who='', buyer=None, outcome=None, src='Note from the workbook owner (state review record ' + r.cec + ' exists)', date_note='Date from the workbook note'))
             continue
-        kind = 'sale' if rtype in ('Ownership/operator change',) else ('parent' if rtype == 'Corporate parent change (multi-facility deal)' else ('internal' if rtype == 'Estate / internal ownership restructuring' else 'realestate'))
+        kind = 'sale' if rtype in ('Ownership/operator change',) else ('parent' if rtype == 'Corporate parent change (multi-facility deal)' else ('internal' if rtype == 'Estate / internal ownership restructuring' else ('unclear' if rtype == 'Unclear from report' else 'realestate')))
         who = pubtxt(r.applicant, True) or ''
         ev_add(key, dict(date=_d(d), kind=kind, cec=r.cec, label=TYPE_LABEL.get(rtype, rtype or 'CEC'), who=who, buyer=pubtxt(r.buyer), outcome=nz(r.outcome), src='RIDOH Change in Effective Control record ' + r.cec,
                          date_note=('CMS takeover date' if T(r.chow) else 'RIDOH decision date')))
@@ -1870,7 +1870,7 @@ function facSearch() {
   if (!hits.length) ul.append(el('li', {}, el('div', { style: 'padding:8px 12px', text: 'No homes match.' }))); ul.classList.remove('hidden');
 }
 $('#fac-q').addEventListener('input', facSearch);
-const KIND_LBL = { mgmt: 'Buyer took over management', closed: 'Closed', sale: 'Sold / new operator', parent: 'Chain reorganization', internal: 'Internal restructuring', realestate: 'Real estate only', cms: 'CMS data' };
+const KIND_LBL = { mgmt: 'Buyer took over management', closed: 'Closed', sale: 'Sold / new operator', parent: 'Chain reorganization', internal: 'Internal restructuring', realestate: 'Real estate only', unclear: 'Change approved, type not stated in the state report', cms: 'CMS data' };
 
 /* ---------- who ran this home over time ---------- */
 function ownerEras(f) {
@@ -1888,7 +1888,7 @@ function ownerEras(f) {
   const lastBefore = d => { let k = -1; dates.forEach((x, i) => { if (x < d) k = i; }); return k; };
   const lastWith = () => { let k = -1; (f.s ? f.s.overall : []).forEach((v, i) => { if (v != null || (f.s.nr && f.s.nr[i])) k = i; }); return k; };
   eras.forEach(r => {
-    r.notes = ev.filter(e => ['mgmt', 'realestate', 'internal'].includes(e.kind) && (r.start === null ? e.date < r.end : (e.date >= r.start && (r.end === null || e.date < r.end))));
+    r.notes = ev.filter(e => ['mgmt', 'realestate', 'internal', 'unclear'].includes(e.kind) && (r.start === null ? e.date < r.end : (e.date >= r.start && (r.end === null || e.date < r.end))));
     if (!f.s || r.startApprox || r.endApprox) return;
     let i0 = r.start === null ? 0 : lastBefore(r.start), fromFirst = false;
     if (i0 < 0) { i0 = 0; fromFirst = true; }
@@ -1906,7 +1906,7 @@ function eraPanel(f) {
   const val = (arr, i) => arr ? arr[i] : null, st0 = (i) => { const v = val(f.s.overall, i); return v != null ? v : (f.s.nr && f.s.nr[i] ? 0 : null); };
   const wrap = el('div', { class: 'panel' }, el('h3', { style: 'margin-top:0', text: 'Who ran this home, and what happened' }),
     el('p', { class: 'small', text: 'Each block is a period under one owner, newest first. Ratings are taken from the last CMS file before the owner changed and the last CMS file before the next change, so each block shows how the home moved while that owner was in charge. CMS can be slow to show a new owner, and a change in ratings may reflect problems that started earlier.' }));
-  const nApproved = f.events.filter(e => ['sale', 'parent', 'internal'].includes(e.kind) && e.outcome !== 'Pending').length + (f.undated || []).filter(u => ['sale', 'parent', 'internal'].includes(u.kind) && !u.pending).length;
+  const nApproved = f.events.filter(e => ['sale', 'parent', 'internal', 'unclear'].includes(e.kind) && e.outcome !== 'Pending').length + (f.undated || []).filter(u => ['sale', 'parent', 'internal', 'unclear'].includes(u.kind) && !u.pending).length;
   if (nApproved) wrap.append(el('p', { style: 'margin:6px 0', text: 'The state has approved ' + nApproved + (nApproved === 1 ? ' change' : ' changes') + ' of control for this home since 2007.' }));
   const pend = f.events.filter(e => e.outcome === 'Pending').concat((f.undated || []).filter(u => u.pending));
   pend.forEach(p => wrap.append(el('div', { class: 'note', text: 'Pending with the state: ' + ([p.buyer, p.who].filter(Boolean).join(', ') || 'application not yet decided') + '. Not included in the history below until it is decided.' })));
