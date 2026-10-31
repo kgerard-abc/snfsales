@@ -16,7 +16,13 @@ DEFAULT_CONFIG = dict(
     ],
     max_plausible_turnover=90,      # nursing staff turnover (%) at or above this is CMS's 'lowest possible score' for missing payroll data: blanked and flagged
     ccn_notes_seed={'Pawtuxet Village Care and Rehabilitation Center': 'Closed April 2012. No CCN exists.'},   # notes added to the CCN Map the first time a name appears
-    closed_seed={'415107': 'Closed January 2025', '415051': 'Closed 2025'},   # homes CMS still lists that have closed (CCN: 'Closed <Month> <Year>' or 'Closed <Year>'); a 'Closed ...' note in the CCN Map does the same and wins
+    closed_seed={'415107': 'Closed January 2025', '415051': 'Closed 2025', '415007': 'Closed May 2022'},   # homes CMS still lists that have closed (CCN: 'Closed <Month> <Year>' or 'Closed <Year>'); a 'Closed ...' note in the CCN Map does the same and wins
+    display_names={'415079': 'Valley View Health & Rehabilitation'},   # CCN: name to show when CMS's latest name is too messy to pick automatically (Valley View was Trinity until early 2026)
+    exclude_names=('Tavares Pediatric Center',),   # homes that should not appear on the page; a 'Exclude ...' note in the CCN Map does the same
+    status_seed={'Park View Center for Rehabilitation & Health Care': 'Closed, last CMS file December 2018',
+                 'Epoch Senior Healthcare on Blackstone Boulevard': 'Now assisted living, date the nursing home ended not recorded',
+                 'Brookdale Smithfield (nursing beds)': 'Now assisted living, date the nursing beds ended not recorded',
+                 'Brookdale Cumberland (nursing beds)': 'Now assisted living, date the nursing beds ended not recorded'},   # status text for homes with no CMS data; a 'Closed ...' or 'Now assisted living ...' note in the CCN Map wins
     max_gap_days=45,
     series_start='2019-04-09',      # first CMS file after the April 2019 star-rating method change (statewide average fell 3.8 -> 3.35 in one month)                # a grid date needs a CMS file within this many days
     page_title='What happened when Rhode Island nursing homes were sold',
@@ -37,6 +43,8 @@ def nz(v):
         if pd.isna(v): return None
     except Exception: pass
     return v
+def is_messy_name(n):
+    l = n.lower(); return (' dba ' in l) or ('operations' in l) or ('operator' in l) or len(n) == 50 or 'legal business name' in l
 def key_(x): return re.sub(r'[^A-Z0-9]', '', str(x).upper()) if nz(x) is not None else None
 def lab_(s): return pd.Timestamp(s).strftime('%b %Y')
 def nice(n):
@@ -142,8 +150,7 @@ def build_model(inp, cfg):
     fac['cms_name'] = fac['provider_name'].map(nice); fac['city'] = fac['city_town'].str.title(); fac['county'] = fac['county_parish'].str.title()
     fac['active'] = fac['last_seen'] == latest
     fac['status'] = [('Active' if a else f"Not in CMS data after {lab_(l)}") for a, l in zip(fac['active'], fac['last_seen'])]
-    def messy(n):
-        l = n.lower(); return (' dba ' in l) or ('operations' in l) or ('operator' in l) or len(n) == 50 or 'legal business name' in l
+    messy = is_messy_name
     names_hist = {}
     for ccn, d in p.groupby('ccn_std'):
         seq = []
@@ -154,6 +161,7 @@ def build_model(inp, cfg):
             else: seq.append(dict(key=k, name=nice(nm), first=s, last=s))
         names_hist[ccn] = seq
     def pick(ccn):
+        if (cfg.get('display_names') or {}).get(ccn): return cfg['display_names'][ccn]
         seq = names_hist[ccn]; rec = [x for x in seq if x['last'] >= '2025-08-01' and not messy(x['name'])]
         return (rec or seq)[-1]['name']
     fac['name'] = [pick(c) for c in fac.index]
@@ -514,6 +522,7 @@ def former_names(M, cec, ccn_of):
         disp = key_(fac.loc[c, 'name']); seen = {disp}; lst = []
         for x in reversed(nh[c]):
             if x['key'] in seen: continue
+            if c in (M['cfg'].get('display_names') or {}) and is_messy_name(x['name']): continue
             seen.add(x['key']); lst.append(dict(name=x['name'], src='CMS listing', first=x['first'], last=x['last']))
         for n, src in cec_names.get(c, []):
             if key_(n) in seen: continue
@@ -758,7 +767,8 @@ def build_public_data(M, S, val, cec, mp, ccn_of, fn, cfg):
         if r['ccn'] and r['ccn'] in fac.index: continue
         key = r['ccn'] or ('cec:' + r['name'])
         fs = cec['fs'][cec['fs'].name == r['name']]; town = nz(fs.iloc[0].town) if len(fs) else None
-        m_ = re.match(r'\s*(Closed[^.;(]*)', str(r.get('note') or '')); stat = m_.group(1).strip() if m_ else 'No CMS data in this dataset (not in the CMS files since 2019)'
+        note_ = str(r.get('note') or '') if re.match(r'\s*(Closed|Now assisted living)', str(r.get('note') or ''), re.I) else (cfg.get('status_seed') or {}).get(r['name'], '')
+        m_ = re.match(r'\s*((?:Closed|Now assisted living)[^.;(]*)', note_, re.I); stat = m_.group(1).strip() if m_ else 'No CMS data in this dataset (not in the CMS files since 2019)'
         facs.append(dict(id=key, ccn=r['ccn'], name=r['name'], town=town, county=None, active=None, status=stat, last_seen=None, beds=None, owner=None, chain=None, ownership_type=None, sff=None, abuse=False,
                          cms_name='', former=[dict(name=x['name'], src=x['src'], to=None) for x in fn.get(r['ccn'] or ('nocc:' + r['name']), []) if key_(x['name']) != key_(r['name'])], now=None, s=None, yr=None,
                          events=sorted(events_by.get(key, []), key=lambda e: e['date'], reverse=True), has_cms=False))
@@ -768,6 +778,8 @@ def build_public_data(M, S, val, cec, mp, ccn_of, fn, cfg):
             if len(lr):
                 fid_ = cec_ccn.get(lr.iloc[0].facility) or ('cec:' + str(lr.iloc[0].facility)); f_ = next((x for x in facs if x['id'] == fid_), None)
                 if f_ is not None and o['treat'] == 'closure': f_['status'] = o['label']
+    excl_ = set(cfg.get('exclude_names') or ()) | {r_['name'] for r_ in mp if re.match(r'\s*exclude', str(r_.get('note') or ''), re.I)}
+    facs = [f_ for f_ in facs if f_['name'] not in excl_ and not any(f_['name'] == n_ for n_ in excl_)]
     for f_ in facs: f_['undated'] = sorted(undated_by.get(f_['id'], []), key=lambda u: (u['year'] or 0))
     facs = [f for f in facs if f['has_cms'] or f['events'] or f['undated']]
     # sales table
