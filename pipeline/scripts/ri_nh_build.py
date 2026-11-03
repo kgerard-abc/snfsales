@@ -1557,7 +1557,7 @@ sup.datemark{font-size:.75em;margin-left:2px}
 table{border-collapse:collapse;width:100%;font-size:.9rem}
 caption{text-align:left;color:var(--muted);font-size:.86rem;padding:4px 0}
 th,td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
-th{position:sticky;top:0;background:var(--card);font-weight:600;white-space:nowrap}
+th{position:sticky;top:0;z-index:3;background:var(--card);font-weight:600;white-space:nowrap}
 th button{all:unset;cursor:pointer;font-weight:600}
 th button:focus-visible{outline:2px solid var(--gold)}
 td.num,th.num{text-align:center;white-space:nowrap}
