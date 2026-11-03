@@ -291,6 +291,12 @@ def _ccn(v):
     s = re.sub(r'\D', '', str(v))
     return s.zfill(6) if s else None
 
+def _approx_date(raw):
+    """First m/d/yyyy date inside text such as 'HSC 12/13/2016; decision date not recorded' (the Council meeting date), else None."""
+    m_ = re.search(r'(\d{1,2})/(\d{1,2})/(\d{4})', str(raw)) if isinstance(raw, str) else None
+    try: return pd.Timestamp(year=int(m_.group(3)), month=int(m_.group(1)), day=int(m_.group(2))) if m_ else None
+    except Exception: return None
+APPROX_NOTE = 'Approximate date'
 _HL = re.compile(r'^=HYPERLINK\(\s*"([^"]+)"\s*,\s*"(.*)"\s*\)\s*$', re.S)
 def _cell_link(c):
     """(url, label) when the cell is a HYPERLINK() formula or carries a cell link; otherwise None."""
@@ -328,7 +334,7 @@ def read_cec(wb):
         if not cid: continue
         rows.append(dict(row=r, cec=str(cid).strip(), facility=_v(ws.cell(row=r, column=cols['fac'])), town=_v(ws.cell(row=r, column=cols['town'])), applicant=_v(ws.cell(row=r, column=cols['applicant'])),
                          buyer=_v(ws.cell(row=r, column=cols['buyer'])), type=_v(ws.cell(row=r, column=cols['type'])), outcome=_v(ws.cell(row=r, column=cols['outcome'])),
-                         decision=_date(_v(ws.cell(row=r, column=cols['decision']))), chow=_date(_v(ws.cell(row=r, column=cols['chow']))), year=_v(ws.cell(row=r, column=cols['year'])),
+                         decision=_date(_v(ws.cell(row=r, column=cols['decision']))), decision_raw=_v(ws.cell(row=r, column=cols['decision'])), chow=_date(_v(ws.cell(row=r, column=cols['chow']))), year=_v(ws.cell(row=r, column=cols['year'])),
                          seller=_v(ws.cell(row=r, column=cols['seller']))))
     out['log'] = pd.DataFrame(rows); out['log_cols'] = cols; out['docs'] = _cec_docs(ws, h, cols['id'])
     ws = wb['Post-Sale Tracker']; rows = []
@@ -733,7 +739,8 @@ def build_public_data(M, S, val, cec, mp, ccn_of, fn, cfg):
                 try: yr_ = int(float(yr_)) if yr_ is not None else None
                 except Exception: yr_ = None
                 k_ = 'sale' if r.type == 'Ownership/operator change' else ('parent' if r.type == 'Corporate parent change (multi-facility deal)' else ('internal' if r.type == 'Estate / internal ownership restructuring' else 'realestate'))
-                undated_by.setdefault(key, []).append(dict(year=yr_, kind=k_, cec=r.cec, label=TYPE_LABEL.get(r.type, r.type or 'CEC'), who=pubtxt(r.applicant, True) or '', buyer=pubtxt(r.buyer), outcome=nz(r.outcome), pending=(nz(r.outcome) == 'Pending')))
+                undated_by.setdefault(key, []).append(dict(year=yr_, kind=k_, cec=r.cec, label=TYPE_LABEL.get(r.type, r.type or 'CEC'), who=pubtxt(r.applicant, True) or '', buyer=pubtxt(r.buyer), outcome=nz(r.outcome), pending=(nz(r.outcome) == 'Pending'),
+                                                  date=(_d(_approx_date(getattr(r, 'decision_raw', None))) if nz(r.outcome) != 'Pending' else None), date_note=APPROX_NOTE))
             continue
         rtype = r.type
         if ovr and ovr['treat'] == 'sale': rtype = 'Ownership/operator change'
@@ -810,7 +817,21 @@ def build_public_data(M, S, val, cec, mp, ccn_of, fn, cfg):
                          label=TYPE_LABEL.get(r.type, r.type), buyer=pubtxt(r.buyer), who=pubtxt(r.applicant, True) or '', outcome=nz(r.outcome), has_cms=bool(r.has_data), before_date=_d(r.before), cms_op=_d(r.cms_detected),
                          m={k: dict(before=_r(getattr(r, f'{k}_before'), 2), y1=_r(getattr(r, f'{k}_y1'), 2), y2=_r(getattr(r, f'{k}_y2'), 2), exit=_r(getattr(r, f'{k}_exit'), 2)) for k in ('overall', 'staffing', 'hours', 'turnover')},
                          ser=dict(before=nz(r.ser_before), y1=nz(r.ser_y1), y2=nz(r.ser_y2)), fines=dict(before=nz(r.fines_before), y1=nz(r.fines_y1), y2=nz(r.fines_y2))))
-    rows = [r for r in rows if r['date']]          # a sale with no recorded date is left out of the table
+    rows = [r for r in rows if r['date']]
+    have = {r['cec'] for r in rows}; blank = lambda: dict(before=None, y1=None, y2=None, exit=None)
+    for r in log.itertuples():       # sales the CMS before/after analysis does not cover still get a row: no exact date (approximate date used) or a deal that fell through
+        if r.cec in have or r.type not in cfg['public_include_types'] or nz(r.outcome) == 'Pending': continue
+        ovr = OVR.get(r.cec); d_, note_, kind_, lab_ = T(r.chow) or T(r.decision), None, ('sale' if r.type == 'Ownership/operator change' else 'parent'), TYPE_LABEL.get(r.type, r.type)
+        if ovr and ovr['treat'] in ('closure', 'not a sale'):
+            d_ = T(ovr['date']) if ovr.get('date') else d_; note_ = 'Date from the workbook note'; kind_ = 'closed'; lab_ = nz(ovr.get('label')) or 'Closed (not a sale)'
+        elif ovr and ovr['treat'] == 'not completed': continue
+        elif d_ is None:
+            d_ = _approx_date(getattr(r, 'decision_raw', None)); note_ = APPROX_NOTE
+        if d_ is None: continue
+        fid_ = cec_ccn.get(r.facility) or ('cec:' + str(r.facility)); f = next((x for x in facs if x['id'] == fid_), None)
+        rows.append(dict(cec=r.cec, fid=fid_, date=_d(d_), date_note=note_ or 'RIDOH decision date', name=(f['name'] if f else r.facility), town=(f['town'] if f else None), kind=kind_, label=lab_, buyer=pubtxt(r.buyer), who=pubtxt(r.applicant, True) or '',
+                         outcome=nz(r.outcome), has_cms=False, before_date=None, cms_op=None, m={k: blank() for k in ('overall', 'staffing', 'hours', 'turnover')}, ser=dict(before=None, y1=None, y2=None), fines=dict(before=None, y1=None, y2=None)))
+    rows.sort(key=lambda r: r['date'], reverse=True)
     for r in rows:
         for k in ('ser', 'fines'):
             r[k] = {a: (None if nz(b) is None else round(float(b))) for a, b in r[k].items()}
@@ -1673,7 +1694,7 @@ const NS = 'http://www.w3.org/2000/svg';
 const sv = (tag, attrs, ...kids) => { const n = document.createElementNS(NS, tag); for (const k in (attrs || {})) n.setAttribute(k, attrs[k]); for (const c of kids.flat()) { if (c) n.append(c.nodeType ? c : document.createTextNode(String(c))); } return n; };
 const MS = d => Date.parse(d + 'T00:00:00Z');
 const fmtMon = d => new Date(MS(d)).toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
-const DATE_MARK = { 'First CMS file showing it': ['\u2020', 'First CMS file showing it'], 'CMS takeover date': ['\u2021', 'CMS takeover date'], 'First CMS file without the home': ['\u00a7', 'First CMS file without the home'], 'Month from the workbook note': ['*', 'Taken from the note in the sales workbook'], 'Date from the workbook note': ['*', 'Taken from the note in the sales workbook'] };
+const DATE_MARK = { 'First CMS file showing it': ['\u2020', 'First CMS file showing it'], 'CMS takeover date': ['\u2021', 'CMS takeover date'], 'First CMS file without the home': ['\u00a7', 'First CMS file without the home'], 'Month from the workbook note': ['*', 'Taken from the note in the sales workbook'], 'Date from the workbook note': ['*', 'Taken from the note in the sales workbook'], 'Approximate date': ['~', 'Approximate: the state record does not give an exact date, so this is the Health Services Council meeting date'] };
 const dateMark = note => DATE_MARK[note] ? el('sup', { class: 'datemark', text: DATE_MARK[note][0] }) : null;
 const dateLegend = () => 'Dates are the RIDOH decision date unless marked: ' + [...new Map(Object.values(DATE_MARK).map(v => [v[0], v[1]])).entries()].map(([k, v]) => k + ' ' + v).join('; ') + '.';
 const fmtDay = d => new Date(MS(d)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
@@ -1888,7 +1909,7 @@ $('#sales-tbl thead').append(el('tr', {}, cols.map(c => el('th', { scope: 'col',
 function trio(a, b, c, fmt, cell) { const parts = [a, b, c].filter((v, i) => i === 0 || v != null || (i === 1)); return parts; }
 function drawSales() {
   const q = $('#sale-q').value.trim().toLowerCase(), incP = $('#sale-parent').checked, onlyC = $('#sale-cms').checked;
-  let rows = D.sales.filter(r => (incP || r.kind === 'sale') && (!onlyC || r.has_cms) && (!q || [r.name, r.town, r.buyer, r.who].join(' ').toLowerCase().includes(q)));
+  let rows = D.sales.filter(r => (incP || r.kind !== 'parent') && (!onlyC || r.has_cms) && (!q || [r.name, r.town, r.buyer, r.who].join(' ').toLowerCase().includes(q)));
   rows.sort((a, b) => { const A = a[sortKey] == null ? '' : a[sortKey], B = b[sortKey] == null ? '' : b[sortKey]; return (A < B ? -1 : A > B ? 1 : 0) * sortDir; });
   const tb = $('#sales-tbl tbody'); tb.replaceChildren();
   rows.forEach(r => { const m = r.m;
@@ -1897,7 +1918,7 @@ function drawSales() {
     const hrs = el('td', { class: 'num' }, r.has_cms && m.hours.before != null ? [f2(m.hours.before), el('span', { class: 'arrow', text: '\u2192' }), f2(m.hours.y1)] : '\u2013');
     const ser = el('td', { class: 'num' }, r.ser.before != null ? [String(r.ser.before), el('span', { class: 'arrow', text: '\u2192' }), r.ser.y1 == null ? '\u2013' : String(r.ser.y1)] : '\u2013');
     const fin = el('td', { class: 'num' }, r.fines.before != null ? [money(r.fines.before), el('span', { class: 'arrow', text: '\u2192' }), r.fines.y1 == null ? '\u2013' : money(r.fines.y1)] : '\u2013');
-    tb.append(el('tr', {}, el('td', { class: 'num', title: r.date_note }, fmtDay(r.date), dateMark(r.date_note), r.mgmt_start ? el('div', { class: 'small', text: 'Buyer managing from ' + fmtMon(r.mgmt_start) }) : null, r.cms_op ? el('div', { class: 'small', text: 'CMS records updated ' + fmtMon(r.cms_op) }) : null), el('td', {}, D.facilities.some(f => f.id === r.fid) ? el('button', { class: 'linkbtn', text: r.name, onclick: () => showFacility(r.fid, true) }) : r.name, r.town ? el('div', { class: 'small', text: r.town }) : null), el('td', {}, r.label, r.outcome === 'Pending' ? el('div', { class: 'small', text: 'Pending' }) : null), newOwner, stars, hrs, ser, fin)); const cd = cecDetail(r.cec, 'Conditions and documents for this sale'); if (cd) tb.append(el('tr', { class: 'cecrow' }, el('td', { colspan: 8 }, cd))); });
+    tb.append(el('tr', {}, el('td', { class: 'num', title: r.date_note }, fmtDay(r.date), dateMark(r.date_note), r.date_note === 'Approximate date' ? el('div', { class: 'small', text: 'Approximate. The state record does not give an exact date.' }) : null, r.mgmt_start ? el('div', { class: 'small', text: 'Buyer managing from ' + fmtMon(r.mgmt_start) }) : null, r.cms_op ? el('div', { class: 'small', text: 'CMS records updated ' + fmtMon(r.cms_op) }) : null), el('td', {}, D.facilities.some(f => f.id === r.fid) ? el('button', { class: 'linkbtn', text: r.name, onclick: () => showFacility(r.fid, true) }) : r.name, r.town ? el('div', { class: 'small', text: r.town }) : null), el('td', {}, r.label, r.outcome === 'Pending' ? el('div', { class: 'small', text: 'Pending' }) : null), newOwner, stars, hrs, ser, fin)); const cd = cecDetail(r.cec, 'Conditions and documents for this sale'); if (cd) tb.append(el('tr', { class: 'cecrow' }, el('td', { colspan: 8 }, cd))); });
   if (!rows.length) tb.append(el('tr', {}, el('td', { colspan: 8, text: 'No sales match.' })));
 }
 $('#date-legend').textContent = dateLegend();
@@ -1921,13 +1942,13 @@ function ownerEras(f) {
   const notPend = e => e.outcome !== 'Pending';
   const closed = ev.find(e => e.kind === 'closed');
   const starters = ev.filter(e => (e.kind === 'sale' || e.kind === 'parent') && notPend(e)).map(e => ({ date: e.date, approx: false, e }))
-    .concat((f.undated || []).filter(u => (u.kind === 'sale' || u.kind === 'parent') && !u.pending && u.year).map(u => ({ date: u.year + '-07-01', approx: true, year: u.year, e: u })));
+    .concat((f.undated || []).filter(u => (u.kind === 'sale' || u.kind === 'parent') && !u.pending && u.year).map(u => ({ date: u.date || (u.year + '-07-01'), known: !!u.date, approx: true, year: u.year, e: u })));
   if (!starters.length) return [];
   starters.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
-  const groups = []; starters.forEach(x => { const g = groups[groups.length - 1]; if (g && !x.approx && !g.approx && g.date === x.date) g.evs.push(x.e); else groups.push({ date: x.date, approx: x.approx, year: x.year, evs: [x.e] }); });
+  const groups = []; starters.forEach(x => { const g = groups[groups.length - 1]; if (g && !x.approx && !g.approx && g.date === x.date) g.evs.push(x.e); else groups.push({ date: x.date, known: x.known, approx: x.approx, year: x.year, evs: [x.e] }); });
   const eras = []; const g0 = groups[0];
   if (f.has_cms && !g0.approx && dates[0] < g0.date) eras.push({ kind: 'earlier', start: null, end: g0.date, evs: [] });
-  groups.forEach((g, i) => { const nx = groups[i + 1]; eras.push({ kind: g.evs.some(e => e.kind === 'sale') ? 'sale' : 'parent', start: g.date, startApprox: g.approx, year: g.year, end: nx ? nx.date : (closed ? closed.date : null), endApprox: nx ? nx.approx : false, endYear: nx ? nx.year : null, evs: g.evs }); });
+  groups.forEach((g, i) => { const nx = groups[i + 1]; eras.push({ kind: g.evs.some(e => e.kind === 'sale') ? 'sale' : 'parent', start: g.date, startKnown: g.known, startApprox: g.approx, year: g.year, end: nx ? nx.date : (closed ? closed.date : null), endApprox: nx ? nx.approx : false, endKnown: nx ? nx.known : false, endYear: nx ? nx.year : null, evs: g.evs }); });
   const lastBefore = d => { let k = -1; dates.forEach((x, i) => { if (x < d) k = i; }); return k; };
   const lastWith = () => { let k = -1; (f.s ? f.s.overall : []).forEach((v, i) => { if (v != null || (f.s.nr && f.s.nr[i])) k = i; }); return k; };
   eras.forEach(r => {
@@ -1959,8 +1980,8 @@ function eraPanel(f) {
     const op = r.kind === 'earlier' ? 'Not named in the state records shown here' : r.evs.map(e => e.who).filter((x, i, a) => x && a.indexOf(x) === i && x !== names).join('; ');
     const tag = r.kind === 'sale' ? 'Sold to a new operator' : r.kind === 'parent' ? 'Chain reorganization' : 'Before the first recorded change';
     const NR = ' (exact date not recorded)';
-    const endTxt = r.end === null ? 'still in charge as of ' + fmtMon(D.meta.latest) : 'until ' + (r.endApprox ? r.endYear + NR : fmtDay(r.end));
-    const whenTxt = r.start === null ? 'Before ' + fmtDay(r.end) : 'From ' + (r.startApprox ? r.year + NR : fmtDay(r.start)) + (r.end === null ? ', ' : ' ') + endTxt;
+    const endTxt = r.end === null ? 'still in charge as of ' + fmtMon(D.meta.latest) : 'until ' + (r.endApprox ? (r.endKnown ? fmtDay(r.end) + ' (approximate)' : r.endYear + NR) : fmtDay(r.end));
+    const whenTxt = r.start === null ? 'Before ' + fmtDay(r.end) : 'From ' + (r.startApprox ? (r.startKnown ? fmtDay(r.start) + ' (approximate)' : r.year + NR) : fmtDay(r.start)) + (r.end === null ? ', ' : ' ') + endTxt;
     const dur = (r.start === null || r.startApprox || r.endApprox) ? null : spanText(r.start, r.end === null ? D.meta.latest : r.end);
     const card = el('div', { class: 'era ' + r.kind }, el('h4', {}, names, el('span', { class: 'tag', text: tag })),
       op ? el('p', { class: 'small', style: 'margin:0', text: op }) : null,
