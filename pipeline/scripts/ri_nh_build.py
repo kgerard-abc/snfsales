@@ -293,8 +293,8 @@ def _ccn(v):
 
 def _approx_date(raw):
     """First m/d/yyyy date inside text such as 'HSC 12/13/2016; decision date not recorded' (the Council meeting date), else None."""
-    m_ = re.search(r'(\d{1,2})/(\d{1,2})/(\d{4})', str(raw)) if isinstance(raw, str) else None
-    try: return pd.Timestamp(year=int(m_.group(3)), month=int(m_.group(1)), day=int(m_.group(2))) if m_ else None
+    m_ = re.search(r'(\d{1,2})/(\d{1,2})/(\d{4}|\d{2})\b', str(raw)) if isinstance(raw, str) else None
+    try: return pd.Timestamp(year=(int(m_.group(3)) + (2000 if len(m_.group(3)) == 2 else 0)), month=int(m_.group(1)), day=int(m_.group(2))) if m_ else None
     except Exception: return None
 APPROX_NOTE = 'Approximate date'
 _HL = re.compile(r'^=HYPERLINK\(\s*"([^"]+)"\s*,\s*"(.*)"\s*\)\s*$', re.S)
@@ -328,13 +328,13 @@ def read_cec(wb):
     out = {}
     ws = wb['CEC Log']; h = _hmap(ws); rows = []
     cols = dict(id=_col(h, 'CEC ID'), fac=_col(h, 'Facility'), town=_col(h, 'Town'), beds=_col(h, 'Beds'), applicant=_col(h, 'Applicant'), buyer=_col(h, 'Buyer group'), type=_col(h, 'Transaction type'),
-                outcome=_col(h, 'Outcome'), decision=_col(h, 'Decision or status date'), year=_col(h, 'Year'), chow=_col(h, 'CMS takeover date'), seller=_col(h, 'Seller per CMS'))
+                outcome=_col(h, 'Outcome'), decision=_col(h, 'Decision or status date'), year=_col(h, 'Year'), chow=_col(h, 'CMS takeover date'), filed=_col(h, 'Date(s) filed'), seller=_col(h, 'Seller per CMS'))
     for r in range(2, ws.max_row + 1):
         cid = _v(ws.cell(row=r, column=cols['id']))
         if not cid: continue
         rows.append(dict(row=r, cec=str(cid).strip(), facility=_v(ws.cell(row=r, column=cols['fac'])), town=_v(ws.cell(row=r, column=cols['town'])), applicant=_v(ws.cell(row=r, column=cols['applicant'])),
                          buyer=_v(ws.cell(row=r, column=cols['buyer'])), type=_v(ws.cell(row=r, column=cols['type'])), outcome=_v(ws.cell(row=r, column=cols['outcome'])),
-                         decision=_date(_v(ws.cell(row=r, column=cols['decision']))), decision_raw=_v(ws.cell(row=r, column=cols['decision'])), chow=_date(_v(ws.cell(row=r, column=cols['chow']))), year=_v(ws.cell(row=r, column=cols['year'])),
+                         decision=_date(_v(ws.cell(row=r, column=cols['decision']))), decision_raw=_v(ws.cell(row=r, column=cols['decision'])), chow=_date(_v(ws.cell(row=r, column=cols['chow']))), filed_raw=(_v(ws.cell(row=r, column=cols['filed'])) if cols['filed'] else None), year=_v(ws.cell(row=r, column=cols['year'])),
                          seller=_v(ws.cell(row=r, column=cols['seller']))))
     out['log'] = pd.DataFrame(rows); out['log_cols'] = cols; out['docs'] = _cec_docs(ws, h, cols['id'])
     ws = wb['Post-Sale Tracker']; rows = []
@@ -820,11 +820,13 @@ def build_public_data(M, S, val, cec, mp, ccn_of, fn, cfg):
     rows = [r for r in rows if r['date']]
     have = {r['cec'] for r in rows}; blank = lambda: dict(before=None, y1=None, y2=None, exit=None)
     for r in log.itertuples():       # sales the CMS before/after analysis does not cover still get a row: no exact date (approximate date used) or a deal that fell through
-        if r.cec in have or r.type not in cfg['public_include_types'] or nz(r.outcome) == 'Pending': continue
+        if r.cec in have or r.type not in cfg['public_include_types']: continue
         ovr = OVR.get(r.cec); d_, note_, kind_, lab_ = T(r.chow) or T(r.decision), None, ('sale' if r.type == 'Ownership/operator change' else 'parent'), TYPE_LABEL.get(r.type, r.type)
         if ovr and ovr['treat'] in ('closure', 'not a sale'):
             d_ = T(ovr['date']) if ovr.get('date') else d_; note_ = 'Date from the workbook note'; kind_ = 'closed'; lab_ = nz(ovr.get('label')) or 'Closed (not a sale)'
         elif ovr and ovr['treat'] == 'not completed': continue
+        elif nz(r.outcome) == 'Pending':       # still under review: dated by the first filing date, else the review-commenced date
+            d_ = _approx_date(getattr(r, 'filed_raw', None)) or _approx_date(getattr(r, 'decision_raw', None)); note_ = 'Application filing date'
         elif d_ is None:
             d_ = _approx_date(getattr(r, 'decision_raw', None)); note_ = APPROX_NOTE
         if d_ is None: continue
@@ -1694,7 +1696,7 @@ const NS = 'http://www.w3.org/2000/svg';
 const sv = (tag, attrs, ...kids) => { const n = document.createElementNS(NS, tag); for (const k in (attrs || {})) n.setAttribute(k, attrs[k]); for (const c of kids.flat()) { if (c) n.append(c.nodeType ? c : document.createTextNode(String(c))); } return n; };
 const MS = d => Date.parse(d + 'T00:00:00Z');
 const fmtMon = d => new Date(MS(d)).toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
-const DATE_MARK = { 'First CMS file showing it': ['\u2020', 'First CMS file showing it'], 'CMS takeover date': ['\u2021', 'CMS takeover date'], 'First CMS file without the home': ['\u00a7', 'First CMS file without the home'], 'Month from the workbook note': ['*', 'Taken from the note in the sales workbook'], 'Date from the workbook note': ['*', 'Taken from the note in the sales workbook'], 'Approximate date': ['~', 'Approximate: the state record does not give an exact date, so this is the Health Services Council meeting date'] };
+const DATE_MARK = { 'First CMS file showing it': ['\u2020', 'First CMS file showing it'], 'CMS takeover date': ['\u2021', 'CMS takeover date'], 'First CMS file without the home': ['\u00a7', 'First CMS file without the home'], 'Month from the workbook note': ['*', 'Taken from the note in the sales workbook'], 'Date from the workbook note': ['*', 'Taken from the note in the sales workbook'], 'Application filing date': ['#', 'Date the application was filed; the state has not decided yet'], 'Approximate date': ['~', 'Approximate: the state record does not give an exact date, so this is the Health Services Council meeting date'] };
 const dateMark = note => DATE_MARK[note] ? el('sup', { class: 'datemark', text: DATE_MARK[note][0] }) : null;
 const dateLegend = () => 'Dates are the RIDOH decision date unless marked: ' + [...new Map(Object.values(DATE_MARK).map(v => [v[0], v[1]])).entries()].map(([k, v]) => k + ' ' + v).join('; ') + '.';
 const fmtDay = d => new Date(MS(d)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
