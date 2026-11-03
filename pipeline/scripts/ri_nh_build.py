@@ -291,6 +291,33 @@ def _ccn(v):
     s = re.sub(r'\D', '', str(v))
     return s.zfill(6) if s else None
 
+_HL = re.compile(r'^=HYPERLINK\(\s*"([^"]+)"\s*,\s*"(.*)"\s*\)\s*$', re.S)
+def _cell_link(c):
+    """(url, label) when the cell is a HYPERLINK() formula or carries a cell link; otherwise None."""
+    v = c.value
+    if isinstance(v, str) and v.startswith('=HYPERLINK('):
+        m = _HL.match(v.strip()); return (m.group(1), m.group(2).replace('""', '"')) if m else None
+    hl = getattr(c, 'hyperlink', None)
+    if hl is not None and getattr(hl, 'target', None) and nz(v) is not None and not (isinstance(v, str) and v.startswith('=')): return (hl.target, str(v).strip())
+    return None
+CEC_DOC_COLS = [('report', 'HSC report', 'Council report'), ('decision', 'Decision letter', 'RIDOH decision letter'), ('comments', 'Public comments', 'Public comments and AG letter'), ('responses', 'Applicant responses', 'Applicant responses'),
+                ('presentation', 'Applicant presentation', 'Applicant presentation'), ('transcript', 'Meeting transcript', 'Meeting transcript'), ('other', 'Other document linked', 'Other document')]
+def _cec_docs(ws, h, idcol):
+    """Per CEC ID: linked documents (Council report, decision letter, comments, responses, presentation, transcript), conditions and whether they were triggered. All optional."""
+    cc = {k: _col(h, st) for k, st, _ in CEC_DOC_COLS}; cond, trig = _col(h, 'Conditions applied'), _col(h, 'Conditions triggered'); out = {}
+    for r in range(2, ws.max_row + 1):
+        cid = _v(ws.cell(row=r, column=idcol))
+        if not cid: continue
+        links, notes = [], []
+        for k, st, lab in CEC_DOC_COLS:
+            if not cc[k]: continue
+            c = ws.cell(row=r, column=cc[k]); lk = _cell_link(c)
+            if lk: links.append(dict(kind=k, role=lab, label=lk[1], url=lk[0]))
+            elif k not in ('report', 'decision') and nz(c.value) is not None and not str(c.value).startswith('='): notes.append(str(c.value).strip())
+        cv = nz(ws.cell(row=r, column=cond).value) if cond else None; tv = nz(ws.cell(row=r, column=trig).value) if trig else None
+        if links or notes or cv or tv: out[str(cid).strip()] = dict(links=links, notes=notes, cond=(str(cv).strip() if cv else None), trig=(str(tv).strip() if tv else None))
+    return out
+
 def read_cec(wb):
     out = {}
     ws = wb['CEC Log']; h = _hmap(ws); rows = []
@@ -303,7 +330,7 @@ def read_cec(wb):
                          buyer=_v(ws.cell(row=r, column=cols['buyer'])), type=_v(ws.cell(row=r, column=cols['type'])), outcome=_v(ws.cell(row=r, column=cols['outcome'])),
                          decision=_date(_v(ws.cell(row=r, column=cols['decision']))), chow=_date(_v(ws.cell(row=r, column=cols['chow']))), year=_v(ws.cell(row=r, column=cols['year'])),
                          seller=_v(ws.cell(row=r, column=cols['seller']))))
-    out['log'] = pd.DataFrame(rows); out['log_cols'] = cols
+    out['log'] = pd.DataFrame(rows); out['log_cols'] = cols; out['docs'] = _cec_docs(ws, h, cols['id'])
     ws = wb['Post-Sale Tracker']; rows = []
     for r in range(3, ws.max_row + 1):
         cid = _v(ws.cell(row=r, column=1))
@@ -433,6 +460,7 @@ def compute_sales(M, cec, ccn_of):
         evd, src = (chow, 'CMS takeover date') if nz(chow) is not None else ((dec, 'RIDOH decision date') if nz(dec) is not None else (None, ''))
         ovr = cec.get('overrides', {}).get(t.cec); treat = ovr['treat'] if ovr else None
         if treat in ('closure', 'not a sale'): ttype = 'Closure / not a sale'
+        elif treat == 'not completed': ttype = 'Approved, not completed'
         elif treat == 'sale': ttype = 'Ownership/operator change'
         elif treat == 'parent company change': ttype = 'Corporate parent change (multi-facility deal)'
         rows.append(dict(row=t.row, cec=t.cec, facility=t.facility, override=treat, ccn=ccn_of.get(t.facility), type=ttype, outcome=t.outcome, buyer=buyer, applicant=applicant or t.new_owner, new_owner=t.new_owner, evd=nz(evd), src=src, decision=nz(dec), chow=nz(chow)))
@@ -456,7 +484,7 @@ def compute_sales(M, cec, ccn_of):
     for i, r in S.iterrows():
         d = {k: None for k in ['before', 'y1', 'y2', 'exit', 'next_event']}
         ev = T(r.evd); ccn = nz(r.ccn)
-        if r.has_data and ev is not None and (nz(r.outcome) or '') != 'Pending' and nz(r.override) not in ('closure', 'not a sale'):
+        if r.has_data and ev is not None and (nz(r.outcome) or '') != 'Pending' and nz(r.override) not in ('closure', 'not a sale', 'not completed'):
             b = prev_snap(ccn, ev); d['before'] = b if (b is not None and b >= floor) else None
             others = S[(S.ccn == ccn) & (S.evd > ev + pd.Timedelta(days=1)) & (S.outcome.fillna('') != 'Pending') & S.type.isin(SALE_TYPES)]
             ne = T(others.evd.min()) if len(others) else None; d['next_event'] = ne
@@ -492,7 +520,7 @@ def compute_sales(M, cec, ccn_of):
     strong = M['ev_own'][M['ev_own'].category.isin(['Operator change', 'Change of ownership (CMS flag)'])].copy(); strong['d'] = pd.to_datetime(strong.snap)
     det, lag = [], []
     for _, r in S.iterrows():
-        if T(r.evd) is None or nz(r.ccn) is None or nz(r.override) in ('closure', 'not a sale'): det.append(None); lag.append(None); continue
+        if T(r.evd) is None or nz(r.ccn) is None or nz(r.override) in ('closure', 'not a sale', 'not completed'): det.append(None); lag.append(None); continue
         s2 = strong[(strong.ccn == r.ccn) & (strong.category == 'Operator change') & (strong.d >= r.evd - pd.DateOffset(months=6))]
         det.append(s2.d.min() if len(s2) else None); lag.append((int((s2.d.min() - r.evd).days) if (len(s2) and (s2.d.min() - r.evd).days <= 730) else None))
     S['cms_detected'], S['cms_lag'] = pd.to_datetime(pd.Series(det, index=S.index)), lag
@@ -700,7 +728,7 @@ def build_public_data(M, S, val, cec, mp, ccn_of, fn, cfg):
         if ovr and ovr.get('date'): d = T(ovr['date'])
         key = cec_ccn.get(r.facility) or ('cec:' + str(r.facility))
         if d is None:   # no usable date (for example "decision date not recorded", or still pending): keep it for the home's owner history, by year
-            if not (ovr and ovr['treat'] in ('closure', 'not a sale')):
+            if not (ovr and ovr['treat'] in ('closure', 'not a sale', 'not completed')):
                 yr_ = nz(r.year)
                 try: yr_ = int(float(yr_)) if yr_ is not None else None
                 except Exception: yr_ = None
@@ -710,6 +738,9 @@ def build_public_data(M, S, val, cec, mp, ccn_of, fn, cfg):
         rtype = r.type
         if ovr and ovr['treat'] == 'sale': rtype = 'Ownership/operator change'
         if ovr and ovr['treat'] == 'parent company change': rtype = 'Corporate parent change (multi-facility deal)'
+        if ovr and ovr['treat'] == 'not completed':   # approved by the state but the sale never closed: on the home's timeline only, never counted as a sale
+            ev_add(key, dict(date=_d(d), kind='unclosed', cec=r.cec, label=nz(ovr.get('label')) or 'Approved but never completed', who='', buyer=None, outcome=None, src='RIDOH Change in Effective Control record ' + r.cec + '; the sale never closed (note from the workbook owner)', date_note='RIDOH decision date'))
+            continue
         if ovr and ovr['treat'] in ('closure', 'not a sale'):
             ev_add(key, dict(date=_d(d), kind='closed', cec=r.cec, label=nz(ovr.get('label')) or 'Closed (not a sale)', who='', buyer=None, outcome=None, src='Note from the workbook owner (state review record ' + r.cec + ' exists)', date_note='Date from the workbook note'))
             continue
@@ -839,7 +870,7 @@ def build_public_data(M, S, val, cec, mp, ccn_of, fn, cfg):
     tv0 = next(((d, v) for d, v in zip(dates, st['avg_turnover']) if v is not None), None)
     head['turnover_first'] = (dict(date=tv0[0], value=tv0[1]) if tv0 else None)
     meta = dict(behind={k: lab_(v) for k, v in M['ds_behind'].items()}, title=cfg['page_title'], credit=cfg['page_credit'], contact=cfg['page_contact'], latest=latest, first=dates[0], updated=lab_(latest), built=dt.date.today().isoformat(), n_homes_ever=int(len(fac)))
-    return dict(meta=meta, dates=dates, state=st, state_years=sy, facilities=facs, sales=rows, study=study, groups=groups, head=head, money=money, levels=lev)
+    return dict(meta=meta, dates=dates, state=st, state_years=sy, facilities=facs, sales=rows, study=study, groups=groups, head=head, money=money, levels=lev, cecdocs=cec.get('docs', {}))
 
 # ------------------------------------------------------------------ workbook: CMS tabs
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -1235,7 +1266,7 @@ def write_event_overrides(wb, cec, ctx, cfg):
         ov = {c: dict(treat=t, date=pd.Timestamp(d) if d else None, label=l, note=n) for c, t, d, l, n in cfg.get('event_overrides_seed', [])}; cec['overrides'] = ov
     ws = wb.create_sheet('Event Overrides'); ws.sheet_properties.tabColor = 'BF9000'; ws.sheet_view.showGridLines = False
     _put(ws, 1, 1, 'Event Overrides: correct how a CEC Log / tracker row is treated', F_TITLE)
-    _put(ws, 2, 1, 'Yellow cells with blue text are yours to edit. Use this when a CEC row is not really a sale (for example a home that closed instead). Treat as must be one of: closure, not a sale, sale, parent company change. "closure" and "not a sale" rows are left out of the sales table, the before/after comparison and the tracker numbers; they stay on the facility timeline (with the label and date you give). Applied on the next update.', F_NOTE)
+    _put(ws, 2, 1, 'Yellow cells with blue text are yours to edit. Use this when a CEC row is not really a sale (for example a home that closed instead). Treat as must be one of: closure, not a sale, not completed, sale, parent company change. "closure", "not a sale" and "not completed" (approved by the state but the sale never closed) rows are left out of the sales table, the before/after comparison and the tracker numbers; they stay on the facility timeline (with the label and date you give). Applied on the next update.', F_NOTE)
     for j, (h, w) in enumerate([('CEC ID', 12), ('Treat as', 22), ('Date (optional)', 14), ('Public label (shown on the page)', 36), ('Note', 90)]): _hdr(ws, 4, j + 1, h); ws.column_dimensions[L(j + 1)].width = w
     ws.row_dimensions[4].height = 30; r = 5
     for cid, o in ov.items():
@@ -1295,14 +1326,14 @@ def write_sale_timing(wb, cec, M, ctx):
         f['E'] = f'=IF(D{r}="","",IF(ISNUMBER({TRK}I{r}),"CMS takeover date","RIDOH decision date"))'
         f['O'] = f"=IF(A{r}=\"\",\"\",IFERROR(INDEX('Event Overrides'!$B$5:$B$200,MATCH(A{r},'Event Overrides'!$A$5:$A$200,0))&\"\",\"\"))"
         f['F'] = f'=IF(A{r}="","",IF($O{r}<>"",IF(OR($O{r}="sale",$O{r}="parent company change"),1,0),IF(AND({TRK}E{r}<>"Pending",(' + '+'.join(cnt(t).format(r=r) for t in SALE_TYPES) + ')>0),1,0)))'
-        f['G'] = f'=IF(OR($A{r}="",$C{r}="",$D{r}="",$O{r}="closure",$O{r}="not a sale"),"",IF(COUNTIFS({Bc},$C{r},{A},"<"&$D{r})=0,"",_xlfn.MAXIFS({A},{Bc},$C{r},{A},"<"&$D{r})))'
+        f['G'] = f'=IF(OR($A{r}="",$C{r}="",$D{r}="",$O{r}="closure",$O{r}="not a sale",$O{r}="not completed"),"",IF(COUNTIFS({Bc},$C{r},{A},"<"&$D{r})=0,"",_xlfn.MAXIFS({A},{Bc},$C{r},{A},"<"&$D{r})))'
         f['J'] = f'=IF(OR($A{r}="",$C{r}="",$D{r}=""),"",IF(COUNTIFS($C$3:$C${last},$C{r},$D$3:$D${last},">"&($D{r}+1),$F$3:$F${last},1)=0,"",_xlfn.MINIFS($D$3:$D${last},$C$3:$C${last},$C{r},$D$3:$D${last},">"&($D{r}+1),$F$3:$F${last},1)))'
         for col, m in (('H', 12), ('I', 24)):
             tgt = f'EDATE($D{r},{m})'; mn = f'_xlfn.MINIFS({A},{Bc},$C{r},{A},">="&{tgt})'
-            f[col] = f'=IF(OR($A{r}="",$C{r}="",$D{r}="",$O{r}="closure",$O{r}="not a sale"),"",IF(COUNTIFS({Bc},$C{r},{A},">="&{tgt})=0,"",IF({mn}>{tgt}+92,"",IF(AND($J{r}<>"",{mn}>=$J{r}),"",{mn}))))'
+            f[col] = f'=IF(OR($A{r}="",$C{r}="",$D{r}="",$O{r}="closure",$O{r}="not a sale",$O{r}="not completed"),"",IF(COUNTIFS({Bc},$C{r},{A},">="&{tgt})=0,"",IF({mn}>{tgt}+92,"",IF(AND($J{r}<>"",{mn}>=$J{r}),"",{mn}))))'
         f['K'] = f'=IF($G{r}="","",IF($J{r}="",_xlfn.MAXIFS({A},{Bc},$C{r}),IF(COUNTIFS({Bc},$C{r},{A},"<"&$J{r})=0,"",_xlfn.MAXIFS({A},{Bc},$C{r},{A},"<"&$J{r}))))'
         oc = lambda col: f"'Ownership Changes'!${col}$5:${col}$3000"; cnd = f'{oc("C")},$C{r},{oc("D")},"Operator change",{oc("A")},">="&EDATE($D{r},-6)'
-        f['L'] = f'=IF(OR($C{r}="",$D{r}="",$O{r}="closure",$O{r}="not a sale"),"",IF(COUNTIFS({cnd})=0,"",_xlfn.MINIFS({oc("A")},{cnd})))'
+        f['L'] = f'=IF(OR($C{r}="",$D{r}="",$O{r}="closure",$O{r}="not a sale",$O{r}="not completed"),"",IF(COUNTIFS({cnd})=0,"",_xlfn.MINIFS({oc("A")},{cnd})))'
         f['M'] = f'=IF($L{r}="","",IF($L{r}-$D{r}>730,"",$L{r}-$D{r}))'
         f['N'] = f'=IF(A{r}="","",IF($O{r}<>"","Override: "&$O{r}&" (see the Event Overrides tab)",IF(C{r}="","No CCN, so no CMS numbers",IF(D{r}="","No event date",IF(G{r}="","No CMS rating before the event (event before "&TEXT($R$2,"mmm yyyy")&", or facility not in the CMS files)",IF(H{r}="","Year 1 not available (too recent, left CMS files, or another ownership change came first)",IF(I{r}="","Year 2 not available","")))))))'
         for col, v in f.items():
@@ -1514,6 +1545,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,su
 .legend i.dot{border-top-style:dotted;border-top-width:4px}
 ol.timeline .kind.mgmt{background:#fdf0cf;color:#6b4e07;border-color:#e3c76a}
 ol.timeline .kind.closed{background:#e4e4e4;color:#222;border-color:#999}
+details.cecdetail{margin-top:6px;font-size:.86rem;max-width:62ch}details.cecdetail summary{cursor:pointer;color:var(--accent)}details.cecdetail p{white-space:pre-line;margin:6px 0}details.cecdetail ul.docs{margin:6px 0 0;padding-left:18px}ol.timeline details.cecdetail ul.docs li{display:list-item;border:0;padding:2px 0}tr.cecrow td{padding-top:0;border-top:0}tr.cecrow details.cecdetail{position:sticky;left:12px;width:min(80ch,calc(100vw - 90px));max-width:none;margin:0 0 6px}details.cecdetail ul.docs li.small{list-style:none;margin-left:-18px}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) ol.timeline .kind.closed{background:#3a3f47;color:#eee;border-color:#6b7480}}
 .legend i.vert{width:0;height:14px;border-top:0;border-left:3px solid;margin-right:7px}.legend i.vert.dash{border-left-style:dashed}
 .note{background:var(--warn);border:1px solid var(--warn-line);border-radius:10px;padding:10px 14px;font-size:.92rem;margin:12px 0}
@@ -1838,6 +1870,17 @@ drawMoney();
   $('#ba-note').textContent = bits.join(' ') + ' Nurse hours barely moved, so the extra money did not go into more nursing time at the bedside. Related-party figures come from the homes\u2019 own Medicare cost reports: payments to companies the owners also control, such as a landlord or a management company. Money moved this way leaves the home\u2019s books as a cost, so a home can look unprofitable while its owners are paid.';
 })();
 
+/* state review details: conditions, whether they were triggered, and the linked documents */
+const CD = D.cecdocs || {};
+function cecDetail(id, label) {
+  const d = CD[id]; if (!d) return null;
+  const parts = [];
+  if (d.cond) parts.push(el('p', {}, el('b', { text: 'Conditions: ' }), d.cond));
+  if (d.trig) parts.push(el('p', {}, el('b', { text: 'Triggered? ' }), d.trig));
+  const items = d.links.map(l => el('li', {}, el('a', { href: l.url, target: '_blank', rel: 'noopener' }, l.role + ': ' + l.label))).concat(d.notes.map(n => el('li', { class: 'small', text: n })));
+  if (items.length) parts.push(el('ul', { class: 'docs' }, items));
+  return parts.length ? el('details', { class: 'cecdetail' }, el('summary', { text: label || 'Conditions and documents' }), parts) : null;
+}
 /* sales table */
 let sortKey = 'date', sortDir = -1;
 const cols = [['date', 'Date'], ['name', 'Home'], ['label', 'Type'], ['buyer', 'New owner'], ['overall', 'Overall stars: before \u2192 1 yr \u2192 2 yrs'], ['hours', 'Nurse hours: before \u2192 1 yr'], ['ser', 'Serious citations: year before \u2192 year after'], ['fines', 'Fines: year before \u2192 year after']];
@@ -1854,7 +1897,7 @@ function drawSales() {
     const hrs = el('td', { class: 'num' }, r.has_cms && m.hours.before != null ? [f2(m.hours.before), el('span', { class: 'arrow', text: '\u2192' }), f2(m.hours.y1)] : '\u2013');
     const ser = el('td', { class: 'num' }, r.ser.before != null ? [String(r.ser.before), el('span', { class: 'arrow', text: '\u2192' }), r.ser.y1 == null ? '\u2013' : String(r.ser.y1)] : '\u2013');
     const fin = el('td', { class: 'num' }, r.fines.before != null ? [money(r.fines.before), el('span', { class: 'arrow', text: '\u2192' }), r.fines.y1 == null ? '\u2013' : money(r.fines.y1)] : '\u2013');
-    tb.append(el('tr', {}, el('td', { class: 'num', title: r.date_note }, fmtDay(r.date), dateMark(r.date_note), r.mgmt_start ? el('div', { class: 'small', text: 'Buyer managing from ' + fmtMon(r.mgmt_start) }) : null, r.cms_op ? el('div', { class: 'small', text: 'CMS records updated ' + fmtMon(r.cms_op) }) : null), el('td', {}, D.facilities.some(f => f.id === r.fid) ? el('button', { class: 'linkbtn', text: r.name, onclick: () => showFacility(r.fid, true) }) : r.name, r.town ? el('div', { class: 'small', text: r.town }) : null), el('td', {}, r.label, r.outcome === 'Pending' ? el('div', { class: 'small', text: 'Pending' }) : null), newOwner, stars, hrs, ser, fin)); });
+    tb.append(el('tr', {}, el('td', { class: 'num', title: r.date_note }, fmtDay(r.date), dateMark(r.date_note), r.mgmt_start ? el('div', { class: 'small', text: 'Buyer managing from ' + fmtMon(r.mgmt_start) }) : null, r.cms_op ? el('div', { class: 'small', text: 'CMS records updated ' + fmtMon(r.cms_op) }) : null), el('td', {}, D.facilities.some(f => f.id === r.fid) ? el('button', { class: 'linkbtn', text: r.name, onclick: () => showFacility(r.fid, true) }) : r.name, r.town ? el('div', { class: 'small', text: r.town }) : null), el('td', {}, r.label, r.outcome === 'Pending' ? el('div', { class: 'small', text: 'Pending' }) : null), newOwner, stars, hrs, ser, fin)); const cd = cecDetail(r.cec, 'Conditions and documents for this sale'); if (cd) tb.append(el('tr', { class: 'cecrow' }, el('td', { colspan: 8 }, cd))); });
   if (!rows.length) tb.append(el('tr', {}, el('td', { colspan: 8, text: 'No sales match.' })));
 }
 $('#date-legend').textContent = dateLegend();
@@ -1870,7 +1913,7 @@ function facSearch() {
   if (!hits.length) ul.append(el('li', {}, el('div', { style: 'padding:8px 12px', text: 'No homes match.' }))); ul.classList.remove('hidden');
 }
 $('#fac-q').addEventListener('input', facSearch);
-const KIND_LBL = { mgmt: 'Buyer took over management', closed: 'Closed', sale: 'Sold / new operator', parent: 'Chain reorganization', internal: 'Internal restructuring', realestate: 'Real estate only', cms: 'CMS data' };
+const KIND_LBL = { mgmt: 'Buyer took over management', closed: 'Closed', unclosed: 'Approved, never completed', sale: 'Sold / new operator', parent: 'Chain reorganization', internal: 'Internal restructuring', realestate: 'Real estate only', cms: 'CMS data' };
 
 /* ---------- who ran this home over time ---------- */
 function ownerEras(f) {
@@ -1958,10 +2001,10 @@ function showFacility(id, scroll) {
     head.append(el('p', { class: 'small', text: `As of the ${fmtMon(f.now.asof)} CMS file.` + (f.sff ? ` CMS special focus status: ${f.sff}.` : '') + (f.abuse ? ' CMS displays an abuse icon for this home.' : '') })); }
   box.append(head);
   const eraP = eraPanel(f); if (eraP) box.append(eraP);
-  if (f.events.length) { const ol = el('ol', { class: 'timeline' }); f.events.forEach(e => ol.append(el('li', {}, el('div', { class: 'small', title: e.date_note || '' }, fmtDay(e.date), dateMark(e.date_note)), el('div', {}, el('span', { class: 'kind ' + (e.kind === 'cms' ? 'cms' : e.kind === 'sale' ? 'sale' : e.kind === 'parent' ? 'parent' : e.kind === 'closed' ? 'closed' : e.kind === 'mgmt' ? 'mgmt' : ''), text: KIND_LBL[e.kind] || e.label }), e.kind === 'closed' ? el('span', { text: e.label }) : e.label && e.kind !== 'cms' ? el('span', { text: [e.buyer, e.who].filter(Boolean).join(' \u2014 ') }) : el('span', { text: e.label + (e.who ? ': ' + e.who : '') }), e.outcome ? el('span', { class: 'small', text: ' \u00B7 ' + e.outcome }) : null, el('div', { class: 'small', text: e.src }))))); box.append(el('details', { class: 'panel', open: eraP ? null : '' }, el('summary', { text: 'Every record behind this, in date order' }), el('p', { class: 'small', text: 'State-reviewed changes and changes visible in CMS data, newest first.' }), ol, el('p', { class: 'small', text: dateLegend() }))); }
+  if (f.events.length) { const ol = el('ol', { class: 'timeline' }); f.events.forEach(e => ol.append(el('li', {}, el('div', { class: 'small', title: e.date_note || '' }, fmtDay(e.date), dateMark(e.date_note)), el('div', {}, el('span', { class: 'kind ' + (e.kind === 'cms' ? 'cms' : e.kind === 'sale' ? 'sale' : e.kind === 'parent' ? 'parent' : (e.kind === 'closed' || e.kind === 'unclosed') ? 'closed' : e.kind === 'mgmt' ? 'mgmt' : ''), text: KIND_LBL[e.kind] || e.label }), (e.kind === 'closed' || e.kind === 'unclosed') ? el('span', { text: e.label }) : e.label && e.kind !== 'cms' ? el('span', { text: [e.buyer, e.who].filter(Boolean).join(' \u2014 ') }) : el('span', { text: e.label + (e.who ? ': ' + e.who : '') }), e.outcome ? el('span', { class: 'small', text: ' \u00B7 ' + e.outcome }) : null, el('div', { class: 'small', text: e.src }), cecDetail(e.cec, 'Conditions and documents for this state review'))))); box.append(el('details', { class: 'panel', open: eraP ? null : '' }, el('summary', { text: 'Every record behind this, in date order' }), el('p', { class: 'small', text: 'State-reviewed changes and changes visible in CMS data, newest first.' }), ol, el('p', { class: 'small', text: dateLegend() }))); }
   else box.append(el('div', { class: 'panel' }, el('p', { text: 'No ownership changes on record for this home.' })));
   if (f.has_cms) {
-    const mk = []; f.events.forEach(e => { if (e.kind === 'cms' || e.kind === 'realestate') return; const x = MS(e.date); mk.push({ x, color: e.kind === 'sale' ? css('--sold') : (e.kind === 'closed' ? css('--fg') : css('--accent')), dash: e.kind === 'internal' ? '3 3' : '', title: KIND_LBL[e.kind] + ', ' + fmtDay(e.date) }); });
+    const mk = []; f.events.forEach(e => { if (e.kind === 'cms' || e.kind === 'realestate' || e.kind === 'unclosed') return; const x = MS(e.date); mk.push({ x, color: e.kind === 'sale' ? css('--sold') : (e.kind === 'closed' ? css('--fg') : css('--accent')), dash: e.kind === 'internal' ? '3 3' : '', title: KIND_LBL[e.kind] + ', ' + fmtDay(e.date) }); });
     const xf = (v, i) => fmtMon(D.dates[i]);
     const c1 = el('div', { class: 'panel' }, el('h3', { style: 'margin-top:0', text: 'Star ratings over time' }), el('div', { class: 'chartbox', id: 'fc1' }), el('div', { class: 'legend' }, ['Overall', 'Health inspection', 'Staffing', 'Quality measures (dotted)'].map((n, i) => el('span', {}, el('i', { class: i === 3 ? 'dot' : '', style: `border-color:${[css('--accent'), css('--s2'), css('--s4'), css('--ctrl')][i]}` }), n)), el('span', {}, el('i', { class: 'vert', style: `border-color:${css('--sold')}` }), 'Sale / new operator (vertical line)'), el('span', {}, el('i', { class: 'vert dash', style: `border-color:${css('--accent')}` }), 'Other change of control (vertical dashed line)')), el('p', { class: 'small', text: 'Where two ratings are the same, the lines sit on top of each other and the darker Overall line is drawn last. A gray band at 0 means CMS did not publish star ratings for that home in those months (special focus facility), so 0 means not rated, not a CMS score.' }));
     const c2 = el('div', { class: 'panel' }, el('h3', { style: 'margin-top:0', text: 'Nurse staffing hours per resident per day' }), el('div', { class: 'chartbox', id: 'fc2' }), el('div', { class: 'legend' }, el('span', {}, el('i', { style: `border-color:${css('--accent')}` }), 'All nurses'), el('span', {}, el('i', { style: `border-color:${css('--s2')}` }), 'RNs'), el('span', {}, el('i', { class: 'dash', style: `border-color:${css('--ctrl')}` }), 'Statewide average, all nurses (dashed)')), el('p', { class: 'small', text: 'Hours are CMS reported hours per resident per day, not adjusted for how sick residents are. A gray band means CMS published an implausibly low figure that month (a payroll-reporting problem), so it is left out.' }));
@@ -1989,6 +2032,7 @@ function showFacility(id, scroll) {
 /* ---------- about + downloads ---------- */
 const ab = $('#about-body');
 [['Where the numbers come from', 'CMS Nursing Home Care Compare monthly files (star ratings, staffing, turnover, inspection citations, fines, ownership fields), Rhode Island homes only, and the Rhode Island Department of Health\u2019s annual reports of Change in Effective Control (CEC) reviews.'],
+ ['Conditions and documents', 'Under each home in the sales table and on its timeline, "Conditions and documents" lists what the Health Services Council recommended and the Health Department decided: the conditions attached to the approval, whether any were triggered, and links to the Council\u2019s report and decision letter and to the public comments, applicant responses, presentations and meeting transcripts that report links. "No public record found" under triggered means the page found nothing public showing a condition was tested, not that it was met. Some approvals were never completed; those are marked on the home\u2019s timeline and not counted as sales.'],
  ['What "sold" means here', 'A change of control approved by the state, most often a sale to a new operator. "Chain reorganizations" are the records the state log marks as a corporate parent change rather than a sale to a different buyer; since April 2019 that is only the 2022 Tryko-to-Marquis reorganization of four homes. Every other change of control on this page is a sale to a new owner or operator. Estate and internal restructurings and real-estate-only deals are shown on a home\u2019s timeline but not counted as sales.'],
  ['Dates', 'The sale date is CMS\u2019s takeover date when CMS lists one, otherwise the state\u2019s decision date. CMS files usually show a new operator several months later. The date shown in the CMS-data timeline entries is when CMS\u2019s files first showed the change.'],
  ['Star ratings', 'CMS revised how star ratings are calculated in April 2019 (the statewide average fell from 3.8 to 3.35 in a single month) and has adjusted its methods since. Charts start after that change. Ratings are one measure of a home, not a full picture of care.'],
@@ -2005,7 +2049,7 @@ const ab = $('#about-body');
 $('#foot').append(el('p', {}, el('b', {}, el('a', { href: 'https://abc-ri.org', text: 'ABC-RI' })), ' \u00B7 Advocates for Better Care in Rhode Island'),
   el('p', {}, [D.meta.credit, 'Data through ' + D.meta.updated + '. Page built ' + D.meta.built + '.'].filter(Boolean).join(' \u00B7 '), D.meta.contact ? [' \u00B7 Corrections: ', el('a', { href: 'mailto:' + D.meta.contact, text: D.meta.contact })] : null));
 function download(name, rows) { const esc = v => { v = v == null ? '' : String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }; const blob = new Blob([rows.map(r => r.map(esc).join(',')).join('\n')], { type: 'text/csv' }); const a = el('a', { href: URL.createObjectURL(blob), download: name }); document.body.append(a); a.click(); a.remove(); }
-$('#dl-sales').addEventListener('click', () => download('ri_nursing_home_sales.csv', [['cec_id', 'date', 'date_source', 'home', 'town', 'type', 'outcome', 'buyer_group', 'applicant', 'stars_before', 'stars_1yr', 'stars_2yr', 'nurse_hrs_before', 'nurse_hrs_1yr', 'serious_cites_before', 'serious_cites_after', 'fines_before', 'fines_after']].concat(D.sales.map(r => [r.cec, r.date, r.date_note, r.name, r.town, r.label, r.outcome, r.buyer, r.who, r.m.overall.before, r.m.overall.y1, r.m.overall.y2, r.m.hours.before, r.m.hours.y1, r.ser.before, r.ser.y1, r.fines.before, r.fines.y1]))));
+$('#dl-sales').addEventListener('click', () => download('ri_nursing_home_sales.csv', [['cec_id', 'date', 'date_source', 'home', 'town', 'type', 'outcome', 'buyer_group', 'applicant', 'stars_before', 'stars_1yr', 'stars_2yr', 'nurse_hrs_before', 'nurse_hrs_1yr', 'serious_cites_before', 'serious_cites_after', 'fines_before', 'fines_after', 'conditions', 'conditions_triggered', 'documents']].concat(D.sales.map(r => [r.cec, r.date, r.date_note, r.name, r.town, r.label, r.outcome, r.buyer, r.who, r.m.overall.before, r.m.overall.y1, r.m.overall.y2, r.m.hours.before, r.m.hours.y1, r.ser.before, r.ser.y1, r.fines.before, r.fines.y1, (CD[r.cec] || {}).cond || '', (CD[r.cec] || {}).trig || '', ((CD[r.cec] || {}).links || []).map(l => l.role + ': ' + l.url).join(' | ')]))));
 $('#dl-monthly').addEventListener('click', () => { const rows = [['ccn', 'home', 'file_date', 'overall_stars', 'health_inspection_stars', 'staffing_stars', 'quality_measure_stars', 'nurse_hours_per_resident_day', 'rn_hours_per_resident_day', 'nursing_staff_turnover_pct']]; D.facilities.filter(f => f.has_cms).forEach(f => D.dates.forEach((d, i) => { if (f.s.overall[i] != null || f.s.hours[i] != null) rows.push([f.ccn, f.name, d, f.s.overall[i], f.s.hi[i], f.s.staffing[i], f.s.qm[i], f.s.hours[i], f.s.rn[i], f.s.turnover[i]]); })); download('ri_nursing_home_monthly.csv', rows); });
 let lastW = window.innerWidth; let rz = null;
 window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (Math.abs(window.innerWidth - lastW) < 30) return; lastW = window.innerWidth; drawStudy(); drawMoney(); if (curFac) showFacility(curFac, false); }, 200); });
