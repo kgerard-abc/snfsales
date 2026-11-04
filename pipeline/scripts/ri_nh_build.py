@@ -355,6 +355,7 @@ def read_cost_summary(wb, have):
     return pd.DataFrame(rows)
 
 
+_RIDOH_DEBUG = []
 RIDOH_PATH = None   # set by build_site.py: RIDOH's own list of reviews ("Annual Report of Reviews"), downloaded from its Google Sheet; None when it could not be fetched
 
 def _dstr(v):
@@ -371,14 +372,22 @@ def read_ridoh(path, years=None):
     yrs = years or [str(dt.date.today().year), str(dt.date.today().year - 1)]
     for sh in yrs:
         if sh not in wb.sheetnames: continue
-        rows = [[c for c in r] for r in wb[sh].iter_rows(values_only=True)]
+        rows = [[c for c in r] for r in wb[sh].iter_rows()]   # cells, not values: the number format says whether a date is shown day-first or month-first
         i = next((k for k, r in enumerate(rows) if r and str(r[0] or '').strip().lower() == 'change in effective control'), None)
         if i is None: continue
         k = i + 2   # skip the title row and the header row
         while k < len(rows):
             r = rows[k] + [None] * 12
-            if not r[0] or not str(r[0]).strip(): break
-            g = lambda j: ('' if r[j] is None else (_dstr(r[j]) if isinstance(r[j], (dt.datetime, dt.date)) else str(r[j]).strip()))
+            if not r[0] or r[0].value is None or not str(r[0].value).strip(): break
+            def g(j):
+                v = r[j].value if hasattr(r[j], 'value') else r[j]
+                if v is None: return ''
+                if isinstance(v, (dt.datetime, dt.date)):   # a real date cell: write it the way the sheet shows it. The sheet's own display can be day-first, and the people who fill it in read what is shown.
+                    t = pd.Timestamp(v); fmt = str(getattr(r[j], 'number_format', '') or '').lower().lstrip('[]$-:; ')
+                    out_ = f'{t.day}/{t.month}/{t.year}' if fmt.startswith('d') else f'{t.month}/{t.day}/{t.year}'
+                    if len(_RIDOH_DEBUG) < 6: _RIDOH_DEBUG.append(f'date cell {t.date()} format {fmt!r} -> {out_}'); print('  RIDOH', _RIDOH_DEBUG[-1])
+                    return out_
+                return str(v).strip()
             out.append(dict(applicant=g(0), desc=g(1), filed=g(2), deficiency=g(3), review=g(4), comment=g(5), hsc=g(6), decision=g(7), meetings='; '.join(x for x in (g(8), g(9), g(10)) if x), year=sh))
             k += 1
     return out
@@ -409,7 +418,12 @@ def ridoh_status(e, today=None):
     start = _dstr(m.group(1)); parts = [f'Under review since {start}']
     cm = re.search(r'(\d{1,2}/\d{1,2}/\d{2,4})', e['comment'] or '')
     if cm:
-        cd = _dstr(cm.group(1)); parts.append(('public comment period ended ' if pd.to_datetime(cd) <= today else 'public comment period ends ') + cd)
+        cd = _dstr(cm.group(1))
+        try:   # the comment period runs about 30 days from the start of review; if the date is far off but month and day swapped fit, the sheet's date order was read the wrong way round
+            t0, t1 = pd.to_datetime(start), pd.to_datetime(cd); mm, dd, yy = cd.split('/'); t2 = pd.Timestamp(int(yy), int(dd), int(mm))
+            if abs((t1 - t0).days - 30) > 20 and abs((t2 - t0).days - 30) <= 20: cd = f'{int(dd)}/{int(mm)}/{yy}'
+        except Exception: pass
+        parts.append(('public comment period ended ' if pd.to_datetime(cd) <= today else 'public comment period ends ') + cd)
     tbd = lambda t: (not t) or t.strip().upper() == 'TBD'
     if tbd(e['hsc']) and tbd(e['decision']):
         mt = re.findall(r'([A-Z][a-z]+ \d{1,2})(?:st|nd|rd|th)?,? (\d{4}) Health Services Council', e['meetings'] or '')
@@ -974,6 +988,7 @@ def build_public_data(M, S, val, cec, mp, ccn_of, fn, cfg):
                 if e_:   # RIDOH's own list is the source for where an application stands and when it was filed
                     r['status'], r['filed'] = ridoh_status(e_); r['status_src'] = 'RIDOH list of reviews (' + e_['year'] + ')'
                     ridoh_used.add(id(e_))
+                    print('  Pending', r['cec'], '|', r['status'], '| filed', r['filed'])
                 elif ridoh_rows: print('  No match on RIDOH list for', r['cec'], r['name'], '(using the CEC Log text)')
     if ridoh_rows:
         known = [dict(desc=getattr(x, 'desc', None), applicant=getattr(x, 'applicant', None)) for x in log.itertuples()]
