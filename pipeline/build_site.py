@@ -27,6 +27,15 @@ if data[:2] != b"PK":
     print("ERROR: the Google Sheet link did not return a spreadsheet file. Check the sharing setting."); sys.exit(1)
 master = os.path.join(out, "RI_Nursing_Home_CECs_master.xlsx")
 open(master, "wb").write(data)
+# RIDOH's own list of reviews is the source for where each pending application stands. Best effort: if it cannot be fetched, the CEC Log text is used.
+RIDOH_SHEET_ID = "1fdRP2rh34eluTT13k8EIqjJUSnGTH2U5yGD-KwRFi-M"
+try:
+    rd = urllib.request.urlopen(urllib.request.Request(f"https://docs.google.com/spreadsheets/d/{RIDOH_SHEET_ID}/export?format=xlsx", headers={"User-Agent": "abc-ri-update/1.0"}), timeout=120).read()
+    if rd[:2] == b"PK":
+        B.RIDOH_PATH = os.path.join(out, "RIDOH_reviews.xlsx"); open(B.RIDOH_PATH, "wb").write(rd)
+    else: print("WARNING: the RIDOH list did not download as a spreadsheet; pending status comes from the CEC Log.")
+except Exception as e:
+    print(f"WARNING: could not download the RIDOH list of reviews ({e}); pending status comes from the CEC Log.")
 import openpyxl
 names = openpyxl.load_workbook(master, read_only=True).sheetnames
 need = ["CEC Log", "Event Overrides", "CCN Map", "Management Agreements"]
