@@ -2000,7 +2000,8 @@ const LANDLORD_TXT = { yes: 'Yes. The home reports its landlord as a related par
 const RPB = (D.money && D.money.by_facility) || {};
 function rpLatest(b) { let i = -1; b.years.forEach((y, k) => { if (b.rev[k] != null) i = k; }); return i; }
 function rpPanel(f) {
-  const b = RPB[f.id]; if (!b || !b.years.length) return null;
+  if (!D.money) return null;
+  const b = RPB[f.id]; if (!b || !b.years.length) return el('div', { class: 'panel' }, el('h3', { style: 'margin-top:0', text: 'Money paid to related companies' }), el('p', { text: 'No cost report data available currently for this home.' }));
   const saleYrs = new Set(f.events.filter(e => e.kind === 'sale' && e.outcome !== 'Pending').map(e => +e.date.slice(0, 4)));
   const body = el('tbody');
   b.years.forEach((y, k) => { if (b.rev[k] == null && b.rp[k] == null) return;
@@ -2020,22 +2021,26 @@ function rpPanel(f) {
   const R = ids.map(id => { const b = RPB[id], f = D.facilities.find(x => x.id === id), i = rpLatest(b); if (i < 0) return null;
     const fs = FS[id], k0 = fs ? b.years.indexOf(fs.year - 1) : -1, before = k0 >= 0 ? b.rp_sh[k0] : null, after = fs && b.years[i] > fs.year ? b.rp_sh[i] : null;
     return { id, name: f ? f.name : id, town: f ? f.town : '', year: b.years[i], rev: b.rev[i], rp: b.rp[i], rpsh: b.rp_sh[i], rent: b.rent[i], rentsh: b.rent_sh[i], mgmt: b.mgmt[i], mgmtsh: b.mgmt_sh[i], margin: b.margin[i], landlord: b.landlord || '', sold: fs ? fs.year : null, before, after }; }).filter(Boolean);
+  const NONE_TXT = 'No cost report data available currently';
+  D.facilities.forEach(f => { if (!RPB[f.id] || !RPB[f.id].years.length) R.push({ id: f.id, name: f.name, town: f.town || '', none: true, sold: (FS[f.id] || {}).year || null }); });
   const RC = [['name', 'Home'], ['year', 'Year'], ['rev', 'Revenue'], ['rpsh', 'All related-party'], ['rentsh', 'Rent'], ['mgmtsh', 'Mgmt fees'], ['margin', 'Margin'], ['sold', 'Sold'], ['ba', 'Before sale \u2192 newest'], ['landlord', 'Landlord = operator?']];
   let rk = 'rpsh', rd = -1;
   $('#rp-tbl thead').append(el('tr', {}, RC.map(c => el('th', { scope: 'col', class: ['name', 'landlord', 'ba'].includes(c[0]) ? '' : 'num' }, c[0] === 'ba' ? c[1] : el('button', { text: c[1], 'aria-label': 'Sort by ' + c[1], onclick: () => { rd = rk === c[0] ? -rd : (c[0] === 'name' ? 1 : -1); rk = c[0]; draw(); } })))));
   function draw() {
     const q = $('#rp-q').value.trim().toLowerCase(), onlyS = $('#rp-sold').checked;
-    const rows = R.filter(r => (!onlyS || r.sold) && (!q || (r.name + ' ' + r.town).toLowerCase().includes(q)));
+    const all = R.filter(r => (!onlyS || r.sold) && (!q || (r.name + ' ' + r.town).toLowerCase().includes(q))), rows = all.filter(r => !r.none), nones = all.filter(r => r.none).sort((a, b) => a.name.localeCompare(b.name));
     rows.sort((a, b) => { const A = a[rk] == null ? (rd < 0 ? -Infinity : Infinity) : a[rk], B = b[rk] == null ? (rd < 0 ? -Infinity : Infinity) : b[rk]; return (A < B ? -1 : A > B ? 1 : 0) * rd; });
     const tb = $('#rp-tbl tbody'); tb.replaceChildren();
     rows.forEach(r => tb.append(el('tr', {}, el('td', { style: 'min-width:13rem' }, D.facilities.some(f => f.id === r.id) ? el('button', { class: 'linkbtn', text: r.name, onclick: () => showFacility(r.id, true) }) : r.name, r.town ? el('div', { class: 'small', text: r.town }) : null), el('td', { class: 'num', text: String(r.year) }), el('td', { class: 'num', text: money(r.rev) }), usdCell(r.rp, r.rpsh), usdCell(r.rent, r.rentsh), usdCell(r.mgmt, r.mgmtsh), el('td', { class: 'num', text: pc1(r.margin) }),
       el('td', { class: 'num', text: r.sold ? String(r.sold) : '' }), el('td', { text: r.before != null && r.after != null ? pc1(r.before) + ' → ' + pc1(r.after) : '–' }), el('td', { class: 'small', text: r.landlord ? (r.landlord.toLowerCase() === 'yes' ? 'Yes' : r.landlord.toLowerCase() === 'likely' ? 'Likely' : r.landlord) : '' }))));
-    if (!rows.length) tb.append(el('tr', {}, el('td', { colspan: RC.length, text: 'No homes match.' })));
+    nones.forEach(r => tb.append(el('tr', {}, el('td', { style: 'min-width:13rem' }, D.facilities.some(f => f.id === r.id) ? el('button', { class: 'linkbtn', text: r.name, onclick: () => showFacility(r.id, true) }) : r.name, r.town ? el('div', { class: 'small', text: r.town }) : null), el('td', { class: 'small', colspan: RC.length - 1, text: NONE_TXT }))));
+    if (!all.length) tb.append(el('tr', {}, el('td', { colspan: RC.length, text: 'No homes match.' })));
   }
   ['#rp-q', '#rp-sold'].forEach(s => $(s).addEventListener('input', draw)); draw();
-  $('#rp-note').textContent = 'Source: Medicare cost reports (CMS-2540-10, worksheet A-8-1 for related-party costs). Only homes with a cost report on file appear, and the newest year is sometimes incomplete. "Sold" is the year of the first state-approved sale of that home on this page. The before and after columns appear only when the home has a report for the year before that sale and a later one. Individual people named in the filings are not shown. A related-party payment is not by itself improper: it shows where money went, and how much of it stayed inside the owners’ group.';
-  $('#dl-rp').addEventListener('click', () => download('ri_nursing_home_related_party_costs.csv', [['ccn', 'home', 'town', 'cost_report_year', 'net_patient_revenue', 'related_party_costs', 'related_party_pct_of_revenue', 'rent_to_related_landlord', 'rent_pct', 'management_fees_to_related', 'management_pct', 'operating_margin_pct', 'first_sale_year', 'related_party_pct_year_before_sale', 'related_party_pct_newest_year', 'landlord_same_as_operator'],
-    ...R.map(r => [r.id, r.name, r.town, r.year, r.rev, r.rp, r.rpsh == null ? '' : (r.rpsh * 100).toFixed(2), r.rent, r.rentsh == null ? '' : (r.rentsh * 100).toFixed(2), r.mgmt, r.mgmtsh == null ? '' : (r.mgmtsh * 100).toFixed(2), r.margin == null ? '' : (r.margin * 100).toFixed(2), r.sold || '', r.before == null ? '' : (r.before * 100).toFixed(2), r.after == null ? '' : (r.after * 100).toFixed(2), r.landlord])]));
+  const nHave = R.filter(r => !r.none).length, nNone = R.length - nHave;
+  $('#rp-note').textContent = 'Cost reports are loaded for ' + nHave + ' of the ' + R.length + ' homes on this page. The other ' + nNone + ' are listed at the bottom as "No cost report data available currently": the cost reports in this workbook were pulled for the homes in the state\u2019s change-of-control records, so homes with no change of control on record (including homes that have closed) and records with no federal provider number are not covered. ' + 'Source: Medicare cost reports (CMS-2540-10, worksheet A-8-1 for related-party costs). The newest year is sometimes incomplete. "Sold" is the year of the first state-approved sale of that home on this page. The before and after columns appear only when the home has a report for the year before that sale and a later one. Individual people named in the filings are not shown. A related-party payment is not by itself improper: it shows where money went, and how much of it stayed inside the owners’ group.';
+  $('#dl-rp').addEventListener('click', () => download('ri_nursing_home_related_party_costs.csv', [['ccn', 'home', 'town', 'cost_report_year', 'net_patient_revenue', 'related_party_costs', 'related_party_pct_of_revenue', 'rent_to_related_landlord', 'rent_pct', 'management_fees_to_related', 'management_pct', 'operating_margin_pct', 'first_sale_year', 'related_party_pct_year_before_sale', 'related_party_pct_newest_year', 'landlord_same_as_operator', 'cost_report_status'],
+    ...R.map(r => r.none ? [r.id.startsWith('cec:') ? '' : r.id, r.name, r.town, '', '', '', '', '', '', '', '', '', r.sold || '', '', '', '', NONE_TXT] : [r.id, r.name, r.town, r.year, r.rev, r.rp, r.rpsh == null ? '' : (r.rpsh * 100).toFixed(2), r.rent, r.rentsh == null ? '' : (r.rentsh * 100).toFixed(2), r.mgmt, r.mgmtsh == null ? '' : (r.mgmtsh * 100).toFixed(2), r.margin == null ? '' : (r.margin * 100).toFixed(2), r.sold || '', r.before == null ? '' : (r.before * 100).toFixed(2), r.after == null ? '' : (r.after * 100).toFixed(2), r.landlord, 'Cost report on file'])]));
 })();
 
 /* ---------- facility lookup ---------- */
