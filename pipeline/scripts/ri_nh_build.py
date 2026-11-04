@@ -978,7 +978,7 @@ def build_public_data(M, S, val, cec, mp, ccn_of, fn, cfg):
     if ridoh_rows:
         known = [dict(desc=getattr(x, 'desc', None), applicant=getattr(x, 'applicant', None)) for x in log.itertuples()]
         for e_ in ridoh_rows:
-            if re.search(r'nursing (home|facility)|skilled nursing', e_['desc'], re.I) and not re.search(r'home (nursing )?care (agency|provider)', e_['desc'], re.I) and not any(_ridoh_match(k_, [e_]) for k_ in known):
+            if not re.search(r'withdrawn', e_['filed'] + ' ' + e_['review'], re.I) and re.search(r'nursing (home|facility)|skilled nursing', e_['desc'], re.I) and not re.search(r'home (nursing )?care (agency|provider)', e_['desc'], re.I) and not any(_ridoh_match(k_, [e_]) for k_ in known):
                 print('  WARNING: on the RIDOH list but not in your CEC Log:', e_['applicant'][:80], '|', e_['filed'])
     rows.sort(key=lambda r: r['date'], reverse=True)
     for r in rows:
