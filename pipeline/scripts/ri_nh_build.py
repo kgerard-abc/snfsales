@@ -324,6 +324,36 @@ def _cec_docs(ws, h, idcol):
         if links or notes or cv or tv or xv: out[str(cid).strip()] = dict(links=links, notes=notes, cond=(str(cv).strip() if cv else None), extra=(str(xv).strip() if xv else None), trig=(str(tv).strip() if tv else None))
     return out
 
+def read_cost_summary(wb, have):
+    """Cost reports for homes that are not on 'Cost Reports by Year' (FY2021 on), from the copy of the cost report summary workbook and its related-party detail tab."""
+    if 'Cost Summary (all homes)' not in wb.sheetnames: return pd.DataFrame()
+    ws = wb['Cost Summary (all homes)']; h = _hmap(ws, 3)
+    c = {k: _col(h, k) for k in ('CCN', 'Fiscal year end', 'Days covered', 'Net patient revenue', 'Operating expenses', 'Net income', 'Paid to related parties')}
+    if not all(c.values()): return pd.DataFrame()
+    det = {}
+    if 'Cost Summary detail' in wb.sheetnames:
+        wd = wb['Cost Summary detail']; hd = _hmap(wd, 1); cc = {k: _col(hd, k) for k in ('CCN', 'FY end year', 'Real estate', 'Management', 'Markup', 'Related organizations')}
+        if all(cc.values()):
+            for r in range(2, wd.max_row + 1):
+                k_ = (_ccn(_v(wd.cell(row=r, column=cc['CCN']))), _v(wd.cell(row=r, column=cc['FY end year'])))
+                if k_[0] and k_[1]: det[(k_[0], int(k_[1]))] = {n: _v(wd.cell(row=r, column=cc[n])) for n in ('Real estate', 'Management', 'Markup', 'Related organizations')}
+    num = lambda v: pd.to_numeric(v if not (isinstance(v, str) and v.strip() in ('', '-')) else None, errors='coerce')
+    rows = []
+    for r in range(4, ws.max_row + 1):
+        ccn = _ccn(_v(ws.cell(row=r, column=c['CCN'])))
+        if not ccn or ccn in have: continue
+        fye = _v(ws.cell(row=r, column=c['Fiscal year end']))
+        try: yr = pd.Timestamp(fye).year
+        except Exception: continue
+        days = num(_v(ws.cell(row=r, column=c['Days covered'])))
+        if pd.notna(days) and days < 330: continue                    # partial years are not comparable
+        rev, exp_, ni, rp = (num(_v(ws.cell(row=r, column=c[k]))) for k in ('Net patient revenue', 'Operating expenses', 'Net income', 'Paid to related parties'))
+        if pd.isna(rev) or rev <= 0: continue
+        d = det.get((ccn, yr), {})
+        rows.append(dict(ccn=ccn, year=int(yr), rev=rev, exp=exp_, ni=ni, margin=((rev - exp_) / rev if pd.notna(exp_) else np.nan), rp=rp, rent=num(d.get('Real estate')), mgmt=num(d.get('Management')),
+                         disallow=num(d.get('Markup')), parties=d.get('Related organizations')))
+    return pd.DataFrame(rows)
+
 def read_cec(wb):
     out = {}
     ws = wb['CEC Log']; h = _hmap(ws); rows = []
@@ -378,6 +408,7 @@ def read_cec(wb):
             cr.append(dict(ccn=c_, year=int(y_), rev=num('rev'), exp=num('exp'), ni=num('ni'), margin=num('marg'), rp=num('rp'), rent=num('rent'), mgmt=num('mgmt'), disallow=num('disallow'),
                            parties=(_v(ws.cell(row=r, column=cols['parties'])) if cols['parties'] else None)))
     out['costs'] = pd.DataFrame(cr)
+    out['costs_extra'] = read_cost_summary(wb, set(c['ccn'] for c in cr))
     mg = {}
     if 'Management Agreements' in wb.sheetnames:
         ws = wb['Management Agreements']
@@ -618,6 +649,7 @@ def cohort_summary(sold, ctrl, metric, higher_better=True):
 MONEY = dict(rp='Related-party costs', rent='Rent and building costs paid to a related party', mgmt='Management and admin fees paid to a related party', margin='Operating margin')
 _CO_WORDS = set('LLC INC CORP CO LP LLP LTD TRUST HOLDINGS GROUP MGMT MANAGEMENT SERVICES SERVICE REHAB REHABILITATION HEALTH HEALTHCARE CARE REALTY PROPERTIES PROPERTY PARTNERS ASSOCIATES ENTERPRISES SOLUTIONS THERAPY PHARMACY SUPPLY STAFFING SYSTEMS CENTER HOME NURSING OPERATIONS ADMIN CONSULTING DEV DEVELOPMENT CAPITAL FUNDING RE PT OT ST RHS GEC GRS INDUSTRIES FOODS MEDICAL BILLING PAYROLL INSURANCE LEASING'.split())
 def _looks_company(name):
+    if re.search(r'\bESTATE OF\b|CREDIT SHELTER|FAMILY ASSOC', name.upper()): return False     # a person's estate, trust or family, not a company
     w = re.findall(r"[A-Za-z0-9&']+", name.upper())
     return bool(w) and (any(x in _CO_WORDS for x in w) or any(ch.isdigit() for ch in name) or '&' in name or len(w) >= 4)
 def _rp_companies(parties, years):
@@ -653,6 +685,16 @@ def cost_panel(cec, S):
         out['by_facility'][ccn] = dict(years=[int(y) for y in g.index], rev=[_r(v, 0) for v in g['rev']], rp=[_r(v, 0) for v in g['rp']], rent=[_r(v, 0) for v in g['rent']], mgmt=[_r(v, 0) for v in g['mgmt']],
                                         rp_sh=[_r(v, 4) for v in g['rp_sh']], rent_sh=[_r(v, 4) for v in g['rent_sh']], mgmt_sh=[_r(v, 4) for v in g['mgmt_sh']], margin=[_r(v, 4) for v in g['margin_sh']],
                                         parties=[(None if nz(v) is None else str(v)[:400]) for v in g['parties']])
+    ce = cec.get('costs_extra')
+    if ce is not None and len(ce):                                       # homes outside the state's change-of-control records: shown on their own pages and in the table, not in the statewide comparisons
+        ce = ce.copy()
+        for k in ('rp', 'rent', 'mgmt'): ce[k + '_sh'] = ce[k] / ce['rev']
+        for ccn, g in ce.groupby('ccn'):
+            if ccn in out['by_facility']: continue
+            g = g.sort_values('year').set_index('year')
+            out['by_facility'][ccn] = dict(years=[int(y) for y in g.index], rev=[_r(v, 0) for v in g['rev']], rp=[_r(v, 0) for v in g['rp']], rent=[_r(v, 0) for v in g['rent']], mgmt=[_r(v, 0) for v in g['mgmt']],
+                                           rp_sh=[_r(v, 4) for v in g['rp_sh']], rent_sh=[_r(v, 4) for v in g['rent_sh']], mgmt_sh=[_r(v, 4) for v in g['mgmt_sh']], margin=[_r(v, 4) for v in g['margin']],
+                                           parties=[(None if nz(v) is None else str(v)[:600]) for v in g['parties']], from_summary=True)
     # same-home before/after (year before the sale vs 1, 2, 3 years after)
     for k in ('rp_sh', 'rent_sh', 'mgmt_sh', 'margin'):
         res = {}
@@ -869,6 +911,7 @@ def build_public_data(M, S, val, cec, mp, ccn_of, fn, cfg):
     if money:
         for ccn_, b_ in money['by_facility'].items():
             b_['cos'], b_['n_people_hidden'] = _rp_companies(b_.pop('parties', []), b_['years'])
+        print(f"Cost reports by home: {len(money['by_facility'])} homes, {sum(1 for b_ in money['by_facility'].values() if b_.get('from_summary'))} of them from the cost summary tabs")
         rank_ = {'yes': 3, 'likely': 2}
         for r_ in log.itertuples():
             lv_ = nz(getattr(r_, 'landlord', None)); k_ = cec_ccn.get(r_.facility)
@@ -2010,6 +2053,7 @@ function rpPanel(f) {
   const wrap = el('div', { class: 'panel' }, el('h3', { style: 'margin-top:0', text: 'Money paid to related companies' }),
     el('p', { class: 'small', text: 'From the home’s Medicare cost reports. "Related" means a company the home’s owners also control. Rent is paid to a related landlord and management fees to a related management company; small figures under each dollar amount are its share of net patient revenue. A year marked "sold" is a year the state approved a sale of this home.' }),
     el('div', { class: 'tblwrap' }, el('table', {}, el('thead', {}, el('tr', {}, ['Year', 'Revenue', 'All related-party', 'Rent', 'Management fees', 'Other (therapy, supplies, services)', 'Margin'].map((t, i) => el('th', { scope: 'col', class: i ? 'num' : '', text: t })))), body)));
+  if (b.from_summary) wrap.append(el('p', { class: 'small', text: 'Reports for this home start in FY2021. The dollar categories come from different lines of the cost report, so rent and management fees may not add up to the all related-party total.' }));
   if (b.landlord) wrap.append(el('p', {}, el('b', { text: 'Is the landlord the same people as the operator? ' }), LANDLORD_TXT[b.landlord.toLowerCase()] || b.landlord));
   if (b.cos && b.cos.length) wrap.append(el('details', {}, el('summary', { text: 'Related companies named in the cost reports (' + b.cos.length + ')' }), el('ul', { class: 'docs' }, b.cos.map(c => el('li', { text: c.name + (c.role ? ' (' + c.role.toLowerCase() + ')' : '') + ', named ' + (c.y1 === c.y2 ? c.y1 : c.y1 + ' to ' + c.y2) })))));
   if (b.n_people_hidden) wrap.append(el('p', { class: 'small', text: 'Individual people named in the filings are not shown here.' }));
@@ -2037,8 +2081,8 @@ function rpPanel(f) {
     if (!all.length) tb.append(el('tr', {}, el('td', { colspan: RC.length, text: 'No homes match.' })));
   }
   ['#rp-q', '#rp-sold'].forEach(s => $(s).addEventListener('input', draw)); draw();
-  const nHave = R.filter(r => !r.none).length, nNone = R.length - nHave;
-  $('#rp-note').textContent = 'Cost reports are loaded for ' + nHave + ' of the ' + R.length + ' homes on this page. The other ' + nNone + ' are listed at the bottom as "No cost report data available currently": the cost reports in this workbook were pulled for the homes in the state\u2019s change-of-control records, so homes with no change of control on record (including homes that have closed) and records with no federal provider number are not covered. ' + 'Source: Medicare cost reports (CMS-2540-10, worksheet A-8-1 for related-party costs). The newest year is sometimes incomplete. "Sold" is the year of the first state-approved sale of that home on this page. The before and after columns appear only when the home has a report for the year before that sale and a later one. Individual people named in the filings are not shown. A related-party payment is not by itself improper: it shows where money went, and how much of it stayed inside the owners’ group.';
+  const nHave = R.filter(r => !r.none).length, nNone = R.length - nHave, nOld = R.filter(r => !r.none && RPB[r.id] && !RPB[r.id].from_summary).length;
+  $('#rp-note').textContent = 'Cost reports are loaded for ' + nHave + ' of the ' + R.length + ' homes on this page. ' + nOld + ' of them have reports from as early as FY2015 (the homes in the state\u2019s change-of-control records); the other ' + (nHave - nOld) + ' start in FY2021. The remaining ' + nNone + ' are listed at the bottom as "No cost report data available currently": the workbook has no cost report for them yet, or they have no federal provider number. ' + 'Source: Medicare cost reports (CMS-2540-10, worksheet A-8-1 for related-party costs). The newest year is sometimes incomplete. "Sold" is the year of the first state-approved sale of that home on this page. The before and after columns appear only when the home has a report for the year before that sale and a later one. Individual people named in the filings are not shown. A related-party payment is not by itself improper: it shows where money went, and how much of it stayed inside the owners’ group.';
   $('#dl-rp').addEventListener('click', () => download('ri_nursing_home_related_party_costs.csv', [['ccn', 'home', 'town', 'cost_report_year', 'net_patient_revenue', 'related_party_costs', 'related_party_pct_of_revenue', 'rent_to_related_landlord', 'rent_pct', 'management_fees_to_related', 'management_pct', 'operating_margin_pct', 'first_sale_year', 'related_party_pct_year_before_sale', 'related_party_pct_newest_year', 'landlord_same_as_operator', 'cost_report_status'],
     ...R.map(r => r.none ? [r.id.startsWith('cec:') ? '' : r.id, r.name, r.town, '', '', '', '', '', '', '', '', '', r.sold || '', '', '', '', NONE_TXT] : [r.id, r.name, r.town, r.year, r.rev, r.rp, r.rpsh == null ? '' : (r.rpsh * 100).toFixed(2), r.rent, r.rentsh == null ? '' : (r.rentsh * 100).toFixed(2), r.mgmt, r.mgmtsh == null ? '' : (r.mgmtsh * 100).toFixed(2), r.margin == null ? '' : (r.margin * 100).toFixed(2), r.sold || '', r.before == null ? '' : (r.before * 100).toFixed(2), r.after == null ? '' : (r.after * 100).toFixed(2), r.landlord, 'Cost report on file'])]));
 })();
