@@ -354,18 +354,83 @@ def read_cost_summary(wb, have):
                          disallow=num(d.get('Markup')), parties=d.get('Related organizations')))
     return pd.DataFrame(rows)
 
+
+RIDOH_PATH = None   # set by build_site.py: RIDOH's own list of reviews ("Annual Report of Reviews"), downloaded from its Google Sheet; None when it could not be fetched
+
+def _dstr(v):
+    """A date or date text as m/d/yyyy; two-digit years are widened."""
+    if isinstance(v, (dt.datetime, dt.date, pd.Timestamp)): t = pd.Timestamp(v); return f'{t.month}/{t.day}/{t.year}'
+    return re.sub(r'\b(\d{1,2})/(\d{1,2})/(\d{2})\b(?!\d)', lambda m: f'{int(m.group(1))}/{int(m.group(2))}/20{m.group(3)}', str(v).strip())
+
+def read_ridoh(path, years=None):
+    """Change in Effective Control rows from RIDOH's annual report workbook (one tab per year; the current and previous year are read).
+    Returns a list of dicts: applicant, desc, filed, deficiency, review, comment, hsc, decision, meetings (text of the Council meeting columns), year."""
+    import openpyxl; out = []
+    try: wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+    except Exception as e: print('  RIDOH list could not be opened:', e); return out
+    yrs = years or [str(dt.date.today().year), str(dt.date.today().year - 1)]
+    for sh in yrs:
+        if sh not in wb.sheetnames: continue
+        rows = [[c for c in r] for r in wb[sh].iter_rows(values_only=True)]
+        i = next((k for k, r in enumerate(rows) if r and str(r[0] or '').strip().lower() == 'change in effective control'), None)
+        if i is None: continue
+        k = i + 2   # skip the title row and the header row
+        while k < len(rows):
+            r = rows[k] + [None] * 12
+            if not r[0] or not str(r[0]).strip(): break
+            g = lambda j: ('' if r[j] is None else (_dstr(r[j]) if isinstance(r[j], (dt.datetime, dt.date)) else str(r[j]).strip()))
+            out.append(dict(applicant=g(0), desc=g(1), filed=g(2), deficiency=g(3), review=g(4), comment=g(5), hsc=g(6), decision=g(7), meetings='; '.join(x for x in (g(8), g(9), g(10)) if x), year=sh))
+            k += 1
+    return out
+
+def _ridoh_match(row, rid):
+    """The RIDOH entry that goes with a CEC Log row: description first (the log keeps RIDOH's wording), then the applicant's name."""
+    import difflib
+    norm = lambda t: re.sub(r'[^a-z0-9 ]+', ' ', str(t or '').lower()).split()
+    d = ' '.join(norm(row.get('desc')))
+    best, score = None, 0.0
+    for e in rid:
+        sc = difflib.SequenceMatcher(None, d, ' '.join(norm(e['desc']))).ratio() if d else 0.0
+        if sc < 0.75:
+            a1, a2 = ' '.join(norm(str(row.get('applicant') or '').split('\u2192')[0])), ' '.join(norm(e['applicant']))
+            if a1 and a2 and (a2.startswith(a1) or a1.startswith(a2)): sc = max(sc, 0.9)
+        if sc > score: best, score = e, sc
+    return best if score >= 0.75 else None
+
+def ridoh_status(e, today=None):
+    """Plain-language status from a RIDOH entry. Returns (status text, filed text)."""
+    today = pd.Timestamp(today or dt.date.today()); rv = e['review']
+    filed = '; '.join(x.strip() for x in _dstr(e['filed']).split(';') if x.strip())
+    if e['deficiency']: filed += ' (deficiency letter ' + '; '.join(x.strip() for x in _dstr(e['deficiency']).split(';') if x.strip()) + ')'
+    if re.match(r'\s*status:', rv, re.I):
+        st = re.sub(r'^\s*status:\s*', '', rv, flags=re.I).strip(); return st[:1].upper() + st[1:].lower(), filed
+    m = re.search(r'(\d{1,2}/\d{1,2}/\d{2,4})', rv)
+    if not rv or not m: return 'Under review', filed
+    start = _dstr(m.group(1)); parts = [f'Under review since {start}']
+    cm = re.search(r'(\d{1,2}/\d{1,2}/\d{2,4})', e['comment'] or '')
+    if cm:
+        cd = _dstr(cm.group(1)); parts.append(('public comment period ended ' if pd.to_datetime(cd) <= today else 'public comment period ends ') + cd)
+    tbd = lambda t: (not t) or t.strip().upper() == 'TBD'
+    if tbd(e['hsc']) and tbd(e['decision']):
+        mt = re.findall(r'([A-Z][a-z]+ \d{1,2})(?:st|nd|rd|th)?,? (\d{4}) Health Services Council', e['meetings'] or '')
+        if mt: parts.append('Council meeting' + ('s' if len(mt) > 1 else '') + ' ' + ', '.join(f'{a}' for a, _ in mt) + ', ' + mt[-1][1])
+        parts.append('Council recommendation and State decision ' + ('TBD' if (e['hsc'] or '').strip().upper() == 'TBD' else 'not yet posted'))
+    elif not tbd(e['decision']): parts.append('State decision posted: ' + e['decision'][:80])
+    else: parts.append('Council recommendation: ' + e['hsc'][:80])
+    return '; '.join(parts), filed
+
 def read_cec(wb):
     out = {}
     ws = wb['CEC Log']; h = _hmap(ws); rows = []
     cols = dict(id=_col(h, 'CEC ID'), fac=_col(h, 'Facility'), town=_col(h, 'Town'), beds=_col(h, 'Beds'), applicant=_col(h, 'Applicant'), buyer=_col(h, 'Buyer group'), type=_col(h, 'Transaction type'),
-                outcome=_col(h, 'Outcome'), decision=_col(h, 'Decision or status date'), year=_col(h, 'Year'), chow=_col(h, 'CMS takeover date'), filed=_col(h, 'Date(s) filed'), seller=_col(h, 'Seller per CMS'), landlord=_col(h, 'Landlord and operator'))
+                outcome=_col(h, 'Outcome'), decision=_col(h, 'Decision or status date'), year=_col(h, 'Year'), chow=_col(h, 'CMS takeover date'), filed=_col(h, 'Date(s) filed'), seller=_col(h, 'Seller per CMS'), landlord=_col(h, 'Landlord and operator'), desc=_col(h, 'Description'))
     for r in range(2, ws.max_row + 1):
         cid = _v(ws.cell(row=r, column=cols['id']))
         if not cid: continue
         rows.append(dict(row=r, cec=str(cid).strip(), facility=_v(ws.cell(row=r, column=cols['fac'])), town=_v(ws.cell(row=r, column=cols['town'])), applicant=_v(ws.cell(row=r, column=cols['applicant'])),
                          buyer=_v(ws.cell(row=r, column=cols['buyer'])), type=_v(ws.cell(row=r, column=cols['type'])), outcome=_v(ws.cell(row=r, column=cols['outcome'])),
                          decision=_date(_v(ws.cell(row=r, column=cols['decision']))), decision_raw=_v(ws.cell(row=r, column=cols['decision'])), chow=_date(_v(ws.cell(row=r, column=cols['chow']))), filed_raw=(_v(ws.cell(row=r, column=cols['filed'])) if cols['filed'] else None), year=_v(ws.cell(row=r, column=cols['year'])),
-                         seller=_v(ws.cell(row=r, column=cols['seller'])), landlord=(_v(ws.cell(row=r, column=cols['landlord'])) if cols.get('landlord') else None)))
+                         seller=_v(ws.cell(row=r, column=cols['seller'])), landlord=(_v(ws.cell(row=r, column=cols['landlord'])) if cols.get('landlord') else None), desc=(_v(ws.cell(row=r, column=cols['desc'])) if cols.get('desc') else None)))
     out['log'] = pd.DataFrame(rows); out['log_cols'] = cols; out['docs'] = _cec_docs(ws, h, cols['id'])
     ws = wb['Post-Sale Tracker']; rows = []
     for r in range(3, ws.max_row + 1):
@@ -896,6 +961,8 @@ def build_public_data(M, S, val, cec, mp, ccn_of, fn, cfg):
         fid_ = cec_ccn.get(r.facility) or ('cec:' + str(r.facility)); f = next((x for x in facs if x['id'] == fid_), None)
         rows.append(dict(cec=r.cec, fid=fid_, date=_d(d_), date_note=note_ or 'RIDOH decision date', name=(f['name'] if f else r.facility), town=(f['town'] if f else None), kind=kind_, label=tlab_, buyer=pubtxt(r.buyer), who=pubtxt(r.applicant, True) or '',
                          outcome=nz(r.outcome), has_cms=False, before_date=None, cms_op=None, m={k: blank() for k in ('overall', 'staffing', 'hours', 'turnover')}, ser=dict(before=None, y1=None, y2=None), fines=dict(before=None, y1=None, y2=None)))
+    ridoh_rows = read_ridoh(RIDOH_PATH) if RIDOH_PATH and os.path.exists(RIDOH_PATH) else []; ridoh_used = set()
+    print(f'RIDOH list of reviews: {len(ridoh_rows)} change-in-control applications read' if ridoh_rows else 'RIDOH list of reviews not available; pending status comes from the CEC Log')
     for r_ in log.itertuples():       # pending applications: where each one stands and every filing date
         if nz(r_.outcome) != 'Pending': continue
         for r in rows:
@@ -903,6 +970,16 @@ def build_public_data(M, S, val, cec, mp, ccn_of, fn, cfg):
                 st_ = re.sub(r'^\s*STATUS:\s*', '', str(nz(getattr(r_, 'decision_raw', None)) or '')).strip()
                 r['status'] = st_[:1].upper() + st_[1:] if st_ else 'Under review'
                 r['filed'] = '; '.join(x.strip() for x in str(nz(getattr(r_, 'filed_raw', None)) or '').split(';') if x.strip())
+                e_ = _ridoh_match(dict(desc=getattr(r_, 'desc', None), applicant=getattr(r_, 'applicant', None)), ridoh_rows) if ridoh_rows else None
+                if e_:   # RIDOH's own list is the source for where an application stands and when it was filed
+                    r['status'], r['filed'] = ridoh_status(e_); r['status_src'] = 'RIDOH list of reviews (' + e_['year'] + ')'
+                    ridoh_used.add(id(e_))
+                elif ridoh_rows: print('  No match on RIDOH list for', r['cec'], r['name'], '(using the CEC Log text)')
+    if ridoh_rows:
+        known = [dict(desc=getattr(x, 'desc', None), applicant=getattr(x, 'applicant', None)) for x in log.itertuples()]
+        for e_ in ridoh_rows:
+            if re.search(r'nursing (home|facility)|skilled nursing', e_['desc'], re.I) and not re.search(r'home (nursing )?care (agency|provider)', e_['desc'], re.I) and not any(_ridoh_match(k_, [e_]) for k_ in known):
+                print('  WARNING: on the RIDOH list but not in your CEC Log:', e_['applicant'][:80], '|', e_['filed'])
     rows.sort(key=lambda r: r['date'], reverse=True)
     for r in rows:
         for k in ('ser', 'fines'):
@@ -1765,8 +1842,8 @@ footer a{color:var(--fg)}
 
 <section id="related"><h2>Related-party money, home by home</h2>
 <p class="lede">Money a home paid to companies its owners also control, such as a landlord, a management company, or a therapy or staffing company, as the home reported it in its Medicare cost report. Shares are of the home's net patient revenue.</p>
-<div class="row"><input type="search" id="rp-q" placeholder="Search by home or town" aria-label="Search related-party table"><label class="chk"><input type="checkbox" id="rp-sold"> Only homes that were sold</label><button class="btn" id="dl-rp">Download this table (CSV)</button></div>
-<div class="tblwrap"><table id="rp-tbl"><caption>Each home's newest cost report on file. Dollars are what the home paid; the percentage is its share of net patient revenue. Click a home for every year. Sold = year of its first sale on this page. Mgmt = management fees. Before sale → newest = all related-party costs as a share of revenue, the year before that sale and in the newest report.</caption><thead></thead><tbody></tbody></table></div>
+<div class="row"><input type="search" id="rp-q" placeholder="Search by home, town, or owner" aria-label="Search related-party table"><label class="chk"><input type="checkbox" id="rp-sold"> Only homes that were sold</label><button class="btn" id="dl-rp">Download this table (CSV)</button></div>
+<div class="tblwrap"><table id="rp-tbl"><caption>Each home's newest cost report on file. Dollars are what the home paid; the percentage is its share of net patient revenue. Click a home for every year. Owner = the buyer group in the home's newest completed sale on this page, or the chain or owner name CMS lists if it never changed hands. Sold = year of its first sale on this page. Mgmt = management fees. Before sale → newest = all related-party costs as a share of revenue, the year before that sale and in the newest report.</caption><thead></thead><tbody></tbody></table></div>
 <p class="small" id="rp-note"></p>
 </section>
 
@@ -2062,29 +2139,32 @@ function rpPanel(f) {
 (function () {
   const ids = Object.keys(RPB); if (!ids.length) { $('#related').classList.add('hidden'); document.querySelectorAll('nav.jump a[href="#related"]').forEach(a => a.classList.add('hidden')); return; }
   const FS = D.money.first_sale || {};
-  const R = ids.map(id => { const b = RPB[id], f = D.facilities.find(x => x.id === id), i = rpLatest(b); if (i < 0) return null;
+  const isClosed = f => !!f && (f.active === false || /^closed/i.test(f.status || ''));   // closed homes are left out of this table
+  const ownerOf = f => { if (!f) return ''; const ev = (f.events || []).filter(e => e.buyer && ['sale', 'parent', 'internal'].includes(e.kind) && e.outcome !== 'Pending' && e.date).sort((a, b) => a.date < b.date ? -1 : 1);
+    return ev.length ? ev[ev.length - 1].buyer : (f.chain || f.owner || ''); };   // newest completed sale's buyer group, else the chain CMS lists, else the owner name CMS lists
+  const R = ids.map(id => { const b = RPB[id], f = D.facilities.find(x => x.id === id), i = rpLatest(b); if (i < 0 || isClosed(f)) return null;
     const fs = FS[id], k0 = fs ? b.years.indexOf(fs.year - 1) : -1, before = k0 >= 0 ? b.rp_sh[k0] : null, after = fs && b.years[i] > fs.year ? b.rp_sh[i] : null;
-    return { id, name: f ? f.name : id, town: f ? f.town : '', year: b.years[i], rev: b.rev[i], rp: b.rp[i], rpsh: b.rp_sh[i], rent: b.rent[i], rentsh: b.rent_sh[i], mgmt: b.mgmt[i], mgmtsh: b.mgmt_sh[i], margin: b.margin[i], landlord: b.landlord || '', sold: fs ? fs.year : null, before, after }; }).filter(Boolean);
+    return { id, name: f ? f.name : id, town: f ? f.town : '', owner: ownerOf(f), year: b.years[i], rev: b.rev[i], rp: b.rp[i], rpsh: b.rp_sh[i], rent: b.rent[i], rentsh: b.rent_sh[i], mgmt: b.mgmt[i], mgmtsh: b.mgmt_sh[i], margin: b.margin[i], landlord: b.landlord || '', sold: fs ? fs.year : null, before, after }; }).filter(Boolean);
   const NONE_TXT = 'No cost report data available currently';
-  D.facilities.forEach(f => { if (!RPB[f.id] || !RPB[f.id].years.length) R.push({ id: f.id, name: f.name, town: f.town || '', none: true, sold: (FS[f.id] || {}).year || null }); });
-  const RC = [['name', 'Home'], ['year', 'Year'], ['rev', 'Revenue'], ['rpsh', 'All related-party'], ['rentsh', 'Rent'], ['mgmtsh', 'Mgmt fees'], ['margin', 'Margin'], ['sold', 'Sold'], ['ba', 'Before sale \u2192 newest'], ['landlord', 'Landlord = operator?']];
+  D.facilities.forEach(f => { if ((!RPB[f.id] || !RPB[f.id].years.length) && !isClosed(f)) R.push({ id: f.id, name: f.name, town: f.town || '', owner: ownerOf(f), none: true, sold: (FS[f.id] || {}).year || null }); });
+  const RC = [['name', 'Home'], ['owner', 'Owner'], ['year', 'Year'], ['rev', 'Revenue'], ['rpsh', 'All related-party'], ['rentsh', 'Rent'], ['mgmtsh', 'Mgmt fees'], ['margin', 'Margin'], ['sold', 'Sold'], ['ba', 'Before sale \u2192 newest'], ['landlord', 'Landlord = operator?']];
   let rk = 'rpsh', rd = -1;
-  $('#rp-tbl thead').append(el('tr', {}, RC.map(c => el('th', { scope: 'col', class: ['name', 'landlord', 'ba'].includes(c[0]) ? '' : 'num' }, c[0] === 'ba' ? c[1] : el('button', { text: c[1], 'aria-label': 'Sort by ' + c[1], onclick: () => { rd = rk === c[0] ? -rd : (c[0] === 'name' ? 1 : -1); rk = c[0]; draw(); } })))));
+  $('#rp-tbl thead').append(el('tr', {}, RC.map(c => el('th', { scope: 'col', class: ['name', 'owner', 'landlord', 'ba'].includes(c[0]) ? '' : 'num' }, c[0] === 'ba' ? c[1] : el('button', { text: c[1], 'aria-label': 'Sort by ' + c[1], onclick: () => { rd = rk === c[0] ? -rd : (['name', 'owner'].includes(c[0]) ? 1 : -1); rk = c[0]; draw(); } })))));
   function draw() {
     const q = $('#rp-q').value.trim().toLowerCase(), onlyS = $('#rp-sold').checked;
-    const all = R.filter(r => (!onlyS || r.sold) && (!q || (r.name + ' ' + r.town).toLowerCase().includes(q))), rows = all.filter(r => !r.none), nones = all.filter(r => r.none).sort((a, b) => a.name.localeCompare(b.name));
+    const all = R.filter(r => (!onlyS || r.sold) && (!q || (r.name + ' ' + r.town + ' ' + r.owner).toLowerCase().includes(q))), rows = all.filter(r => !r.none), nones = all.filter(r => r.none).sort((a, b) => a.name.localeCompare(b.name));
     rows.sort((a, b) => { const A = a[rk] == null ? (rd < 0 ? -Infinity : Infinity) : a[rk], B = b[rk] == null ? (rd < 0 ? -Infinity : Infinity) : b[rk]; return (A < B ? -1 : A > B ? 1 : 0) * rd; });
     const tb = $('#rp-tbl tbody'); tb.replaceChildren();
-    rows.forEach(r => tb.append(el('tr', {}, el('td', { style: 'min-width:13rem' }, D.facilities.some(f => f.id === r.id) ? el('button', { class: 'linkbtn', text: r.name, onclick: () => showFacility(r.id, true) }) : r.name, r.town ? el('div', { class: 'small', text: r.town }) : null), el('td', { class: 'num', text: String(r.year) }), el('td', { class: 'num', text: money(r.rev) }), usdCell(r.rp, r.rpsh), usdCell(r.rent, r.rentsh), usdCell(r.mgmt, r.mgmtsh), el('td', { class: 'num', text: pc1(r.margin) }),
+    rows.forEach(r => tb.append(el('tr', {}, el('td', { style: 'min-width:13rem' }, D.facilities.some(f => f.id === r.id) ? el('button', { class: 'linkbtn', text: r.name, onclick: () => showFacility(r.id, true) }) : r.name, r.town ? el('div', { class: 'small', text: r.town }) : null), el('td', { class: 'small', style: 'min-width:9rem', text: r.owner || '' }), el('td', { class: 'num', text: String(r.year) }), el('td', { class: 'num', text: money(r.rev) }), usdCell(r.rp, r.rpsh), usdCell(r.rent, r.rentsh), usdCell(r.mgmt, r.mgmtsh), el('td', { class: 'num', text: pc1(r.margin) }),
       el('td', { class: 'num', text: r.sold ? String(r.sold) : '' }), el('td', { text: r.before != null && r.after != null ? pc1(r.before) + ' → ' + pc1(r.after) : '–' }), el('td', { class: 'small', text: r.landlord ? (r.landlord.toLowerCase() === 'yes' ? 'Yes' : r.landlord.toLowerCase() === 'likely' ? 'Likely' : r.landlord) : '' }))));
-    nones.forEach(r => tb.append(el('tr', {}, el('td', { style: 'min-width:13rem' }, D.facilities.some(f => f.id === r.id) ? el('button', { class: 'linkbtn', text: r.name, onclick: () => showFacility(r.id, true) }) : r.name, r.town ? el('div', { class: 'small', text: r.town }) : null), el('td', { class: 'small', colspan: RC.length - 1, text: NONE_TXT }))));
+    nones.forEach(r => tb.append(el('tr', {}, el('td', { style: 'min-width:13rem' }, D.facilities.some(f => f.id === r.id) ? el('button', { class: 'linkbtn', text: r.name, onclick: () => showFacility(r.id, true) }) : r.name, r.town ? el('div', { class: 'small', text: r.town }) : null), el('td', { class: 'small', style: 'min-width:9rem', text: r.owner || '' }), el('td', { class: 'small', colspan: RC.length - 2, text: NONE_TXT }))));
     if (!all.length) tb.append(el('tr', {}, el('td', { colspan: RC.length, text: 'No homes match.' })));
   }
   ['#rp-q', '#rp-sold'].forEach(s => $(s).addEventListener('input', draw)); draw();
   const nHave = R.filter(r => !r.none).length, nNone = R.length - nHave, nOld = R.filter(r => !r.none && RPB[r.id] && !RPB[r.id].from_summary).length;
-  $('#rp-note').textContent = 'Cost reports are loaded for ' + nHave + ' of the ' + R.length + ' homes on this page. ' + nOld + ' of them have reports from as early as FY2015 (the homes in the state\u2019s change-of-control records); the other ' + (nHave - nOld) + ' start in FY2021. The remaining ' + nNone + ' are listed at the bottom as "No cost report data available currently": the workbook has no cost report for them yet, or they have no federal provider number. ' + 'Source: Medicare cost reports (CMS-2540-10, worksheet A-8-1 for related-party costs). The newest year is sometimes incomplete. "Sold" is the year of the first state-approved sale of that home on this page. The before and after columns appear only when the home has a report for the year before that sale and a later one. Individual people named in the filings are not shown. A related-party payment is not by itself improper: it shows where money went, and how much of it stayed inside the owners’ group.';
-  $('#dl-rp').addEventListener('click', () => download('ri_nursing_home_related_party_costs.csv', [['ccn', 'home', 'town', 'cost_report_year', 'net_patient_revenue', 'related_party_costs', 'related_party_pct_of_revenue', 'rent_to_related_landlord', 'rent_pct', 'management_fees_to_related', 'management_pct', 'operating_margin_pct', 'first_sale_year', 'related_party_pct_year_before_sale', 'related_party_pct_newest_year', 'landlord_same_as_operator', 'cost_report_status'],
-    ...R.map(r => r.none ? [r.id.startsWith('cec:') ? '' : r.id, r.name, r.town, '', '', '', '', '', '', '', '', '', r.sold || '', '', '', '', NONE_TXT] : [r.id, r.name, r.town, r.year, r.rev, r.rp, r.rpsh == null ? '' : (r.rpsh * 100).toFixed(2), r.rent, r.rentsh == null ? '' : (r.rentsh * 100).toFixed(2), r.mgmt, r.mgmtsh == null ? '' : (r.mgmtsh * 100).toFixed(2), r.margin == null ? '' : (r.margin * 100).toFixed(2), r.sold || '', r.before == null ? '' : (r.before * 100).toFixed(2), r.after == null ? '' : (r.after * 100).toFixed(2), r.landlord, 'Cost report on file'])]));
+  $('#rp-note').textContent = 'Cost reports are loaded for ' + nHave + ' of the ' + R.length + ' homes on this page. ' + nOld + ' of them have reports from as early as FY2015 (the homes in the state\u2019s change-of-control records); the other ' + (nHave - nOld) + ' start in FY2021. Homes that have closed are left out. The remaining ' + nNone + ' are listed at the bottom as "No cost report data available currently": the workbook has no cost report for them yet, or they have no federal provider number. ' + 'Source: Medicare cost reports (CMS-2540-10, worksheet A-8-1 for related-party costs). The newest year is sometimes incomplete. "Sold" is the year of the first state-approved sale of that home on this page. The before and after columns appear only when the home has a report for the year before that sale and a later one. Individual people named in the filings are not shown. A related-party payment is not by itself improper: it shows where money went, and how much of it stayed inside the owners’ group.';
+  $('#dl-rp').addEventListener('click', () => download('ri_nursing_home_related_party_costs.csv', [['ccn', 'home', 'town', 'owner', 'cost_report_year', 'net_patient_revenue', 'related_party_costs', 'related_party_pct_of_revenue', 'rent_to_related_landlord', 'rent_pct', 'management_fees_to_related', 'management_pct', 'operating_margin_pct', 'first_sale_year', 'related_party_pct_year_before_sale', 'related_party_pct_newest_year', 'landlord_same_as_operator', 'cost_report_status'],
+    ...R.map(r => r.none ? [r.id.startsWith('cec:') ? '' : r.id, r.name, r.town, r.owner || '', '', '', '', '', '', '', '', '', '', r.sold || '', '', '', '', NONE_TXT] : [r.id, r.name, r.town, r.owner || '', r.year, r.rev, r.rp, r.rpsh == null ? '' : (r.rpsh * 100).toFixed(2), r.rent, r.rentsh == null ? '' : (r.rentsh * 100).toFixed(2), r.mgmt, r.mgmtsh == null ? '' : (r.mgmtsh * 100).toFixed(2), r.margin == null ? '' : (r.margin * 100).toFixed(2), r.sold || '', r.before == null ? '' : (r.before * 100).toFixed(2), r.after == null ? '' : (r.after * 100).toFixed(2), r.landlord, 'Cost report on file'])]));
 })();
 
 /* ---------- facility lookup ---------- */
