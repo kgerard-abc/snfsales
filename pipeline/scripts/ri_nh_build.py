@@ -821,9 +821,9 @@ def build_public_data(M, S, val, cec, mp, ccn_of, fn, cfg):
     have = {r['cec'] for r in rows}; blank = lambda: dict(before=None, y1=None, y2=None, exit=None)
     for r in log.itertuples():       # sales the CMS before/after analysis does not cover still get a row: no exact date (approximate date used) or a deal that fell through
         if r.cec in have or r.type not in cfg['public_include_types']: continue
-        ovr = OVR.get(r.cec); d_, note_, kind_, lab_ = T(r.chow) or T(r.decision), None, ('sale' if r.type == 'Ownership/operator change' else 'parent'), TYPE_LABEL.get(r.type, r.type)
+        ovr = OVR.get(r.cec); d_, note_, kind_, tlab_ = T(r.chow) or T(r.decision), None, ('sale' if r.type == 'Ownership/operator change' else 'parent'), TYPE_LABEL.get(r.type, r.type)
         if ovr and ovr['treat'] in ('closure', 'not a sale'):
-            d_ = T(ovr['date']) if ovr.get('date') else d_; note_ = 'Date from the workbook note'; kind_ = 'closed'; lab_ = nz(ovr.get('label')) or 'Closed (not a sale)'
+            d_ = T(ovr['date']) if ovr.get('date') else d_; note_ = 'Date from the workbook note'; kind_ = 'closed'; tlab_ = nz(ovr.get('label')) or 'Closed (not a sale)'
         elif ovr and ovr['treat'] == 'not completed': continue
         elif nz(r.outcome) == 'Pending':       # still under review: dated by the first filing date, else the review-commenced date
             d_ = _approx_date(getattr(r, 'filed_raw', None)) or _approx_date(getattr(r, 'decision_raw', None)); note_ = 'Application filing date'
@@ -831,7 +831,7 @@ def build_public_data(M, S, val, cec, mp, ccn_of, fn, cfg):
             d_ = _approx_date(getattr(r, 'decision_raw', None)); note_ = APPROX_NOTE
         if d_ is None: continue
         fid_ = cec_ccn.get(r.facility) or ('cec:' + str(r.facility)); f = next((x for x in facs if x['id'] == fid_), None)
-        rows.append(dict(cec=r.cec, fid=fid_, date=_d(d_), date_note=note_ or 'RIDOH decision date', name=(f['name'] if f else r.facility), town=(f['town'] if f else None), kind=kind_, label=lab_, buyer=pubtxt(r.buyer), who=pubtxt(r.applicant, True) or '',
+        rows.append(dict(cec=r.cec, fid=fid_, date=_d(d_), date_note=note_ or 'RIDOH decision date', name=(f['name'] if f else r.facility), town=(f['town'] if f else None), kind=kind_, label=tlab_, buyer=pubtxt(r.buyer), who=pubtxt(r.applicant, True) or '',
                          outcome=nz(r.outcome), has_cms=False, before_date=None, cms_op=None, m={k: blank() for k in ('overall', 'staffing', 'hours', 'turnover')}, ser=dict(before=None, y1=None, y2=None), fines=dict(before=None, y1=None, y2=None)))
     for r_ in log.itertuples():       # pending applications: where each one stands and every filing date
         if nz(r_.outcome) != 'Pending': continue
