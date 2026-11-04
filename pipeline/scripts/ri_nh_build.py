@@ -306,7 +306,7 @@ def _cell_link(c):
     hl = getattr(c, 'hyperlink', None)
     if hl is not None and getattr(hl, 'target', None) and nz(v) is not None and not (isinstance(v, str) and v.startswith('=')): return (hl.target, str(v).strip())
     return None
-CEC_DOC_COLS = [('report', 'HSC report', 'Council report'), ('decision', 'Decision letter', 'RIDOH decision letter'), ('comments', 'Public comments', 'Public comments and AG letter'), ('responses', 'Applicant responses', 'Applicant responses'),
+CEC_DOC_COLS = [('application', 'Application', 'Application'), ('application2', 'Application (earlier filing)', 'Earlier application filing'), ('notice', 'Initiation of review notice', 'Notice that review began'), ('report', 'HSC report', 'Council report'), ('decision', 'Decision letter', 'RIDOH decision letter'), ('comments', 'Public comments', 'Public comments and AG letter'), ('responses', 'Applicant responses', 'Applicant responses'),
                 ('presentation', 'Applicant presentation', 'Applicant presentation'), ('transcript', 'Meeting transcript', 'Meeting transcript'), ('other', 'Other document linked', 'Other document')]
 def _cec_docs(ws, h, idcol):
     """Per CEC ID: linked documents (Council report, decision letter, comments, responses, presentation, transcript), conditions and whether they were triggered. All optional."""
@@ -833,6 +833,13 @@ def build_public_data(M, S, val, cec, mp, ccn_of, fn, cfg):
         fid_ = cec_ccn.get(r.facility) or ('cec:' + str(r.facility)); f = next((x for x in facs if x['id'] == fid_), None)
         rows.append(dict(cec=r.cec, fid=fid_, date=_d(d_), date_note=note_ or 'RIDOH decision date', name=(f['name'] if f else r.facility), town=(f['town'] if f else None), kind=kind_, label=lab_, buyer=pubtxt(r.buyer), who=pubtxt(r.applicant, True) or '',
                          outcome=nz(r.outcome), has_cms=False, before_date=None, cms_op=None, m={k: blank() for k in ('overall', 'staffing', 'hours', 'turnover')}, ser=dict(before=None, y1=None, y2=None), fines=dict(before=None, y1=None, y2=None)))
+    for r_ in log.itertuples():       # pending applications: where each one stands and every filing date
+        if nz(r_.outcome) != 'Pending': continue
+        for r in rows:
+            if r['cec'] == r_.cec:
+                st_ = re.sub(r'^\s*STATUS:\s*', '', str(nz(getattr(r_, 'decision_raw', None)) or '')).strip()
+                r['status'] = st_[:1].upper() + st_[1:] if st_ else 'Under review'
+                r['filed'] = '; '.join(x.strip() for x in str(nz(getattr(r_, 'filed_raw', None)) or '').split(';') if x.strip())
     rows.sort(key=lambda r: r['date'], reverse=True)
     for r in rows:
         for k in ('ser', 'fines'):
@@ -1662,6 +1669,9 @@ footer a{color:var(--fg)}
 <details><summary>See the month-by-month timeline</summary><p class="small">Each point is the average change from the last CMS rating before the sale (that rating is 0, at "Sale"). Points left of "Sale" show the lead-up.</p><div class="chartbox" id="study-line"></div><div class="legend"><span><i style="border-color:var(--sold)"></i>Homes that were sold</span><span><i class="dash" style="border-color:var(--ctrl)"></i>Comparable homes that were not sold</span></div></details>
 <p class="small" id="study-note"></p></div>
 
+<h3 id="pending-h">Sales under review now</h3>
+<div id="pending-box"></div>
+
 <h3>Every sale, one row each</h3>
 <div class="row"><input type="search" id="sale-q" placeholder="Search by home, town or owner" aria-label="Search sales"><label class="chk"><input type="checkbox" id="sale-parent" checked> Include chain reorganizations</label><label class="chk"><input type="checkbox" id="sale-cms"> Only homes with CMS data</label><button class="btn" id="dl-sales">Download this table (CSV)</button></div>
 <div class="tblwrap"><table id="sales-tbl"><caption>Dates are the CMS takeover date where CMS lists one, otherwise the state's decision date. Stars are CMS overall ratings (5 is best).</caption><thead></thead><tbody></tbody></table></div><p class="small" id="date-legend"></p>
@@ -1904,6 +1914,26 @@ function cecDetail(id, label) {
   if (items.length) parts.push(el('ul', { class: 'docs' }, items));
   return parts.length ? el('details', { class: 'cecdetail' }, el('summary', { text: label || 'Conditions and documents' }), parts) : null;
 }
+/* sales under review now */
+(function () {
+  const P = D.sales.filter(r => r.outcome === 'Pending'), box = $('#pending-box');
+  if (!P.length) { $('#pending-h').classList.add('hidden'); box.classList.add('hidden'); return; }
+  const by = new Map(); P.forEach(r => { const k = r.buyer || r.who || 'Applicant not named'; if (!by.has(k)) by.set(k, []); by.get(k).push(r); });
+  box.append(el('p', { class: 'small', text: 'Applications the state has received that have no decision yet. ' + P.length + ' homes, ' + by.size + ' buyer group' + (by.size === 1 ? '' : 's') + '. Each is also in the table below. The state posts only the filing and status dates, so there are no ratings to compare yet.' }));
+  [...by.entries()].sort((a, b) => b[1].length - a[1].length).forEach(([g, rs]) => {
+    const grp = D.groups.find(x => x.group === g);
+    const head = el('h4', { style: 'margin:0 0 6px' }, g, el('span', { class: 'small', text: '  ' + rs.length + ' home' + (rs.length === 1 ? '' : 's') }));
+    const tb = el('tbody');
+    rs.sort((a, b) => a.name.localeCompare(b.name)).forEach(r => {
+      tb.append(el('tr', {}, el('td', {}, D.facilities.some(f => f.id === r.fid) ? el('button', { class: 'linkbtn', text: r.name, onclick: () => showFacility(r.fid, true) }) : r.name), el('td', { text: r.town || '' }), el('td', { text: r.label }), el('td', { class: 'small', text: r.who || '' }), el('td', { class: 'small', text: r.filed || fmtDay(r.date) }), el('td', { text: r.status || 'Under review' })));
+      const dt = cecDetail(r.cec, 'Application and documents');
+      if (dt) tb.append(el('tr', { class: 'cecrow' }, el('td', { colspan: 6 }, dt)));
+    });
+    box.append(el('div', { class: 'panel' }, head,
+      grp ? el('p', { class: 'small', style: 'margin:0 0 6px' }, 'Owner groups lists ' + grp.n + ' home' + (grp.n === 1 ? '' : 's') + ' this group has taken over. ', el('a', { href: '#groups', text: 'See Owner groups' })) : el('p', { class: 'small', style: 'margin:0 0 6px', text: 'No Rhode Island homes recorded for this group so far.' }),
+      el('div', { class: 'tblwrap' }, el('table', {}, el('thead', {}, el('tr', {}, ['Home', 'Town', 'Type', 'Applicant', 'Filed', 'Status'].map(t => el('th', { scope: 'col', text: t })))), tb))));
+  });
+})();
 /* sales table */
 let sortKey = 'date', sortDir = -1;
 const cols = [['date', 'Date'], ['name', 'Home'], ['label', 'Type'], ['buyer', 'New owner'], ['overall', 'Overall stars: before \u2192 1 yr \u2192 2 yrs'], ['hours', 'Nurse hours: before \u2192 1 yr'], ['ser', 'Serious citations: year before \u2192 year after'], ['fines', 'Fines: year before \u2192 year after']];
