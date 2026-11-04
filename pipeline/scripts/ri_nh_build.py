@@ -373,7 +373,7 @@ def read_ridoh(path, years=None):
     for sh in yrs:
         if sh not in wb.sheetnames: continue
         rows = [[c for c in r] for r in wb[sh].iter_rows()]   # cells, not values: the number format says whether a date is shown day-first or month-first
-        i = next((k for k, r in enumerate(rows) if r and str(r[0] or '').strip().lower() == 'change in effective control'), None)
+        i = next((k for k, r in enumerate(rows) if r and str((r[0].value if r else None) or '').strip().lower() == 'change in effective control'), None)
         if i is None: continue
         k = i + 2   # skip the title row and the header row
         while k < len(rows):
