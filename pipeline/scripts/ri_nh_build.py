@@ -649,6 +649,7 @@ def cohort_summary(sold, ctrl, metric, higher_better=True):
 MONEY = dict(rp='Related-party costs', rent='Rent and building costs paid to a related party', mgmt='Management and admin fees paid to a related party', margin='Operating margin')
 _CO_WORDS = set('LLC INC CORP CO LP LLP LTD TRUST HOLDINGS GROUP MGMT MANAGEMENT SERVICES SERVICE REHAB REHABILITATION HEALTH HEALTHCARE CARE REALTY PROPERTIES PROPERTY PARTNERS ASSOCIATES ENTERPRISES SOLUTIONS THERAPY PHARMACY SUPPLY STAFFING SYSTEMS CENTER HOME NURSING OPERATIONS ADMIN CONSULTING DEV DEVELOPMENT CAPITAL FUNDING RE PT OT ST RHS GEC GRS INDUSTRIES FOODS MEDICAL BILLING PAYROLL INSURANCE LEASING'.split())
 def _looks_company(name):
+    if re.search(r'\bESTATE OF\b|CREDIT SHELTER|FAMILY ASSOC', name.upper()): return False     # a person's estate, trust or family, not a company
     w = re.findall(r"[A-Za-z0-9&']+", name.upper())
     return bool(w) and (any(x in _CO_WORDS for x in w) or any(ch.isdigit() for ch in name) or '&' in name or len(w) >= 4)
 def _rp_companies(parties, years):
