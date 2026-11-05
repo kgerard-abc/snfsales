@@ -1031,7 +1031,7 @@ def build_public_data(M, S, val, cec, mp, ccn_of, fn, cfg):
         lr = log[log.cec == cid]
         if not len(lr): continue
         key = cec_ccn.get(lr.iloc[0].facility) or ('cec:' + str(lr.iloc[0].facility))
-        ev_add(key, dict(date=_d(m['start']), kind='mgmt', label='Buyer took over management', who=pubtxt(m.get('who')) or '', buyer=None, outcome=None, src=nz(m.get('src')) or ('Management agreement noted for ' + cid), date_note='Management agreement start'))
+        ev_add(key, dict(date=_d(m['start']), kind='mgmt', cec=cid, label='Buyer took over management', who=pubtxt(m.get('who')) or '', buyer=None, outcome=None, src=nz(m.get('src')) or ('Management agreement noted for ' + cid), date_note='Management agreement start'))
     for f_ in facs: f_['events'] = sorted(events_by.get(f_['id'], f_['events']), key=lambda e: e['date'], reverse=True)
     for r in rows: r['mgmt_start'] = (_d(MG[r['cec']]['start']) if (r['cec'] in MG and T(MG[r['cec']].get('start'))) else None)
     # same-home levels before vs after (for the before/after chart)
@@ -2226,14 +2226,16 @@ function ownerEras(f) {
   const dates = D.dates, ev = f.events.slice().sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
   const notPend = e => e.outcome !== 'Pending';
   const closed = ev.find(e => e.kind === 'closed');
-  const starters = ev.filter(e => (e.kind === 'sale' || e.kind === 'parent') && notPend(e)).map(e => ({ date: e.date, approx: false, e }))
+  /* When a buyer began managing the home before the sale date (Management Agreements tab), that is when its time in charge starts. */
+  const mgmtBy = {}; ev.filter(e => e.kind === 'mgmt' && e.cec).forEach(e => { if (!mgmtBy[e.cec] || e.date < mgmtBy[e.cec].date) mgmtBy[e.cec] = e; });
+  const starters = ev.filter(e => (e.kind === 'sale' || e.kind === 'parent') && notPend(e)).map(e => { const m = e.cec && mgmtBy[e.cec]; return (m && m.date < e.date) ? { date: m.date, approx: false, note: 'Buyer began managing the home (management agreement), before the sale date of ' + fmtDay(e.date), e } : { date: e.date, approx: false, e }; })
     .concat((f.undated || []).filter(u => (u.kind === 'sale' || u.kind === 'parent') && !u.pending && u.year).map(u => ({ date: u.date || (u.year + '-07-01'), known: !!u.date, approx: true, year: u.year, e: u })));
   if (!starters.length) return [];
   starters.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
-  const groups = []; starters.forEach(x => { const g = groups[groups.length - 1]; if (g && !x.approx && !g.approx && g.date === x.date) g.evs.push(x.e); else groups.push({ date: x.date, known: x.known, approx: x.approx, year: x.year, evs: [x.e] }); });
+  const groups = []; starters.forEach(x => { const g = groups[groups.length - 1]; if (g && !x.approx && !g.approx && g.date === x.date) g.evs.push(x.e); else groups.push({ date: x.date, known: x.known, approx: x.approx, year: x.year, note: x.note, evs: [x.e] }); });
   const eras = []; const g0 = groups[0];
   if (f.has_cms && !g0.approx && dates[0] < g0.date) eras.push({ kind: 'earlier', start: null, end: g0.date, evs: [] });
-  groups.forEach((g, i) => { const nx = groups[i + 1]; eras.push({ kind: g.evs.some(e => e.kind === 'sale') ? 'sale' : 'parent', start: g.date, startKnown: g.known, startApprox: g.approx, year: g.year, end: nx ? nx.date : (closed ? closed.date : null), endApprox: nx ? nx.approx : false, endKnown: nx ? nx.known : false, endYear: nx ? nx.year : null, evs: g.evs }); });
+  groups.forEach((g, i) => { const nx = groups[i + 1]; eras.push({ kind: g.evs.some(e => e.kind === 'sale') ? 'sale' : 'parent', start: g.date, startKnown: g.known, startApprox: g.approx, startNote: g.note, year: g.year, end: nx ? nx.date : (closed ? closed.date : null), endApprox: nx ? nx.approx : false, endKnown: nx ? nx.known : false, endYear: nx ? nx.year : null, evs: g.evs }); });
   const lastBefore = d => { let k = -1; dates.forEach((x, i) => { if (x < d) k = i; }); return k; };
   const lastWith = () => { let k = -1; (f.s ? f.s.overall : []).forEach((v, i) => { if (v != null || (f.s.nr && f.s.nr[i])) k = i; }); return k; };
   eras.forEach(r => {
@@ -2271,7 +2273,7 @@ function eraPanel(f) {
     const card = el('div', { class: 'era ' + r.kind }, el('h4', {}, names, el('span', { class: 'tag', text: tag })),
       op ? el('p', { class: 'small', style: 'margin:0', text: op }) : null,
       el('p', { class: 'when', text: whenTxt + (dur ? ' (' + dur + ')' : '') }),
-      r.start !== null && !r.startApprox && first.date_note ? el('p', { class: 'small', style: 'margin:0', text: 'Start date: ' + first.date_note + '.' }) : null);
+      r.start !== null && !r.startApprox && (r.startNote || first.date_note) ? el('p', { class: 'small', style: 'margin:0', text: 'Start date: ' + (r.startNote || first.date_note) + '.' }) : null);
     if (r.i1 != null) {
       const mets = el('div', { class: 'mets' });
       const s0 = st0(r.i0), s1 = st0(r.i1);
