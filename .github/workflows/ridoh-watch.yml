@@ -3,6 +3,8 @@ name: Watch RIDOH's list of reviews
 # RIDOH's "Annual Report of Reviews" sheet is the source for where each pending application stands.
 # This checks it every few hours. When a Change in Effective Control row is added or changed, it saves the new copy
 # and starts the sales page rebuild, so the page follows RIDOH without anyone having to ask.
+# It also checks the CEC Log tab of the INTERNAL Google Sheet. When a row is added or edited there (by the weekly
+# CEC Log check, or by kg filling in a buyer group or principals), it starts the same rebuild.
 
 on:
   schedule:
@@ -29,19 +31,26 @@ jobs:
       - name: Look for changes
         id: look
         run: python3 .github/scripts/ridoh_watch.py
-      - name: Save the new copy and rebuild the page
-        if: steps.look.outputs.changed == 'true' && github.ref == 'refs/heads/main'
+      - name: Look for CEC Log edits
+        id: cec
+        run: python3 .github/scripts/cec_log_watch.py
+      - name: Save the new copies and rebuild the page
+        if: (steps.look.outputs.changed == 'true' || steps.cec.outputs.cec_changed == 'true') && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           git config user.name "abc-ri-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add pipeline/ridoh_cec_snapshot.json
-          git commit -m "RIDOH list of reviews changed" || echo "Nothing to commit."
+          git add pipeline/ridoh_cec_snapshot.json || true
+          git add pipeline/cec_log_snapshot.json || true
+          git commit -m "RIDOH list of reviews or CEC Log changed" || echo "Nothing to commit."
           git pull --rebase origin main
           git push
-          if [ "${{ steps.look.outputs.first }}" = "true" ]; then echo "First run: saved the starting copy, no rebuild."; exit 0; fi
+          REBUILD=no
+          if [ "${{ steps.look.outputs.changed }}" = "true" ] && [ "${{ steps.look.outputs.first }}" != "true" ]; then REBUILD=yes; fi
+          if [ "${{ steps.cec.outputs.cec_changed }}" = "true" ] && [ "${{ steps.cec.outputs.cec_first }}" != "true" ]; then REBUILD=yes; fi
+          if [ "$REBUILD" = "no" ]; then echo "First run for the changed list: saved the starting copy, no rebuild."; exit 0; fi
           gh workflow run monthly-update.yml --repo "$GITHUB_REPOSITORY" --ref main -f rebuild_only=true -f test_only=false
       - name: Not on main
-        if: steps.look.outputs.changed == 'true' && github.ref != 'refs/heads/main'
-        run: echo "Test run on a branch - would have saved the copy and rebuilt the page."
+        if: (steps.look.outputs.changed == 'true' || steps.cec.outputs.cec_changed == 'true') && github.ref != 'refs/heads/main'
+        run: echo "Test run on a branch - would have saved the copies and rebuilt the page."
