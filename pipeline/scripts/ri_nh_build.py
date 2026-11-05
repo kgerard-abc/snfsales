@@ -2143,7 +2143,7 @@ function drawSales() {
   rows.forEach(r => { const m = r.m;
     const newOwner = el('td', {}, r.buyer ? el('b', { text: r.buyer }) : null, r.buyer ? el('br') : null, el('span', { class: 'small', text: r.who }));
     const inCms = (D.facilities.find(f => f.id === r.fid) || {}).has_cms;
-    const noData = r.has_cms ? 'no rating before sale' : (inCms && r.date && r.date < D.dates[0] ? 'before CMS files start (' + fmtMon(D.dates[0]) + ')' : 'no CMS data');
+    const noData = (r.has_cms || inCms) && r.date && r.date < D.dates[0] ? 'before CMS files start (' + fmtMon(D.dates[0]) + ')' : (r.has_cms ? 'no rating before sale' : 'no CMS data');
     const stars = el('td', { class: 'num' }, r.has_cms && m.overall.before != null ? [chip(m.overall.before), el('span', { class: 'arrow', text: '\u2192' }), chip(m.overall.y1), el('span', { class: 'arrow', text: '\u2192' }), chip(m.overall.y2),
       r.outcome === 'Pending' && r.before_date ? el('div', { class: 'small', text: 'Now, from the ' + fmtMon(r.before_date) + ' CMS file' }) : null] : el('span', { class: 'small', text: noData }));
     const hrs = el('td', { class: 'num' }, r.has_cms && m.hours.before != null ? [f2(m.hours.before), el('span', { class: 'arrow', text: '\u2192' }), f2(m.hours.y1)] : '\u2013');
