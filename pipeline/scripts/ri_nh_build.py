@@ -2363,7 +2363,7 @@ let lastW = window.innerWidth; let rz = null;
 window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (Math.abs(window.innerWidth - lastW) < 30) return; lastW = window.innerWidth; drawStudy(); drawMoney(); if (curFac) showFacility(curFac, false); }, 200); });
 if (location.hash.startsWith('#home=')) { showFacility(decodeURIComponent(location.hash.slice(6))); }
 </script>
-<script data-goatcounter="https://abc-ri-snf.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+<script data-goatcounter="https://abc-ri-snfsales.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 <script>function gcEvent(n){try{var g=window.goatcounter;if(g&&g.count)g.count({path:'home/'+n,title:n,event:true});}catch(e){}}</script>
 <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "91c84447763744a2814a6a4a5b62a9b5"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
