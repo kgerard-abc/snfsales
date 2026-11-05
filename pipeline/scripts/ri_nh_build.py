@@ -961,6 +961,18 @@ def build_public_data(M, S, val, cec, mp, ccn_of, fn, cfg):
                          ser=dict(before=nz(r.ser_before), y1=nz(r.ser_y1), y2=nz(r.ser_y2)), fines=dict(before=nz(r.fines_before), y1=nz(r.fines_y1), y2=nz(r.fines_y2))))
     rows = [r for r in rows if r['date']]
     have = {r['cec'] for r in rows}; blank = lambda: dict(before=None, y1=None, y2=None, exit=None)
+    hu_b = M['hu'].assign(sd=pd.to_datetime(M['hu'].survey_date)); pu_b = M['pu'][M['pu'].penalty_type == 'Fine']; pu_b = pu_b.assign(pd_=pd.to_datetime(pu_b.penalty_date))
+    def baseline(ccn, anchor):
+        """The home's figures in the last CMS file before `anchor`, with serious citations and fines in the 12 months before it.
+        Used for sales the before/after study does not cover yet (pending, or decided after the newest tracker row), so the
+        table shows where each home stood going in. Returns None if the home has no CMS file in the comparable series."""
+        if ccn not in val or anchor is None: return None
+        snaps = sorted(s_ for s_ in val[ccn]['overall'] if s_ >= cfg['series_start'] and pd.Timestamp(s_) < anchor)
+        if not snaps: return None
+        b = snaps[-1]; lo = anchor - pd.DateOffset(months=12)
+        h2 = hu_b[(hu_b.ccn_std == ccn) & (hu_b.sd >= lo) & (hu_b.sd < anchor)]; f2 = pu_b[(pu_b.ccn_std == ccn) & (pu_b.pd_ >= lo) & (pu_b.pd_ < anchor)]
+        return dict(date=b, m={k: dict(before=_r(val[ccn][k].get(b), 2), y1=None, y2=None, exit=None) for k in ('overall', 'staffing', 'hours', 'turnover')},
+                    ser=dict(before=int(h2.serious.sum()), y1=None, y2=None), fines=dict(before=float(f2.fine_amount.sum()), y1=None, y2=None))
     for r in log.itertuples():       # sales the CMS before/after analysis does not cover still get a row: no exact date (approximate date used) or a deal that fell through
         if r.cec in have or r.type not in cfg['public_include_types']: continue
         ovr = OVR.get(r.cec); d_, note_, kind_, tlab_ = T(r.chow) or T(r.decision), None, ('sale' if r.type == 'Ownership/operator change' else 'parent'), TYPE_LABEL.get(r.type, r.type)
@@ -973,8 +985,11 @@ def build_public_data(M, S, val, cec, mp, ccn_of, fn, cfg):
             d_ = _approx_date(getattr(r, 'decision_raw', None)); note_ = APPROX_NOTE
         if d_ is None: continue
         fid_ = cec_ccn.get(r.facility) or ('cec:' + str(r.facility)); f = next((x for x in facs if x['id'] == fid_), None)
+        # Pending: the sale has not happened, so "before" is the home today (newest CMS file). Otherwise the last file before the date used.
+        bl = baseline(fid_, (pd.Timestamp(latest) + pd.Timedelta(days=1)) if nz(r.outcome) == 'Pending' else T(d_)) if kind_ != 'closed' else None
         rows.append(dict(cec=r.cec, fid=fid_, date=_d(d_), date_note=note_ or 'RIDOH decision date', name=(f['name'] if f else r.facility), town=(f['town'] if f else None), kind=kind_, label=tlab_, buyer=pubtxt(r.buyer), who=pubtxt(r.applicant, True) or '',
-                         outcome=nz(r.outcome), has_cms=False, before_date=None, cms_op=None, m={k: blank() for k in ('overall', 'staffing', 'hours', 'turnover')}, ser=dict(before=None, y1=None, y2=None), fines=dict(before=None, y1=None, y2=None)))
+                         outcome=nz(r.outcome), has_cms=bool(bl), before_date=(bl['date'] if bl else None), cms_op=None, m=(bl['m'] if bl else {k: blank() for k in ('overall', 'staffing', 'hours', 'turnover')}),
+                         ser=(bl['ser'] if bl else dict(before=None, y1=None, y2=None)), fines=(bl['fines'] if bl else dict(before=None, y1=None, y2=None))))
     ridoh_rows = read_ridoh(RIDOH_PATH) if RIDOH_PATH and os.path.exists(RIDOH_PATH) else []; ridoh_used = set()
     print(f'RIDOH list of reviews: {len(ridoh_rows)} change-in-control applications read' if ridoh_rows else 'RIDOH list of reviews not available; pending status comes from the CEC Log')
     for r_ in log.itertuples():       # pending applications: where each one stands and every filing date
@@ -1687,6 +1702,15 @@ PAGE_TEMPLATE = r'''<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>__TITLE__</title>
+<meta name="description" content="What happened to ratings, staffing, inspections, and money paid to owners' own companies when Rhode Island nursing homes were sold, with every change in effective control the state has reviewed. From Advocates for Better Care in Rhode Island.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Advocates for Better Care in Rhode Island">
+<meta property="og:title" content="What happened when Rhode Island nursing homes were sold">
+<meta property="og:description" content="Ratings, staffing, inspections, and money paid to owners' own companies, before and after each Rhode Island nursing home sale.">
+<meta property="og:url" content="https://snfsales.abc-ri.org/">
+<meta property="og:image" content="https://snfsales.abc-ri.org/abcri-logo.png">
+<meta property="og:image:alt" content="ABC-RI logo">
+<meta name="twitter:card" content="summary">
 <link rel="icon" href="abcri-logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -2091,7 +2115,7 @@ function cecDetail(id, label) {
   const P = D.sales.filter(r => r.outcome === 'Pending'), box = $('#pending-box');
   if (!P.length) { $('#pending-h').classList.add('hidden'); box.classList.add('hidden'); return; }
   const by = new Map(); P.forEach(r => { const k = r.buyer || r.who || 'Applicant not named'; if (!by.has(k)) by.set(k, []); by.get(k).push(r); });
-  box.append(el('p', { class: 'small', text: 'Applications the state has received that have no decision yet. ' + P.length + ' homes, ' + by.size + ' buyer group' + (by.size === 1 ? '' : 's') + '. Each is also in the table below. The state posts only the filing and status dates, so there are no ratings to compare yet.' }));
+  box.append(el('p', { class: 'small', text: 'Applications the state has received that have no decision yet. ' + P.length + ' homes, ' + by.size + ' buyer group' + (by.size === 1 ? '' : 's') + '. Each is also in the table below. There are no after-sale figures yet. The table shows each home as it stands now, from the newest CMS file, so it can be compared after the sale.' }));
   [...by.entries()].sort((a, b) => b[1].length - a[1].length).forEach(([g, rs]) => {
     const grp = D.groups.find(x => x.group === g);
     const head = el('h4', { style: 'margin:0 0 6px' }, g, el('span', { class: 'small', text: '  ' + rs.length + ' home' + (rs.length === 1 ? '' : 's') }));
@@ -2118,7 +2142,10 @@ function drawSales() {
   const tb = $('#sales-tbl tbody'); tb.replaceChildren();
   rows.forEach(r => { const m = r.m;
     const newOwner = el('td', {}, r.buyer ? el('b', { text: r.buyer }) : null, r.buyer ? el('br') : null, el('span', { class: 'small', text: r.who }));
-    const stars = el('td', { class: 'num' }, r.has_cms && m.overall.before != null ? [chip(m.overall.before), el('span', { class: 'arrow', text: '\u2192' }), chip(m.overall.y1), el('span', { class: 'arrow', text: '\u2192' }), chip(m.overall.y2)] : el('span', { class: 'small', text: r.has_cms ? 'no rating before sale' : 'no CMS data' }));
+    const inCms = (D.facilities.find(f => f.id === r.fid) || {}).has_cms;
+    const noData = (r.has_cms || inCms) && r.date && r.date < D.dates[0] ? 'before CMS files start (' + fmtMon(D.dates[0]) + ')' : (r.has_cms ? 'no rating before sale' : 'no CMS data');
+    const stars = el('td', { class: 'num' }, r.has_cms && m.overall.before != null ? [chip(m.overall.before), el('span', { class: 'arrow', text: '\u2192' }), chip(m.overall.y1), el('span', { class: 'arrow', text: '\u2192' }), chip(m.overall.y2),
+      r.outcome === 'Pending' && r.before_date ? el('div', { class: 'small', text: 'Now, from the ' + fmtMon(r.before_date) + ' CMS file' }) : null] : el('span', { class: 'small', text: noData }));
     const hrs = el('td', { class: 'num' }, r.has_cms && m.hours.before != null ? [f2(m.hours.before), el('span', { class: 'arrow', text: '\u2192' }), f2(m.hours.y1)] : '\u2013');
     const ser = el('td', { class: 'num' }, r.ser.before != null ? [String(r.ser.before), el('span', { class: 'arrow', text: '\u2192' }), r.ser.y1 == null ? '\u2013' : String(r.ser.y1)] : '\u2013');
     const fin = el('td', { class: 'num' }, r.fines.before != null ? [money(r.fines.before), el('span', { class: 'arrow', text: '\u2192' }), r.fines.y1 == null ? '\u2013' : money(r.fines.y1)] : '\u2013');
@@ -2268,7 +2295,7 @@ function eraPanel(f) {
 }
 let curFac = null;
 function showFacility(id, scroll) {
-  const f = D.facilities.find(x => x.id === id); if (!f) return; if (curFac !== id) gcEvent(f.name); curFac = id; const box = $('#profile'); box.replaceChildren();
+  const f = D.facilities.find(x => x.id === id); if (!f) return; if (curFac !== id && typeof gcEvent === 'function') gcEvent(f.name); curFac = id; const box = $('#profile'); box.replaceChildren();
   const gsec = $('#groups'); if (gsec) gsec.classList.add('hidden');            // statewide owner-group table is not about this home
   const closeFac = () => { curFac = null; box.replaceChildren(); if (gsec) gsec.classList.remove('hidden'); if (location.hash.startsWith('#home=')) history.replaceState(null, '', location.pathname + location.search + '#lookup'); };
   const nowB = (label, v, fmt) => el('div', { class: 'badge' }, label, el('b', {}, v == null ? '\u2013' : (fmt ? fmt(v) : v)));
