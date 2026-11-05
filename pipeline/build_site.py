@@ -43,4 +43,20 @@ if [n for n in need if n not in names]:
     print(f"ERROR: the Google Sheet is missing tabs: {[n for n in need if n not in names]}. Is it the INTERNAL copy?"); sys.exit(1)
 r = B.run(out, cec_path=master, std_dir=std)
 shutil.copy(os.path.join(out, "public", "index.html"), os.path.join(ROOT, "index.html"))
+# sales.json: a small file the SNF dashboard reads to show each home's pending or most recent sale and link here.
+# One entry per home (by CMS number): pending applications, plus the most recent completed sale. Chain reorganizations are left out.
+import json
+D = r["D"]; homes = {}
+for s_ in sorted(D["sales"], key=lambda x: x.get("date") or "", reverse=True):
+    if s_.get("kind") != "sale" or not s_.get("fid") or str(s_["fid"]).startswith("cec:") or not s_.get("date"):
+        continue
+    pend = s_.get("outcome") == "Pending"
+    lst = homes.setdefault(s_["fid"], [])
+    if not pend and any(not x["pending"] for x in lst):
+        continue   # keep only the most recent completed sale
+    lst.append(dict(date=s_["date"], date_note=s_.get("date_note"), buyer=s_.get("buyer") or s_.get("who") or None, pending=pend, mgmt_start=s_.get("mgmt_start")))
+feed = dict(built=D["meta"].get("built"), source="https://snfsales.abc-ri.org/", homes=homes)
+with open(os.path.join(ROOT, "sales.json"), "w", encoding="utf-8") as f:
+    json.dump(feed, f, ensure_ascii=False, separators=(",", ":"))
+print(f"Wrote sales.json ({len(homes)} homes).")
 print("Built index.html and the workbook.")
