@@ -5,7 +5,7 @@ Usage: build_site.py <master-sheet-id>
 Writes: index.html (repo root, replaces the old page), pipeline/out/RI_Nursing_Homes_CMS_and_CEC.xlsx
 The logo already in the repo is left alone.
 """
-import gzip, io, os, shutil, sys, urllib.request
+import gzip, io, json, os, shutil, sys, urllib.request
 HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.dirname(HERE)
 sys.path.insert(0, os.path.join(HERE, "scripts"))
 import ri_nh_build as B
@@ -36,6 +36,26 @@ try:
     else: print("WARNING: the RIDOH list did not download as a spreadsheet; pending status comes from the CEC Log.")
 except Exception as e:
     print(f"WARNING: could not download the RIDOH list of reviews ({e}); pending status comes from the CEC Log.")
+# The SNF dashboard's Facility extras sheet: the home names and owner group names both sites use. Best effort.
+EXTRAS_SHEET_ID = "1PXFDq_55whZPcW0ODuJYsD3NGcJnsvgzYkgV0y8maGQ"
+try:
+    ex = urllib.request.urlopen(urllib.request.Request(f"https://docs.google.com/spreadsheets/d/{EXTRAS_SHEET_ID}/export?format=xlsx", headers={"User-Agent": "abc-ri-update/1.0"}), timeout=120).read()
+    if ex[:2] == b"PK":
+        B.EXTRAS_PATH = os.path.join(out, "facility_extras.xlsx"); open(B.EXTRAS_PATH, "wb").write(ex)
+    else: print("WARNING: the Facility extras sheet did not download as a spreadsheet; CMS names are used.")
+except Exception as e:
+    print(f"WARNING: could not download the Facility extras sheet ({e}); CMS names are used.")
+# CMS's national figures for each nursing home chain. Best effort.
+import chains
+CHAINS_CSV = os.path.join(ROOT, "pipeline", "cms_chains.csv")
+try:
+    B.CHAINS = chains.fetch()
+    B.CHAINS_ASOF = chains.version()
+    chains.save(B.CHAINS, CHAINS_CSV, B.CHAINS_ASOF)
+    print(f"CMS chain file: {len(B.CHAINS)} chains, as of {B.CHAINS_ASOF}.")
+except Exception as e:
+    B.CHAINS, B.CHAINS_ASOF = chains.load(CHAINS_CSV)
+    print(f"WARNING: could not download CMS's chain performance file ({e}); using the saved copy ({len(B.CHAINS or [])} chains).")
 import openpyxl
 names = openpyxl.load_workbook(master, read_only=True).sheetnames
 need = ["CEC Log", "Event Overrides", "CCN Map", "Management Agreements"]
@@ -44,17 +64,16 @@ if [n for n in need if n not in names]:
 r = B.run(out, cec_path=master, std_dir=std)
 shutil.copy(os.path.join(out, "public", "index.html"), os.path.join(ROOT, "index.html"))
 # sales.json: a small file the SNF dashboard reads to show each home's pending or most recent sale and link here.
-# One entry per home (by CMS number): pending applications, plus the most recent completed sale. Chain reorganizations are left out.
+# One entry per home (by CMS number): pending applications and every completed sale, newest first, with buyer names
+# matching the dashboard's owner groups. The dashboard shows the newest sale and uses the rest to find when the
+# current owner took over. Chain reorganizations are left out.
 import json
 D = r["D"]; homes = {}
 for s_ in sorted(D["sales"], key=lambda x: x.get("date") or "", reverse=True):
     if s_.get("kind") != "sale" or not s_.get("fid") or str(s_["fid"]).startswith("cec:") or not s_.get("date"):
         continue
     pend = s_.get("outcome") == "Pending"
-    lst = homes.setdefault(s_["fid"], [])
-    if not pend and any(not x["pending"] for x in lst):
-        continue   # keep only the most recent completed sale
-    lst.append(dict(date=s_["date"], date_note=s_.get("date_note"), buyer=s_.get("buyer") or s_.get("who") or None, pending=pend, mgmt_start=s_.get("mgmt_start")))
+    homes.setdefault(s_["fid"], []).append(dict(date=s_["date"], date_note=s_.get("date_note"), buyer=s_.get("buyer") or s_.get("who") or None, pending=pend, mgmt_start=s_.get("mgmt_start")))
 feed = dict(built=D["meta"].get("built"), source="https://snfsales.abc-ri.org/", homes=homes)
 with open(os.path.join(ROOT, "sales.json"), "w", encoding="utf-8") as f:
     json.dump(feed, f, ensure_ascii=False, separators=(",", ":"))

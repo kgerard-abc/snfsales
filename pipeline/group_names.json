@@ -1,0 +1,18 @@
+{
+ "_about": "Owner group names on the sales site. 'aliases' turns a buyer name from the CEC Log into the owner group name the SNF dashboard uses (Facility extras sheet, owner_group), so both sites match. 'fill' gives a buyer group for sales whose CEC Log row has none, by CEC id. 'cms_chain' names a group's chain in CMS's national chain file when CMS can't be matched through the group's Rhode Island homes. Edit here and rebuild.",
+ "aliases": {
+  "Marquis / Tryko": "Marquis/Tryko",
+  "Mayflower Healthcare": "Mayflower",
+  "Green Tree Healthcare": "Green Tree Healthcare Management",
+  "Cedar Haven / Lake Valley": "Allaire",
+  "Health Concepts": "Health Concepts, Ltd.",
+  "Violet SNF Holdco": "Cch Healthcare/Mayers",
+  "Genesis HealthCare / Formation Capital": "Genesis Healthcare"
+ },
+ "fill": {
+  "CEC-047": "Covenant Health",
+  "CEC-048": "Centers Health Care",
+  "CEC-002": "Epoch Senior Living"
+ },
+ "cms_chain": {}
+}
