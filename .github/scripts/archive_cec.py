@@ -150,7 +150,7 @@ def load_manifest():
     return {"links": {}, "items": {}}
 
 def save_manifest(m):
-    m["updated"] = dt.datetime.utcnow().strftime("%Y-%m-%dT%H:%MZ")
+    m["updated"] = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%MZ")
     MANIFEST.parent.mkdir(parents=True, exist_ok=True)
     MANIFEST.write_text(json.dumps(m, indent=1, sort_keys=True, ensure_ascii=False))
 
@@ -203,6 +203,26 @@ def fetch(rec, workdir):
         return None, "failed", msg[:200]
     return None, "failed", "unhandled kind"
 
+def with_extension(path):
+    """Drive sometimes hands back a file whose name has no ending. Work out the type from the file and add it."""
+    path = Path(path)
+    if path.suffix: return path
+    head = path.read_bytes()[:16] if path.exists() else b""
+    ext = None
+    if head.startswith(b"%PDF"): ext = ".pdf"
+    elif head[:4] == b"PK\x03\x04":
+        import zipfile
+        try: names = zipfile.ZipFile(path).namelist()
+        except Exception: names = []
+        ext = (".docx" if any(n.startswith("word/") for n in names) else ".xlsx" if any(n.startswith("xl/") for n in names)
+               else ".pptx" if any(n.startswith("ppt/") for n in names) else ".zip")
+    elif head[4:8] == b"ftyp": ext = ".mp4"
+    elif head[:3] == b"\xff\xd8\xff": ext = ".jpg"
+    elif head[:8] == b"\x89PNG\r\n\x1a\n": ext = ".png"
+    elif head[:4] == b"\xd0\xcf\x11\xe0": ext = ".doc"
+    if not ext: return path
+    new = path.with_name(path.name + ext); path.rename(new); return new
+
 def sha256(p):
     h = hashlib.sha256()
     with open(p, "rb") as f:
@@ -249,7 +269,10 @@ def main():
 
     manifest = load_manifest()
     manifest["items"] = item_ids(uniq, manifest)
-    todo = [r for r in uniq if manifest["links"].get(r["url"], {}).get("status") != "archived"]
+    def done(r):
+        e = manifest["links"].get(r["url"], {})
+        return e.get("status") == "archived" and Path(e.get("file", "")).suffix != ""
+    todo = [r for r in uniq if not done(r)]
     log(f"{len(uniq) - len(todo)} already archived. {len(todo)} to do.")
 
     if a.dry_run:
@@ -268,13 +291,15 @@ def main():
         key = f"{r['year']}|{r['applicant']}"; ident = manifest["items"][key]
         entry = {"year": r["year"], "applicant": r["applicant"], "label": r["label"], "link_text": r["link_text"],
                  "sheet_row": r["sheet_row"], "kind": r["kind"], "item": ident, "checked": dt.date.today().isoformat()}
+        old_file = (manifest["links"].get(r["url"], {}) or {}).get("file") if manifest["links"].get(r["url"], {}).get("status") == "archived" else None
         path, status, note = fetch(r, workdir)
         if status == "ok":
+            path = with_extension(path)
             mb = path.stat().st_size / 1e6
             if mb > a.max_mb:
                 status, note = "too_large", f"{mb:.0f} MB, over the {a.max_mb} MB limit"
             else:
-                used = {e.get("file") for e in manifest["links"].values() if e.get("item") == ident}
+                used = {e.get("file") for e in manifest["links"].values() if e.get("item") == ident and e.get("file") != old_file}
                 fname = safe_name(path.name)
                 if fname in used: fname = f"{r['id'][:6]}-{fname}"
                 md = {"mediatype": "texts", "title": f"{r['applicant']} ({r['year']}): Change in Effective Control materials",
@@ -288,6 +313,12 @@ def main():
                     ok = upload(ident, path, fname, md, access, secret)
                 except Exception as e:
                     ok, note = False, str(e)[:200]
+                if ok and old_file and old_file != fname:
+                    try:
+                        from internetarchive import get_item
+                        get_item(ident).get_file(old_file).delete(access_key=access, secret_key=secret, cascade_delete=True)
+                    except Exception as e:
+                        log(f"   could not remove the old copy {old_file}: {str(e)[:120]}")
                 if ok:
                     entry.update({"file": fname, "bytes": size, "sha256": digest,
                                   "archive_url": f"https://archive.org/download/{ident}/{fname.replace(' ', '%20')}",
