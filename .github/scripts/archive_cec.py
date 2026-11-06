@@ -13,7 +13,9 @@ pipeline/cec_archive_scope.json: {"include": ["text"], "exclude": ["text"]}, mat
 What it does:
   1. Gets RIDOH's sheet (downloads it, or uses --xlsx) and pulls every link out of the Change in Effective Control rows
      on each year tab.
-  2. Groups the links into one Internet Archive item per applicant per year, named ri-cec-YEAR-applicant.
+  2. Groups the links into one Internet Archive item per application, named ri-cec-FIRSTYEAR-applicant. An application that
+     takes years is listed on several year tabs, with the report and decision only on the last one. Rows with the same
+     applicant name, in the same position among that applicant's rows, in tabs no more than 3 years apart, are one application.
   3. Downloads each Drive file and uploads it to its item. Folders, private files, missing files, and anything over
      --max-mb are not uploaded. They are listed in the manifest with a status so they can be handled another way.
   4. Saves pipeline/cec_archive_manifest.json after every file, so a stopped run picks up where it left off.
@@ -145,27 +147,57 @@ def report_scope(why):
             f.write(f"### Scope check\n\n**Kept ({len(keep)}):**\n\n" + "\n".join(f"- {k}" for k in keep) +
                     f"\n\n**Left out ({len(drop)}):**\n\n" + "\n".join(f"- {k}" for k in drop) + "\n\n")
 
+_APPS = None
+def load_manifest_for_apps():
+    global _APPS
+    _APPS = load_manifest(); return _APPS
+
 def load_manifest():
-    if MANIFEST.exists(): return json.loads(MANIFEST.read_text())
-    return {"links": {}, "items": {}}
+    m = json.loads(MANIFEST.read_text()) if MANIFEST.exists() else {}
+    for k in ("links", "apps"): m.setdefault(k, {})
+    m.setdefault("cleanup", [])
+    return m
 
 def save_manifest(m):
     m["updated"] = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%MZ")
     MANIFEST.parent.mkdir(parents=True, exist_ok=True)
     MANIFEST.write_text(json.dumps(m, indent=1, sort_keys=True, ensure_ascii=False))
 
-def item_ids(recs, manifest):
-    """One stable item name per (year, applicant). Names already in the manifest are kept."""
-    ids = dict(manifest.get("items", {}))
-    taken = set(ids.values())
+def assign_applications(recs, manifest):
+    """Tie rows on different year tabs together as one application and give each application one item name.
+    Sets r['item'], r['first_year'], r['last_year'] on every record."""
+    rows = {}
+    for r in recs: rows.setdefault((r["year"], r["sheet_row"]), r)
+    by_name = {}
+    for (yr, row), r in rows.items(): by_name.setdefault(norm(r["applicant"]), []).append((int(yr), row, r))
+    apps = manifest.setdefault("apps", {}); taken = set(apps.values())
+    for n, lst in by_name.items():
+        per_year = {}
+        for yr, row, r in sorted(lst, key=lambda x: (x[0], x[1])): per_year.setdefault(yr, []).append(r)
+        occ_max = max(len(v) for v in per_year.values())
+        for occ in range(occ_max):
+            chain = []
+            for yr in sorted(per_year):
+                if occ < len(per_year[yr]):
+                    if chain and yr - chain[-1][0] > 3:
+                        flush(chain, n, occ, occ_max > 1, apps, taken); chain = []
+                    chain.append((yr, per_year[yr][occ]))
+            if chain: flush(chain, n, occ, occ_max > 1, apps, taken)
     for r in recs:
-        key = f"{r['year']}|{r['applicant']}"
-        if key in ids: continue
-        base = f"ri-cec-{r['year']}-{slug(r['applicant'], 70)}"
-        name, n = base, 2
-        while name in taken: name = f"{base}-{n}"; n += 1
-        ids[key] = name; taken.add(name)
-    return ids
+        r["item"] = r["_chain_item"]; r["first_year"] = r["_first"]; r["last_year"] = r["_last"]
+
+def flush(chain, n, occ, several, apps, taken):
+    first, last = chain[0][0], chain[-1][0]
+    key = f"{n}|{occ}|{first}"
+    if key not in apps:
+        latest = chain[-1][1]
+        text = latest["applicant"] + ((" " + re.sub(r"(?i)change in effective control\W*", "", latest.get("desc", ""))[:50]) if several else "")
+        base = f"ri-cec-{first}-{slug(text, 70)}"; name, k = base, 2
+        while name in taken: name = f"{base}-{k}"; k += 1
+        apps[key] = name; taken.add(name)
+    for _, r in chain:
+        for x in RECS_BY_ROW[(r["year"], r["sheet_row"])]:
+            x["_chain_item"] = apps[key]; x["_first"] = str(first); x["_last"] = str(last)
 
 def safe_name(name):
     name = re.sub(r"[^\w.\-() ]", "_", name).strip() or "file"
@@ -263,6 +295,20 @@ def upload(identifier, path, filename, md, access, secret):
                        retries=8, retries_sleep=30, verbose=False, validate_identifier=True)
     return all(r.status_code == 200 for r in resp)
 
+def try_delete(item_name, file_name, access, secret):
+    """Remove one file from archive.org. True if it is gone (removed, or was never there)."""
+    try:
+        from internetarchive import get_item
+        it = get_item(item_name)
+        if not it.exists: return True
+        f = it.get_file(file_name)
+        if f is None: return True
+        resp = f.delete(access_key=access, secret_key=secret, cascade_delete=True)
+        if getattr(resp, "status_code", 200) >= 300: raise RuntimeError(f"HTTP {resp.status_code}")
+        log(f"   removed {file_name} from {item_name}"); return True
+    except Exception as e:
+        log(f"   could not remove {file_name} from {item_name}: {str(e)[:120]}"); return False
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--xlsx"); ap.add_argument("--dry-run", action="store_true")
@@ -275,6 +321,10 @@ def main():
     if not xlsx:
         xlsx = "ridoh.xlsx"; log("Downloading RIDOH's list of reviews..."); download_sheet(xlsx)
     recs, skipped = collect(xlsx)
+    global RECS_BY_ROW
+    RECS_BY_ROW = {}
+    for r in recs: RECS_BY_ROW.setdefault((r["year"], r["sheet_row"]), []).append(r)
+    assign_applications(recs, load_manifest_for_apps())   # before the year and name filters, so the grouping is the same on every run
     if a.years: recs = [r for r in recs if r["year"] in {y.strip() for y in a.years.split(",")}]
     if a.only: recs = [r for r in recs if a.only.lower() in r["applicant"].lower()]
     log(f"Found {len(recs)} links in Change in Effective Control rows of all kinds. Tabs with no such section: {', '.join(skipped) or 'none'}.")
@@ -295,11 +345,10 @@ def main():
     log(f"{len(uniq)} different links: " + ", ".join(f"{k} {v}" for k, v in sorted(kinds.items())))
     log("Links by column: " + "; ".join(f"{k} {v}" for k, v in sorted(labels.items(), key=lambda x: -x[1])))
 
-    manifest = load_manifest()
-    manifest["items"] = item_ids(uniq, manifest)
+    manifest = _APPS
     def done(r):
         e = manifest["links"].get(r["url"], {})
-        if e.get("status") != "archived": return False
+        if e.get("status") != "archived" or e.get("item") != r["item"]: return False
         if r["label"].lower().startswith("hsc recommendation") and not e.get("scanned"): return False
         return e.get("kind") == "folder" or has_extension(e.get("file", ""))
     queue = [r for r in uniq if not done(r)]
@@ -307,7 +356,7 @@ def main():
 
     if a.dry_run:
         for r in queue[: a.limit or 25]:
-            log(f"  would do: {manifest['items'][r['year'] + '|' + r['applicant']]} | {r['label']} | {r['kind']} | {r['url']}")
+            log(f"  would do: {r['item']} | {r['label']} | {r['kind']} | {r['url']}")
         log("Dry run: nothing downloaded, uploaded, or saved. Links inside HSC reports can only be found when the reports are downloaded.")
         return
 
@@ -316,31 +365,17 @@ def main():
         sys.exit("IA_ACCESS and IA_SECRET are not set. Add them as repository secrets.")
 
     # Files queued for removal from archive.org (for example copies filed without a file ending).
-    left = []
-    for c in manifest.get("cleanup", []):
-        try:
-            from internetarchive import get_item
-            it = get_item(c["item"])
-            if not it.exists: raise RuntimeError("item not found")
-            f = it.get_file(c["file"])
-            if f is None: raise RuntimeError("file not found")
-            resp = f.delete(access_key=access, secret_key=secret, cascade_delete=True)
-            if getattr(resp, "status_code", 200) >= 300: raise RuntimeError(f"HTTP {resp.status_code}")
-            log(f"Removed {c['file']} from {c['item']}")
-        except Exception as e:
-            log(f"Could not remove {c['file']} from {c['item']}: {str(e)[:120]}")
-            if "not found" not in str(e): left.append(c)
+    left = [c for c in manifest.get("cleanup", []) if not try_delete(c["item"], c["file"], access, secret)]
     manifest["cleanup"] = left; save_manifest(manifest)
 
     workdir = tempfile.mkdtemp(); dl = Path(workdir) / "dl"; count = 0; i = 0
     while i < len(queue):
         r = queue[i]; i += 1
         if a.limit and count >= a.limit: break
-        key = f"{r['year']}|{r['applicant']}"
         prior = manifest["links"].get(r["url"], {}) or {}
-        ident = prior.get("item") or manifest["items"][key]
+        ident = r["item"]
         entry = {"year": r["year"], "applicant": r["applicant"], "label": r["label"], "link_text": r["link_text"],
-                 "sheet_row": r["sheet_row"], "kind": r["kind"], "item": ident, "checked": dt.date.today().isoformat()}
+                 "sheet_row": r["sheet_row"], "kind": r["kind"], "item": ident, "years": f"{r['first_year']}-{r['last_year']}", "checked": dt.date.today().isoformat()}
         if r.get("linked_from"): entry["linked_from"] = r["linked_from"]
         old_file = prior.get("file") if prior.get("status") == "archived" else None
         paths, status, note = fetch(r, workdir)
@@ -367,9 +402,9 @@ def main():
             for e in manifest["links"].values():
                 if e.get("item") == ident and e is not prior:
                     used.add(e.get("file")); used.update(f.get("file") for f in e.get("files", []))
-            md = {"mediatype": "texts", "title": f"{r['applicant']} ({r['year']}): Change in Effective Control materials",
+            md = {"mediatype": "texts", "title": f"{r['applicant']} ({r['first_year'] if r['first_year'] == r['last_year'] else r['first_year'] + ' to ' + r['last_year']}): Change in Effective Control materials",
                   "creator": "Rhode Island Department of Health, Office of Health Systems Development (public filings)",
-                  "date": r["year"], "subject": ["Rhode Island", "nursing home", "change in effective control", "certificate of need"],
+                  "date": r["last_year"], "subject": ["Rhode Island", "nursing home", "change in effective control", "certificate of need"],
                   "description": ("Public documents from RIDOH's Annual Report of Reviews for this Change in Effective Control "
                                   "application, copied by Advocates for Better Care in Rhode Island (ABC-RI) so they stay available "
                                   "if RIDOH's links stop working.")}
@@ -392,16 +427,17 @@ def main():
                 entry.update({"files": stored, "archive_url": f"https://archive.org/details/{ident}", "archived_on": dt.date.today().isoformat()})
                 status = "archived" if stored and len(good) == len(stored) else ("partial" if good else "failed")
                 if note: entry["note_extra"] = note
+                if prior.get("status") == "archived" and prior.get("item") not in (None, ident):
+                    for pf in prior.get("files", []):
+                        if not try_delete(prior["item"], pf["file"], access, secret):
+                            manifest.setdefault("cleanup", []).append({"item": prior["item"], "file": pf["file"]})
             elif stored and good:
                 f = good[0]
                 entry.update({k: f[k] for k in ("file", "bytes", "sha256", "archive_url")}); entry["archived_on"] = dt.date.today().isoformat()
                 status = "archived"
-                if old_file and old_file != f["file"]:
-                    try:
-                        from internetarchive import get_item
-                        get_item(ident).get_file(old_file).delete(access_key=access, secret_key=secret, cascade_delete=True)
-                    except Exception as e:
-                        log(f"   could not remove the old copy {old_file}: {str(e)[:120]}")
+                if old_file and (old_file != f["file"] or prior.get("item") != ident):
+                    if not try_delete(prior.get("item") or ident, old_file, access, secret):
+                        manifest.setdefault("cleanup", []).append({"item": prior.get("item") or ident, "file": old_file})
             elif stored and stored[0]["status"] == "too_large":
                 status, note = "too_large", f"{stored[0]['bytes'] / 1e6:.0f} MB, over the {a.max_mb} MB limit"
             else:
