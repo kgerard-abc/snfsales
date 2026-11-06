@@ -38,7 +38,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install openpyxl gdown internetarchive
+      - run: pip install openpyxl gdown internetarchive pypdf
       - name: Archive
         env:
           IA_ACCESS: ${{ secrets.IA_ACCESS }}

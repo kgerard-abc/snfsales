@@ -169,39 +169,60 @@ def item_ids(recs, manifest):
 
 def safe_name(name):
     name = re.sub(r"[^\w.\-() ]", "_", name).strip() or "file"
-    return name[:150]
+    if len(name) <= 150: return name
+    stem, dot, ext = name.rpartition(".")
+    return (stem[:145] + "." + ext) if dot and len(ext) <= 5 else name[:150]
+
+def pdf_links(path):
+    """Web links in a PDF: clickable links and web addresses printed in the text."""
+    urls = set()
+    try:
+        from pypdf import PdfReader
+        for page in PdfReader(str(path)).pages:
+            for annot in (page.get("/Annots") or []):
+                o = annot.get_object(); act = o.get("/A")
+                act = act.get_object() if act is not None else {}
+                if act.get("/URI"): urls.add(str(act["/URI"]).strip())
+            urls.update(u.rstrip(".,;)") for u in re.findall(r"https?://[^\s<>\"]+", page.extract_text() or ""))
+    except Exception as e:
+        log(f"   could not read links in {Path(path).name}: {str(e)[:120]}")
+    return sorted(urls)
 
 def fetch(rec, workdir):
-    """Download one record. Returns (path or None, status, note)."""
+    """Download one record. Returns (list of paths, status, note)."""
     kind, fid = rec["kind"], rec["id"]
     out = Path(workdir) / "dl"; shutil.rmtree(out, ignore_errors=True); out.mkdir(parents=True)
-    if kind == "folder": return None, "folder", "Drive folder: needs a different method"
-    if kind == "other": return None, "other_link", "Not a Drive link"
+    if kind == "other": return [], "other_link", "Not a Drive link"
     try:
+        if kind == "folder":
+            import gdown
+            got = gdown.download_folder(id=fid, output=str(out) + "/", quiet=True, remaining_ok=True)
+            files = [Path(g.path) for g in (got or []) if Path(g.path).exists()]
+            if not files: return [], "failed", "folder came back empty or could not be read"
+            note = "Drive lists at most 50 files per folder and this one has 50, so it may be incomplete" if len(files) >= 50 else ""
+            return files, "ok", note
         if kind == "file":
             import gdown
             got = gdown.download(id=fid, output=str(out) + "/", quiet=True)
-            if not got: return None, "failed", "gdown returned nothing"
-            return Path(got), "ok", ""
+            if not got: return [], "failed", "gdown returned nothing"
+            return [Path(got)], "ok", ""
         if kind.startswith("gdoc:"):
             what = kind.split(":", 1)[1]
-            base = {"document": "document", "spreadsheets": "spreadsheets", "presentation": "presentation"}[what]
             fmt = "xlsx" if what == "spreadsheets" else "pdf"
-            req = urllib.request.Request(f"https://docs.google.com/{base}/d/{fid}/export?format={fmt}", headers={"User-Agent": "abc-ri-update/1.0"})
+            req = urllib.request.Request(f"https://docs.google.com/{what}/d/{fid}/export?format={fmt}", headers={"User-Agent": "abc-ri-update/1.0"})
             data = urllib.request.urlopen(req, timeout=180).read()
             p = out / f"{fid}.{fmt}"; p.write_bytes(data)
-            return p, "ok", ""
+            return [p], "ok", ""
     except urllib.error.HTTPError as e:
-        if e.code in (401, 403): return None, "not_public", f"HTTP {e.code}"
-        if e.code == 404: return None, "missing", "HTTP 404"
-        return None, "failed", f"HTTP {e.code}"
+        if e.code in (401, 403): return [], "not_public", f"HTTP {e.code}"
+        if e.code == 404: return [], "missing", "HTTP 404"
+        return [], "failed", f"HTTP {e.code}"
     except Exception as e:
-        msg = str(e)
-        low = msg.lower()
-        if "permission" in low or "anyone with the link" in low or "sign in" in low: return None, "not_public", msg[:200]
-        if "not found" in low or "404" in low: return None, "missing", msg[:200]
-        return None, "failed", msg[:200]
-    return None, "failed", "unhandled kind"
+        msg = str(e); low = msg.lower()
+        if "permission" in low or "anyone with the link" in low or "sign in" in low: return [], "not_public", msg[:200]
+        if "not found" in low or "404" in low: return [], "missing", msg[:200]
+        return [], "failed", msg[:200]
+    return [], "failed", "unhandled kind"
 
 def with_extension(path):
     """Drive sometimes hands back a file whose name has no ending. Work out the type from the file and add it."""
@@ -263,74 +284,108 @@ def main():
     for r in recs:
         if r["url"] in seen: continue
         seen.add(r["url"]); uniq.append(r)
-    kinds = {}
-    for r in uniq: kinds[r["kind"]] = kinds.get(r["kind"], 0) + 1
+    kinds, labels = {}, {}
+    for r in uniq:
+        kinds[r["kind"]] = kinds.get(r["kind"], 0) + 1
+        lab = re.sub(r"[*]+", "", r["label"]).strip(); labels[lab] = labels.get(lab, 0) + 1
     log(f"{len(uniq)} different links: " + ", ".join(f"{k} {v}" for k, v in sorted(kinds.items())))
+    log("Links by column: " + "; ".join(f"{k} {v}" for k, v in sorted(labels.items(), key=lambda x: -x[1])))
 
     manifest = load_manifest()
     manifest["items"] = item_ids(uniq, manifest)
     def done(r):
         e = manifest["links"].get(r["url"], {})
-        return e.get("status") == "archived" and Path(e.get("file", "")).suffix != ""
-    todo = [r for r in uniq if not done(r)]
-    log(f"{len(uniq) - len(todo)} already archived. {len(todo)} to do.")
+        if e.get("status") != "archived": return False
+        return e.get("kind") == "folder" or Path(e.get("file", "")).suffix != ""
+    queue = [r for r in uniq if not done(r)]
+    log(f"{len(uniq) - len(queue)} already archived. {len(queue)} to do. Links found inside HSC reports (public comments) are added as the run goes.")
 
     if a.dry_run:
-        for r in todo[: a.limit or 25]:
+        for r in queue[: a.limit or 25]:
             log(f"  would do: {manifest['items'][r['year'] + '|' + r['applicant']]} | {r['label']} | {r['kind']} | {r['url']}")
-        log("Dry run: nothing downloaded, uploaded, or saved.")
+        log("Dry run: nothing downloaded, uploaded, or saved. Links inside HSC reports can only be found when the reports are downloaded.")
         return
 
     access, secret = os.environ.get("IA_ACCESS"), os.environ.get("IA_SECRET")
     if not access or not secret:
         sys.exit("IA_ACCESS and IA_SECRET are not set. Add them as repository secrets.")
 
-    workdir = tempfile.mkdtemp(); done = 0
-    for r in todo:
-        if a.limit and done >= a.limit: break
+    workdir = tempfile.mkdtemp(); dl = Path(workdir) / "dl"; count = 0; i = 0
+    while i < len(queue):
+        r = queue[i]; i += 1
+        if a.limit and count >= a.limit: break
         key = f"{r['year']}|{r['applicant']}"; ident = manifest["items"][key]
         entry = {"year": r["year"], "applicant": r["applicant"], "label": r["label"], "link_text": r["link_text"],
                  "sheet_row": r["sheet_row"], "kind": r["kind"], "item": ident, "checked": dt.date.today().isoformat()}
-        old_file = (manifest["links"].get(r["url"], {}) or {}).get("file") if manifest["links"].get(r["url"], {}).get("status") == "archived" else None
-        path, status, note = fetch(r, workdir)
+        if r.get("linked_from"): entry["linked_from"] = r["linked_from"]
+        prior = manifest["links"].get(r["url"], {}) or {}
+        old_file = prior.get("file") if prior.get("status") == "archived" else None
+        paths, status, note = fetch(r, workdir)
+        stored = []
         if status == "ok":
-            path = with_extension(path)
-            mb = path.stat().st_size / 1e6
-            if mb > a.max_mb:
-                status, note = "too_large", f"{mb:.0f} MB, over the {a.max_mb} MB limit"
-            else:
-                used = {e.get("file") for e in manifest["links"].values() if e.get("item") == ident and e.get("file") != old_file}
-                fname = safe_name(path.name)
-                if fname in used: fname = f"{r['id'][:6]}-{fname}"
-                md = {"mediatype": "texts", "title": f"{r['applicant']} ({r['year']}): Change in Effective Control materials",
-                      "creator": "Rhode Island Department of Health, Office of Health Systems Development (public filings)",
-                      "date": r["year"], "subject": ["Rhode Island", "nursing home", "change in effective control", "certificate of need"],
-                      "description": ("Public documents from RIDOH's Annual Report of Reviews for this Change in Effective Control "
-                                      "application, copied by Advocates for Better Care in Rhode Island (ABC-RI) so they stay available "
-                                      "if RIDOH's links stop working.")}
-                size, digest = Path(path).stat().st_size, sha256(path)
-                try:
-                    ok = upload(ident, path, fname, md, access, secret)
-                except Exception as e:
-                    ok, note = False, str(e)[:200]
-                if ok and old_file and old_file != fname:
+            paths = [with_extension(p) for p in paths]
+            # Public comments: the HSC report links to a Drive folder of them. Add any Drive links found in the report.
+            if r["label"].lower().startswith("hsc recommendation") and r["kind"] != "folder":
+                found = []
+                for p in paths:
+                    if p.read_bytes()[:4] != b"%PDF": continue
+                    for u in pdf_links(p):
+                        k2, id2 = drive_ref(u)
+                        if k2 == "other" or u in seen: continue
+                        seen.add(u); found.append(u)
+                        queue.append({**{x: r[x] for x in ("year", "sheet_row", "applicant")}, "label": "Public comments (linked from HSC report)",
+                                      "link_text": "", "url": u, "kind": k2, "id": id2, "desc": r.get("desc", ""), "linked_from": r["url"]})
+                if found:
+                    entry["links_found_in_report"] = found; log(f"   found {len(found)} Drive link(s) inside this report")
+            used = set()
+            for e in manifest["links"].values():
+                if e.get("item") == ident and e is not prior:
+                    used.add(e.get("file")); used.update(f.get("file") for f in e.get("files", []))
+            md = {"mediatype": "texts", "title": f"{r['applicant']} ({r['year']}): Change in Effective Control materials",
+                  "creator": "Rhode Island Department of Health, Office of Health Systems Development (public filings)",
+                  "date": r["year"], "subject": ["Rhode Island", "nursing home", "change in effective control", "certificate of need"],
+                  "description": ("Public documents from RIDOH's Annual Report of Reviews for this Change in Effective Control "
+                                  "application, copied by Advocates for Better Care in Rhode Island (ABC-RI) so they stay available "
+                                  "if RIDOH's links stop working.")}
+            for p in paths:
+                rel = p.relative_to(dl) if r["kind"] == "folder" else Path(p.name)
+                fname = safe_name(" - ".join(rel.parts))
+                if fname in used: fname = safe_name(f"{(r['id'] or 'x')[:6]}-{fname}")
+                used.add(fname)
+                size = p.stat().st_size
+                if size / 1e6 > a.max_mb:
+                    stored.append({"file": fname, "status": "too_large", "bytes": size}); continue
+                digest = sha256(p); ok, err = False, ""
+                try: ok = upload(ident, p, fname, md, access, secret)
+                except Exception as e: err = str(e)[:200]
+                stored.append({"file": fname, "status": "archived" if ok else "failed", "bytes": size, "sha256": digest,
+                               "archive_url": f"https://archive.org/download/{ident}/{fname.replace(' ', '%20')}",
+                               **({"error": err} if err else {})})
+            good = [f for f in stored if f["status"] == "archived"]
+            if r["kind"] == "folder":
+                entry.update({"files": stored, "archive_url": f"https://archive.org/details/{ident}", "archived_on": dt.date.today().isoformat()})
+                status = "archived" if stored and len(good) == len(stored) else ("partial" if good else "failed")
+                if note: entry["note_extra"] = note
+            elif stored and good:
+                f = good[0]
+                entry.update({k: f[k] for k in ("file", "bytes", "sha256", "archive_url")}); entry["archived_on"] = dt.date.today().isoformat()
+                status = "archived"
+                if old_file and old_file != f["file"]:
                     try:
                         from internetarchive import get_item
                         get_item(ident).get_file(old_file).delete(access_key=access, secret_key=secret, cascade_delete=True)
                     except Exception as e:
                         log(f"   could not remove the old copy {old_file}: {str(e)[:120]}")
-                if ok:
-                    entry.update({"file": fname, "bytes": size, "sha256": digest,
-                                  "archive_url": f"https://archive.org/download/{ident}/{fname.replace(' ', '%20')}",
-                                  "archived_on": dt.date.today().isoformat()})
-                    status = "archived"
-                else:
-                    status = "failed"; note = note or "upload did not return success"
+            elif stored and stored[0]["status"] == "too_large":
+                status, note = "too_large", f"{stored[0]['bytes'] / 1e6:.0f} MB, over the {a.max_mb} MB limit"
+            else:
+                status = "failed"; note = note or "upload did not return success"
         entry.update({"status": status, "note": note})
         manifest["links"][r["url"]] = entry
-        save_manifest(manifest); done += 1
-        log(f"[{done}] {status:10} {ident} | {r['label']} {('| ' + note) if note else ''}")
-        shutil.rmtree(Path(workdir) / "dl", ignore_errors=True)
+        save_manifest(manifest); count += 1
+        extra = f" ({len(stored)} files)" if r["kind"] == "folder" and stored else ""
+        log(f"[{count}] {status:10} {ident} | {r['label']}{extra} {('| ' + note) if note else ''}")
+        shutil.rmtree(dl, ignore_errors=True)
         time.sleep(1)
 
     counts = {}
