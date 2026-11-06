@@ -365,7 +365,11 @@ def verify():
             elif e.get("status") == "not_on_archive":
                 e["status"] = "archived"; e["note"] = ""
         stray = sorted(n for n in have - expected if not IA_OWN_FILES.search(n))
-        for n in stray: log(f"  on archive.org but not in the record, {item}: {n}")
+        for n in stray:
+            twin = any(x.startswith(n + ".") for x in expected)
+            log(f"  on archive.org but not in the record, {item}: {n}" + ("  (a copy with a file ending exists, so this one is queued for removal)" if twin else ""))
+            c = {"item": item, "file": n}
+            if twin and c not in m["cleanup"]: m["cleanup"].append(c)
     save_manifest(m)
     log(f"Checked {checked} files. Missing from archive.org: {missing_total}. Missing ones will be uploaded again by the next full run.")
     if os.environ.get("GITHUB_STEP_SUMMARY"):
