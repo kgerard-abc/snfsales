@@ -272,9 +272,9 @@
    "label": "Public comments (linked from HSC report)",
    "link_text": "",
    "linked_from": "https://drive.google.com/file/d/1JFmPte_fi6fnMt13hBi9zhondH9Dgxdj",
-   "note": "",
+   "note": "not found on archive.org: Written Public Comment(s) - 2026.1.16 Written Public Comment from KGradowski at the RIAG re_ Cortland Place Rehab Center LLC CEC.pdf",
    "sheet_row": 168,
-   "status": "archived",
+   "status": "not_on_archive",
    "year": "2026",
    "years": "2024-2026"
   },
@@ -304,9 +304,9 @@
    "label": "Public comments (linked from HSC report)",
    "link_text": "",
    "linked_from": "https://drive.google.com/file/d/1JFmPte_fi6fnMt13hBi9zhondH9Dgxdj",
-   "note": "",
+   "note": "not found on archive.org: Applicants Correspondence - 2026-01-30 Lease Agreement 4911-0103-0540 1.pdf; Applicants Correspondence - 2026.01.29 Ltr to HSC Responding to RIAG lett",
    "sheet_row": 168,
-   "status": "archived",
+   "status": "not_on_archive",
    "year": "2026",
    "years": "2024-2026"
   },
@@ -545,5 +545,5 @@
    "years": "2019-2019"
   }
  },
- "updated": "2026-11-06T17:32Z"
+ "updated": "2026-11-06T18:01Z"
 }
