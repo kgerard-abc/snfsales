@@ -315,15 +315,33 @@ def main():
     if not access or not secret:
         sys.exit("IA_ACCESS and IA_SECRET are not set. Add them as repository secrets.")
 
+    # Files queued for removal from archive.org (for example copies filed without a file ending).
+    left = []
+    for c in manifest.get("cleanup", []):
+        try:
+            from internetarchive import get_item
+            it = get_item(c["item"])
+            if not it.exists: raise RuntimeError("item not found")
+            f = it.get_file(c["file"])
+            if f is None: raise RuntimeError("file not found")
+            resp = f.delete(access_key=access, secret_key=secret, cascade_delete=True)
+            if getattr(resp, "status_code", 200) >= 300: raise RuntimeError(f"HTTP {resp.status_code}")
+            log(f"Removed {c['file']} from {c['item']}")
+        except Exception as e:
+            log(f"Could not remove {c['file']} from {c['item']}: {str(e)[:120]}")
+            if "not found" not in str(e): left.append(c)
+    manifest["cleanup"] = left; save_manifest(manifest)
+
     workdir = tempfile.mkdtemp(); dl = Path(workdir) / "dl"; count = 0; i = 0
     while i < len(queue):
         r = queue[i]; i += 1
         if a.limit and count >= a.limit: break
-        key = f"{r['year']}|{r['applicant']}"; ident = manifest["items"][key]
+        key = f"{r['year']}|{r['applicant']}"
+        prior = manifest["links"].get(r["url"], {}) or {}
+        ident = prior.get("item") or manifest["items"][key]
         entry = {"year": r["year"], "applicant": r["applicant"], "label": r["label"], "link_text": r["link_text"],
                  "sheet_row": r["sheet_row"], "kind": r["kind"], "item": ident, "checked": dt.date.today().isoformat()}
         if r.get("linked_from"): entry["linked_from"] = r["linked_from"]
-        prior = manifest["links"].get(r["url"], {}) or {}
         old_file = prior.get("file") if prior.get("status") == "archived" else None
         paths, status, note = fetch(r, workdir)
         stored = []

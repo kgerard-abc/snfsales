@@ -1,4 +1,10 @@
 {
+ "cleanup": [
+  {
+   "file": "2025.09.26 Cortland DBA Stillwater CEC Application _ Exhibits resubmitted",
+   "item": "ri-cec-2026-cortland-dba-stillwater"
+  }
+ ],
  "items": {
   "2014|Genesis HealthCare Trust Change in Effective Control:": "ri-cec-2014-genesis-healthcare-trust-change-in-effective-control",
   "2015|Bannister Operations Associates d/b/a Bannister Center": "ri-cec-2015-bannister-operations-associates-d-b-a-bannister-center",
