@@ -261,7 +261,7 @@
    "label": "Public comments (linked from HSC report)",
    "link_text": "",
    "linked_from": "https://drive.google.com/file/d/1JFmPte_fi6fnMt13hBi9zhondH9Dgxdj",
-   "note": "download_folder() got an unexpected keyword argument 'remaining_ok'",
+   "note": "'str' object has no attribute 'path'",
    "sheet_row": 168,
    "status": "failed",
    "year": "2026",
@@ -275,7 +275,7 @@
    "label": "Public comments (linked from HSC report)",
    "link_text": "",
    "linked_from": "https://drive.google.com/file/d/1JFmPte_fi6fnMt13hBi9zhondH9Dgxdj",
-   "note": "download_folder() got an unexpected keyword argument 'remaining_ok'",
+   "note": "'str' object has no attribute 'path'",
    "sheet_row": 168,
    "status": "failed",
    "year": "2026",
@@ -516,5 +516,5 @@
    "years": "2019-2019"
   }
  },
- "updated": "2026-11-06T17:23Z"
+ "updated": "2026-11-06T17:27Z"
 }
