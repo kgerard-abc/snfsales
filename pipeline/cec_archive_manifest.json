@@ -253,6 +253,34 @@
   "2026|Westerly Nursing and Rehab LLC and 79 Beach Street LLC": "ri-cec-2026-westerly-nursing-and-rehab-llc-and-79-beach-street-llc"
  },
  "links": {
+  "https://drive.google.com/drive/folders/1F7jrqTGzBD7Z2EIKtCDH2RHrQMS2CSw2": {
+   "applicant": "Cortland dba Stillwater",
+   "checked": "2026-11-06",
+   "item": "ri-cec-2024-cortland-dba-stillwater",
+   "kind": "folder",
+   "label": "Public comments (linked from HSC report)",
+   "link_text": "",
+   "linked_from": "https://drive.google.com/file/d/1JFmPte_fi6fnMt13hBi9zhondH9Dgxdj",
+   "note": "download_folder() got an unexpected keyword argument 'remaining_ok'",
+   "sheet_row": 168,
+   "status": "failed",
+   "year": "2026",
+   "years": "2024-2026"
+  },
+  "https://drive.google.com/drive/folders/1kJde_bgyyLZB3GKmIrTfAXqRIjJCyWyc": {
+   "applicant": "Cortland dba Stillwater",
+   "checked": "2026-11-06",
+   "item": "ri-cec-2024-cortland-dba-stillwater",
+   "kind": "folder",
+   "label": "Public comments (linked from HSC report)",
+   "link_text": "",
+   "linked_from": "https://drive.google.com/file/d/1JFmPte_fi6fnMt13hBi9zhondH9Dgxdj",
+   "note": "download_folder() got an unexpected keyword argument 'remaining_ok'",
+   "sheet_row": 168,
+   "status": "failed",
+   "year": "2026",
+   "years": "2024-2026"
+  },
   "https://drive.google.com/file/d/1-n_eYhWrV-nbqxNG2NhJVgRKDS-cNvjo": {
    "applicant": "Cortland Place Rehab Center LLC",
    "archive_url": "https://archive.org/download/ri-cec-2019-cortland-place-rehab-center-llc/2019.07.18%20CEC%20Cortland%20Place%20Decision%20Letter%20and%20Adopted%20HSC%20Report.pdf",
@@ -306,6 +334,25 @@
    "year": "2026",
    "years": "2024-2026"
   },
+  "https://drive.google.com/file/d/1HUpZGiTVYFIMHXNguTEXMcIhSueKemeh": {
+   "applicant": "Cortland dba Stillwater",
+   "archive_url": "https://archive.org/download/ri-cec-2024-cortland-dba-stillwater/Cortland%20Place%20CEC%20HSC%20Presentation%202026.02.03.pdf",
+   "archived_on": "2026-11-06",
+   "bytes": 277476,
+   "checked": "2026-11-06",
+   "file": "Cortland Place CEC HSC Presentation 2026.02.03.pdf",
+   "item": "ri-cec-2024-cortland-dba-stillwater",
+   "kind": "file",
+   "label": "Public comments (linked from HSC report)",
+   "link_text": "",
+   "linked_from": "https://drive.google.com/file/d/1JFmPte_fi6fnMt13hBi9zhondH9Dgxdj",
+   "note": "",
+   "sha256": "5ec34e63f139ad25c0a87fd91924fcad6e99c1e64dbf8c26ed747ec304eb7806",
+   "sheet_row": 168,
+   "status": "archived",
+   "year": "2026",
+   "years": "2024-2026"
+  },
   "https://drive.google.com/file/d/1JFmPte_fi6fnMt13hBi9zhondH9Dgxdj": {
    "applicant": "Cortland dba Stillwater",
    "archive_url": "https://archive.org/download/ri-cec-2024-cortland-dba-stillwater/Cortland%20Place%20Rehab%20Center%20LLC%20CEC%20Report%20HSC%20adopted.pdf",
@@ -335,6 +382,25 @@
    ],
    "scanned": true,
    "sha256": "20f10184e7ecf3da0db583451062f030887fd1fe49e07f22d38f749a95c43eaa",
+   "sheet_row": 168,
+   "status": "archived",
+   "year": "2026",
+   "years": "2024-2026"
+  },
+  "https://drive.google.com/file/d/1LBDopz0wZfAKwnG9ZqG3CuL7FO26MztZ": {
+   "applicant": "Cortland dba Stillwater",
+   "archive_url": "https://archive.org/download/ri-cec-2024-cortland-dba-stillwater/2026.02.03%20Cortland%20Place%20Rehab%20Center%20LLC%20CEC%20transcript%20of%20HSC%20meeting.pdf",
+   "archived_on": "2026-11-06",
+   "bytes": 577758,
+   "checked": "2026-11-06",
+   "file": "2026.02.03 Cortland Place Rehab Center LLC CEC transcript of HSC meeting.pdf",
+   "item": "ri-cec-2024-cortland-dba-stillwater",
+   "kind": "file",
+   "label": "Public comments (linked from HSC report)",
+   "link_text": "",
+   "linked_from": "https://drive.google.com/file/d/1JFmPte_fi6fnMt13hBi9zhondH9Dgxdj",
+   "note": "",
+   "sha256": "76691a8fdcc68b050394d962d4424bd63ba78b1fcc83d32d3369740028387643",
    "sheet_row": 168,
    "status": "archived",
    "year": "2026",
@@ -450,5 +516,5 @@
    "years": "2019-2019"
   }
  },
- "updated": "2026-11-06T17:21Z"
+ "updated": "2026-11-06T17:23Z"
 }
