@@ -1,5 +1,5 @@
 {
- "_about": "Owner group names on the sales site. 'aliases' turns a buyer name from the CEC Log into the owner group name the SNF dashboard uses (Facility extras sheet, owner_group), so both sites match. 'fill' gives a buyer group for sales whose CEC Log row has none, by CEC id. 'cms_chain' names a group's chain in CMS's national chain file when CMS can't be matched through the group's Rhode Island homes. Edit here and rebuild. 'about' is a short note on who is behind a pending buyer, shown on its printable Council summary; write it from the application or a named source.",
+ "_about": "Owner group names on the sales site. 'aliases' turns a buyer name from the CEC Log into the owner group name the SNF dashboard uses (Facility extras sheet, owner_group), so both sites match. 'fill' gives a buyer group for sales whose CEC Log row has none, by CEC id. 'cms_chain' names a group's chain in CMS's national chain file when CMS can't be matched through the group's Rhode Island homes. Edit here and rebuild.",
  "aliases": {
   "Marquis / Tryko": "Marquis/Tryko",
   "Mayflower Healthcare": "Mayflower",
@@ -14,10 +14,5 @@
   "CEC-048": "Centers Health Care",
   "CEC-002": "Epoch Senior Living"
  },
- "cms_chain": {},
- "about": {
-  "AdviniaCare": "AdviniaCare (Pointe Group Care LLC) is based in Stoughton, Massachusetts. CMS lists Shraga Braun as an indirect owner with managerial control of its homes.",
-  "WSSH / NewGen": "Each applicant belongs to Cindat Tenant Holdings LLC, which belongs to WSSH LLC (manager: Daniel Katz). WSSH was formed to buy 175 nursing homes, mostly on the East Coast, in one deal. The application says its leadership comes from NewGen LLC, which runs homes in California, Washington, and Nevada, and that NewGen's Aaron Robin and Abe Tress set up and benefit from the two trusts named in it.",
-  "Shelby trusts / TL Management families": "The operating companies belong to family trusts of Jack Shelby. The buildings belong to the Lichtschein, Scheiner, Kohn, Meisner/Rodkin, and Stern families (TL Management). Skilled Nursing News reported in May 2026 that Shelby trusts were buying CommuniCare's 18 Maryland nursing homes, and that Shelby owns nursing homes in Florida and Texas."
- }
+ "cms_chain": {}
 }

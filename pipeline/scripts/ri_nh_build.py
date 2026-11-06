@@ -1689,12 +1689,6 @@ def run(out_dir, cec_path=None, config=None, std_dir=None, verbose=True):
         try: D['chain_asof'] = 'updated ' + dt.date.fromisoformat(CHAINS_ASOF).strftime('%B %-d, %Y')
         except ValueError: pass
     say(f"  names from the dashboard sheet: {'yes' if extras is not None else 'no'}; national chain file: {'yes' if CHAINS else 'no'}; {len(D['tenures'])} owner tenures")
-    import council
-    try:
-        made = council.build(D, M['hu'], M['pu'], os.path.join(pub_dir, 'council'), names)
-        D['council'] = [m['slug'] for m in made]; say(f"  Council summaries: {len(made)} buyer groups")
-    except Exception as e:
-        say(f"WARNING: could not build the Council summaries ({e})")
     page = build_page(D, os.path.join(pub_dir, 'index.html')); say('Public page:', page)
     say('Writing workbook...')
     for n in MANAGED:
@@ -2150,13 +2144,6 @@ function nationalLine(c) {
   if (c.fines_avg != null) bits.push(money0(c.fines_avg) + ' in fines per home' + (N.fines_avg != null ? ' (all U.S.: ' + money0(N.fines_avg) + ')' : ''));
   return el('p', { class: 'small', style: 'margin:8px 0 0' }, el('b', { text: 'Nationally: ' }), 'CMS lists ' + c.name + ' as a chain of ' + plural(c.homes || 0, 'home') + ' in ' + plural(c.states || 0, 'state') + ', with ' + bits.join('; ') + '. From CMS\u2019s Nursing Home Chain Performance Measures' + (D.chain_asof ? ', ' + D.chain_asof : '') + '.');
 }
-// Printable one-page summary for the Health Services Council (built by pipeline/scripts/council.py), only if the build made one.
-function councilLinks(g) {
-  const sl = g.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-  if (!(D.council || []).includes(sl)) return null;
-  return el('p', { class: 'small', style: 'margin:8px 0 0' }, el('b', { text: 'For the Health Services Council: ' }),
-    el('a', { href: 'council/' + sl + '.html', text: 'one-page printable summary' }), ' (', el('a', { href: 'council/' + sl + '-large.html', text: 'large print' }), ')');
-}
 function trackRecord(g) {
   const t = (D.track || {})[g], ten = (D.tenures || []).filter(x => x.group === g).sort((a, b) => a.start < b.start ? 1 : -1);
   const wrap = el('div', { class: 'track' }, el('h5', { text: g + (/s$/.test(g) ? '\u2019' : '\u2019s') + ' record' }));
@@ -2196,7 +2183,7 @@ function trackRecord(g) {
     });
     box.append(el('div', { class: 'panel' }, head,
       el('div', { class: 'tblwrap' }, el('table', {}, el('thead', {}, el('tr', {}, ['Home', 'Town', 'Type', 'Applicant', 'Filed', 'Status'].map(t => el('th', { scope: 'col', text: t })))), tb)),
-      trackRecord(g), councilLinks(g)));
+      trackRecord(g)));
   });
 })();
 /* sales table */
