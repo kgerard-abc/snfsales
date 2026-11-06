@@ -53,8 +53,6 @@ try:
     B.CHAINS_ASOF = chains.version()
     chains.save(B.CHAINS, CHAINS_CSV, B.CHAINS_ASOF)
     print(f"CMS chain file: {len(B.CHAINS)} chains, as of {B.CHAINS_ASOF}.")
-    try: print("CMS chain file meta:", json.dumps(chains._get(chains.VIEWER).get("meta", {}))[:1500])
-    except Exception as e: print("meta:", e)
 except Exception as e:
     B.CHAINS, B.CHAINS_ASOF = chains.load(CHAINS_CSV)
     print(f"WARNING: could not download CMS's chain performance file ({e}); using the saved copy ({len(B.CHAINS or [])} chains).")
@@ -65,6 +63,11 @@ if [n for n in need if n not in names]:
     print(f"ERROR: the Google Sheet is missing tabs: {[n for n in need if n not in names]}. Is it the INTERNAL copy?"); sys.exit(1)
 r = B.run(out, cec_path=master, std_dir=std)
 shutil.copy(os.path.join(out, "public", "index.html"), os.path.join(ROOT, "index.html"))
+# printable one-page summaries for the Health Services Council, one per pending buyer group
+cdir = os.path.join(ROOT, "council")
+shutil.rmtree(cdir, ignore_errors=True)
+if os.path.isdir(os.path.join(out, "public", "council")):
+    shutil.copytree(os.path.join(out, "public", "council"), cdir)
 # sales.json: a small file the SNF dashboard reads to show each home's pending or most recent sale and link here.
 # One entry per home (by CMS number): pending applications and every completed sale, newest first, with buyer names
 # matching the dashboard's owner groups. The dashboard shows the newest sale and uses the rest to find when the

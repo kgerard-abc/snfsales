@@ -31,16 +31,15 @@ def fetch():
 
 
 def version():
-    """The date CMS gives for this release (YYYY-MM-DD), or None."""
+    """The date of this release (YYYY-MM-DD), read from the newest file name CMS lists for the dataset
+    (for example Chain_Performance_20260610.csv), or None."""
+    import re
     try:
-        meta = _get(VIEWER).get("meta", {})
+        txt = json.dumps(_get(f"https://data.cms.gov/data-api/v1/dataset-resources/{ID}"))
     except Exception:
         return None
-    for k in ("data_version", "dataset_version", "version", "last_modified", "modified"):
-        v = meta.get(k)
-        if v:
-            return str(v)[:10]
-    return None
+    ds = sorted(set(re.findall(r"_(20[2-9]\d)(0[1-9]|1[0-2])([0-3]\d)\.csv", txt)))
+    return f"{ds[-1][0]}-{ds[-1][1]}-{ds[-1][2]}" if ds else None
 
 
 def save(rows, path, asof=None):
