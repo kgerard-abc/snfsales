@@ -255,29 +255,58 @@
  "links": {
   "https://drive.google.com/drive/folders/1F7jrqTGzBD7Z2EIKtCDH2RHrQMS2CSw2": {
    "applicant": "Cortland dba Stillwater",
+   "archive_url": "https://archive.org/details/ri-cec-2024-cortland-dba-stillwater",
+   "archived_on": "2026-11-06",
    "checked": "2026-11-06",
+   "files": [
+    {
+     "archive_url": "https://archive.org/download/ri-cec-2024-cortland-dba-stillwater/Written%20Public%20Comment(s)%20-%202026.1.16%20Written%20Public%20Comment%20from%20KGradowski%20at%20the%20RIAG%20re_%20Cortland%20Place%20Rehab%20Center%20LLC%20CEC.pdf",
+     "bytes": 258511,
+     "file": "Written Public Comment(s) - 2026.1.16 Written Public Comment from KGradowski at the RIAG re_ Cortland Place Rehab Center LLC CEC.pdf",
+     "sha256": "8df3872314eebaed011486e43afed60fd1ba72b3a13e519441ce0040c55337c5",
+     "status": "archived"
+    }
+   ],
    "item": "ri-cec-2024-cortland-dba-stillwater",
    "kind": "folder",
    "label": "Public comments (linked from HSC report)",
    "link_text": "",
    "linked_from": "https://drive.google.com/file/d/1JFmPte_fi6fnMt13hBi9zhondH9Dgxdj",
-   "note": "'str' object has no attribute 'path'",
+   "note": "",
    "sheet_row": 168,
-   "status": "failed",
+   "status": "archived",
    "year": "2026",
    "years": "2024-2026"
   },
   "https://drive.google.com/drive/folders/1kJde_bgyyLZB3GKmIrTfAXqRIjJCyWyc": {
    "applicant": "Cortland dba Stillwater",
+   "archive_url": "https://archive.org/details/ri-cec-2024-cortland-dba-stillwater",
+   "archived_on": "2026-11-06",
    "checked": "2026-11-06",
+   "files": [
+    {
+     "archive_url": "https://archive.org/download/ri-cec-2024-cortland-dba-stillwater/Applicants%20Correspondence%20-%202026-01-30%20Lease%20Agreement%204911-0103-0540%201.pdf",
+     "bytes": 495405,
+     "file": "Applicants Correspondence - 2026-01-30 Lease Agreement 4911-0103-0540 1.pdf",
+     "sha256": "7ddb361e5db954571cbcbc1f34785de2f701377d60fdce78726a578377d0ddf2",
+     "status": "archived"
+    },
+    {
+     "archive_url": "https://archive.org/download/ri-cec-2024-cortland-dba-stillwater/Applicants%20Correspondence%20-%202026.01.29%20Ltr%20to%20HSC%20Responding%20to%20RIAG%20letter%20to%20HSC%20with%20Lease%20Agreement.pdf",
+     "bytes": 458111,
+     "file": "Applicants Correspondence - 2026.01.29 Ltr to HSC Responding to RIAG letter to HSC with Lease Agreement.pdf",
+     "sha256": "a95f09c020e916aaab9a44fbb77641fac7516e7312da1463760d69ce6d2dae2f",
+     "status": "archived"
+    }
+   ],
    "item": "ri-cec-2024-cortland-dba-stillwater",
    "kind": "folder",
    "label": "Public comments (linked from HSC report)",
    "link_text": "",
    "linked_from": "https://drive.google.com/file/d/1JFmPte_fi6fnMt13hBi9zhondH9Dgxdj",
-   "note": "'str' object has no attribute 'path'",
+   "note": "",
    "sheet_row": 168,
-   "status": "failed",
+   "status": "archived",
    "year": "2026",
    "years": "2024-2026"
   },
@@ -516,5 +545,5 @@
    "years": "2019-2019"
   }
  },
- "updated": "2026-11-06T17:27Z"
+ "updated": "2026-11-06T17:32Z"
 }
