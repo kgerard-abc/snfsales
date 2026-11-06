@@ -269,7 +269,10 @@ def fetch(rec, workdir):
         if e.code == 404: return [], "missing", "HTTP 404"
         return [], "failed", f"HTTP {e.code}"
     except Exception as e:
-        msg = str(e); low = msg.lower()
+        msg = re.sub(r"\s+", " ", str(e)); low = msg.lower()
+        if ("cannot retrieve the public link" in low or "many accesses" in low or "failed to retrieve file url" in low
+                or "failed to download the following files" in low):
+            return [], "blocked", "Drive refused the download. The file is private, or Drive is limiting downloads. It is tried again on the next run."
         if "permission" in low or "anyone with the link" in low or "sign in" in low: return [], "not_public", msg[:200]
         if "not found" in low or "404" in low: return [], "missing", msg[:200]
         return [], "failed", msg[:200]
@@ -458,9 +461,11 @@ def main():
     left = [c for c in manifest.get("cleanup", []) if not try_delete(c["item"], c["file"], access, secret)]
     manifest["cleanup"] = left; save_manifest(manifest)
 
-    workdir = tempfile.mkdtemp(); dl = Path(workdir) / "dl"; count = 0; i = 0
-    while i < len(queue):
-        r = queue[i]; i += 1
+    workdir = tempfile.mkdtemp(); dl = Path(workdir) / "dl"; count = 0
+    big = lambda x: re.search(r"meeting (audio|video)|recording", x["label"], re.I) is not None
+    blocked_streak = 0; paused = False
+    while queue:
+        r = queue.pop(next((k for k, x in enumerate(queue) if not big(x)), 0))   # documents first, large recordings last
         if a.limit and count >= a.limit: break
         prior = manifest["links"].get(r["url"], {}) or {}
         ident = r["item"]
@@ -533,12 +538,20 @@ def main():
             else:
                 status = "failed"; note = note or "upload did not return success"
         entry.update({"status": status, "note": note})
+        if status not in ("archived", "partial"): entry["attempts"] = int(prior.get("attempts", 0)) + 1
         manifest["links"][r["url"]] = entry
+        blocked_streak = blocked_streak + 1 if status == "blocked" else 0
         save_manifest(manifest); count += 1
         extra = f" ({len(stored)} files)" if r["kind"] == "folder" and stored else ""
         log(f"[{count}] {status:10} {ident} | {r['label']}{extra} {('| ' + note) if note else ''}")
         shutil.rmtree(dl, ignore_errors=True)
         time.sleep(1)
+        if blocked_streak >= 4:
+            if not paused:
+                log("Drive has refused 4 downloads in a row. Pausing 20 minutes, then trying again."); paused = True
+                blocked_streak = 0; time.sleep(1200)
+            else:
+                log("Drive is still refusing downloads. Stopping here so it is not hammered. Run again in a few hours; everything not yet archived is picked up."); break
 
     counts = {}
     for e in manifest["links"].values(): counts[e["status"]] = counts.get(e["status"], 0) + 1
