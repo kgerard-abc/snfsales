@@ -224,10 +224,14 @@ def fetch(rec, workdir):
         return [], "failed", msg[:200]
     return [], "failed", "unhandled kind"
 
+def has_extension(name):
+    """True for a real file ending like .pdf or .docx. Dates such as 2025.09.26 are not endings."""
+    return re.fullmatch(r"\.[A-Za-z][A-Za-z0-9]{1,4}", Path(name).suffix) is not None
+
 def with_extension(path):
     """Drive sometimes hands back a file whose name has no ending. Work out the type from the file and add it."""
     path = Path(path)
-    if path.suffix: return path
+    if has_extension(path.name): return path
     head = path.read_bytes()[:16] if path.exists() else b""
     ext = None
     if head.startswith(b"%PDF"): ext = ".pdf"
@@ -296,7 +300,8 @@ def main():
     def done(r):
         e = manifest["links"].get(r["url"], {})
         if e.get("status") != "archived": return False
-        return e.get("kind") == "folder" or Path(e.get("file", "")).suffix != ""
+        if r["label"].lower().startswith("hsc recommendation") and not e.get("scanned"): return False
+        return e.get("kind") == "folder" or has_extension(e.get("file", ""))
     queue = [r for r in uniq if not done(r)]
     log(f"{len(uniq) - len(queue)} already archived. {len(queue)} to do. Links found inside HSC reports (public comments) are added as the run goes.")
 
@@ -326,17 +331,20 @@ def main():
             paths = [with_extension(p) for p in paths]
             # Public comments: the HSC report links to a Drive folder of them. Add any Drive links found in the report.
             if r["label"].lower().startswith("hsc recommendation") and r["kind"] != "folder":
-                found = []
+                found, every = [], []
                 for p in paths:
                     if p.read_bytes()[:4] != b"%PDF": continue
                     for u in pdf_links(p):
+                        every.append(u)
                         k2, id2 = drive_ref(u)
                         if k2 == "other" or u in seen: continue
                         seen.add(u); found.append(u)
                         queue.append({**{x: r[x] for x in ("year", "sheet_row", "applicant")}, "label": "Public comments (linked from HSC report)",
                                       "link_text": "", "url": u, "kind": k2, "id": id2, "desc": r.get("desc", ""), "linked_from": r["url"]})
-                if found:
-                    entry["links_found_in_report"] = found; log(f"   found {len(found)} Drive link(s) inside this report")
+                entry["scanned"] = True; entry["report_urls"] = every
+                log(f"   links inside this report: {len(every)} in all, {len(found)} new Drive link(s)")
+                for u in every: log(f"      {u}")
+                if found: entry["links_found_in_report"] = found
             used = set()
             for e in manifest["links"].values():
                 if e.get("item") == ident and e is not prior:
