@@ -306,13 +306,12 @@ def sha256(p):
     return h.hexdigest()
 
 def upload(identifier, path, filename, md, access, secret):
+    """Upload one local file under exactly the name given. True only if archive.org accepted it."""
     from internetarchive import get_item
     item = get_item(identifier)
-    target = Path(path).with_name(filename)
-    if target != Path(path): Path(path).rename(target)
-    resp = item.upload(files=[str(target)], metadata=(None if item.exists else md), access_key=access, secret_key=secret,
+    resp = item.upload(files={filename: str(path)}, metadata=(None if item.exists else md), access_key=access, secret_key=secret,
                        retries=8, retries_sleep=30, verbose=False, validate_identifier=True)
-    return all(r.status_code == 200 for r in resp)
+    return bool(resp) and all(r.status_code == 200 for r in resp)
 
 def child_rec(r, u):
     """A link found inside an HSC report, filed in the same item as the report."""
@@ -334,6 +333,20 @@ def try_delete(item_name, file_name, access, secret):
         log(f"   removed {file_name} from {item_name}"); return True
     except Exception as e:
         log(f"   could not remove {file_name} from {item_name}: {str(e)[:120]}"); return False
+
+def ia_tasks(item, access, secret):
+    """The item's task queue on archive.org: running, waiting, and failed tasks, then the most recent finished ones."""
+    lines = []
+    for params in ("catalog=1&history=0&limit=10", "catalog=0&history=1&limit=6"):
+        try:
+            req = urllib.request.Request(f"https://archive.org/services/tasks.php?identifier={item}&{params}",
+                                         headers={"Authorization": f"LOW {access}:{secret}", "User-Agent": "abc-ri-update/1.0"})
+            v = json.load(urllib.request.urlopen(req, timeout=60)).get("value", {}) or {}
+            for t in (v.get("catalog") or []) + (v.get("history") or []):
+                lines.append("    task: " + ", ".join(f"{k}={str(t.get(k))[:70]}" for k in ("cmd", "submittime", "finished", "wait_admin", "status", "args") if t.get(k) not in (None, "", {}, [])))
+        except Exception as ex:
+            lines.append(f"    could not read the task queue ({str(ex)[:80]})"); break
+    return lines
 
 IA_OWN_FILES = re.compile(r"(_archive\.torrent|_files\.xml|_meta\.xml|_meta\.sqlite|_reviews\.xml|__ia_thumb\.jpg)$")
 
@@ -364,6 +377,8 @@ def verify():
                 for n in gone: log(f"  MISSING in {item}: {n}")
             elif e.get("status") == "not_on_archive":
                 e["status"] = "archived"; e["note"] = ""
+        if os.environ.get("IA_ACCESS") and os.environ.get("IA_SECRET") and any(e.get("status") == "not_on_archive" for _, e in lst):
+            log(f"  Task queue for {item}:"); [log(l) for l in ia_tasks(item, os.environ["IA_ACCESS"], os.environ["IA_SECRET"])]
         stray = sorted(n for n in have - expected if not IA_OWN_FILES.search(n))
         for n in stray:
             twin = any(x.startswith(n + ".") for x in expected)
