@@ -682,8 +682,22 @@ def names_text(lst, first_is_current=False):
         else: parts.append(x['name'])
     return '; '.join(parts)
 
+MATCH_MIN, MATCH_K = 3, 8
+def match_controls(val, controls, b_s, v0, metric):
+    """Homes not sold that started where the sold home started, so the comparison isn't thrown off by homes at the
+    bottom of the ratings tending to rise and homes at the top tending to fall, whoever owns them.
+    Star ratings: the same rating on the same date (within one star if fewer than MATCH_MIN homes match exactly).
+    Hours and turnover: the MATCH_K homes with the closest value on that date."""
+    have = [(c, val[c][metric].get(b_s)) for c in controls]
+    have = [(c, x) for c, x in have if nz(x) is not None]
+    if metric in ('overall', 'staffing'):
+        same = [c for c, x in have if abs(x - v0) < 1e-9]
+        return same if len(same) >= MATCH_MIN else [c for c, x in have if abs(x - v0) <= 1 + 1e-9]
+    have.sort(key=lambda p: abs(p[1] - v0))
+    return [c for c, _ in have[:MATCH_K]]
+
 def event_study(M, S, val, metric, sale_rows, qrange=range(-4, 9), tol=45):
-    """Average change from the last snapshot before each sale, for sold homes vs comparable homes that were not sold."""
+    """Average change from the last snapshot before each sale, for sold homes vs similar homes that were not sold (see match_controls)."""
     fac = M['fac']; snaps = pd.to_datetime(pd.Series(M['snaps'])); latest = pd.Timestamp(M['latest'])
     evd_by = {}
     for r in S[S.counts].itertuples():
@@ -699,6 +713,7 @@ def event_study(M, S, val, metric, sale_rows, qrange=range(-4, 9), tol=45):
         if nz(v0) is None: continue
         ne = T(r.next_event)
         controls = [c for c in fac.index if c != ccn and not any((b - pd.DateOffset(months=12)) <= d <= (b + pd.DateOffset(months=24)) for d in evd_by.get(c, []))]
+        controls = match_controls(val, controls, b.strftime('%Y-%m-%d'), v0, metric)
         for q in qrange:
             tgt = b + pd.DateOffset(months=3 * q)
             if tgt > latest + pd.Timedelta(days=tol): continue
@@ -709,7 +724,7 @@ def event_study(M, S, val, metric, sale_rows, qrange=range(-4, 9), tol=45):
             if nz(v) is None: continue
             cd = [val[c][metric].get(s) - val[c][metric].get(b.strftime('%Y-%m-%d')) for c in controls
                   if nz(val[c][metric].get(s)) is not None and nz(val[c][metric].get(b.strftime('%Y-%m-%d'))) is not None]
-            if len(cd) < 5: continue
+            if len(cd) < MATCH_MIN: continue
             sold[q].append(v - v0); ctrl[q].append(float(np.mean(cd)))
     res = []
     for q in qrange:
@@ -1868,9 +1883,9 @@ footer a{color:var(--fg)}
 <div class="row"><div class="tabs" role="group" aria-label="Which changes" id="set-tabs" style="margin:0"></div><div class="tabs" role="group" aria-label="Choose a measure" id="metric-tabs" style="margin:0"></div></div>
 <p class="small" id="study-howto" style="margin:4px 0 0"></p>
 <div class="chartbox" id="study-chart"></div>
-<div class="legend"><span><i class="sq" style="background:var(--sold)"></i>Homes that were sold</span><span><i class="sq" style="background:var(--ctrl)"></i>Comparable homes that were not sold</span></div>
+<div class="legend"><span><i class="sq" style="background:var(--sold)"></i>Homes that were sold</span><span><i class="sq" style="background:var(--ctrl)"></i>Similar homes that were not sold</span></div>
 <div class="callout" id="study-text" aria-live="polite"></div>
-<details><summary>See the month-by-month timeline</summary><p class="small">Each point is the average change from the last CMS rating before the sale (that rating is 0, at "Sale"). Points left of "Sale" show the lead-up.</p><div class="chartbox" id="study-line"></div><div class="legend"><span><i style="border-color:var(--sold)"></i>Homes that were sold</span><span><i class="dash" style="border-color:var(--ctrl)"></i>Comparable homes that were not sold</span></div></details>
+<details><summary>See the month-by-month timeline</summary><p class="small">Each point is the average change from the last CMS rating before the sale (that rating is 0, at "Sale"). Points left of "Sale" show the lead-up.</p><div class="chartbox" id="study-line"></div><div class="legend"><span><i style="border-color:var(--sold)"></i>Homes that were sold</span><span><i class="dash" style="border-color:var(--ctrl)"></i>Similar homes that were not sold</span></div></details>
 <p class="small" id="study-note"></p></div>
 
 <h3>Every sale, one row each</h3>
@@ -2010,7 +2025,7 @@ function groupedBars(box, groups, fmt, aria, zeroNote) {
   svg.append(sv('line', { x1: L, x2: W - R, y1: Y(0), y2: Y(0), stroke: css('--fg'), 'stroke-width': 1.5 }));
   const gw = pw / groups.length, bw = Math.min(70, gw * .32);
   groups.forEach((g, i) => { const cx = L + gw * i + gw / 2;
-    [[g.sold, css('--sold'), -bw - 3, 'Sold homes'], [g.ctrl, css('--ctrl'), 3, 'Comparable homes not sold']].forEach(b => { if (b[0] == null) return; const y0 = Y(0), y1 = Y(b[0]), top = Math.min(y0, y1), hgt = Math.max(1.5, Math.abs(y1 - y0));
+    [[g.sold, css('--sold'), -bw - 3, 'Sold homes'], [g.ctrl, css('--ctrl'), 3, 'Similar homes not sold']].forEach(b => { if (b[0] == null) return; const y0 = Y(0), y1 = Y(b[0]), top = Math.min(y0, y1), hgt = Math.max(1.5, Math.abs(y1 - y0));
       svg.append(sv('rect', { x: cx + b[2], y: top, width: bw, height: hgt, fill: b[1], rx: 2 }, sv('title', {}, b[3] + ': ' + fmt(b[0]))), sv('text', { x: cx + b[2] + bw / 2, y: b[0] >= 0 ? top - 5 : top + hgt + 13, 'text-anchor': 'middle', 'font-size': 12, 'font-weight': 700, fill: css('--fg') }, fmt(b[0]))); });
     svg.append(sv('text', { x: cx, y: H - 30, 'text-anchor': 'middle', 'font-size': 12.5, 'font-weight': 600, fill: css('--fg') }, g.label), sv('text', { x: cx, y: H - 14, 'text-anchor': 'middle', 'font-size': 11, fill: css('--muted') }, g.n == null ? 'not enough homes' : g.n + ' homes')); });
   box.append(svg);
@@ -2044,17 +2059,17 @@ function drawStudy() {
   $('#study-howto').textContent = `Each bar is the average change in ${m.unit} over that period. ` + (m.hb ? 'Below zero means it fell.' : 'Above zero means it rose, which is worse.') + ' "Year before" is the change leading up to the sale; the two "after" bars are the change since the sale.';
   groupedBars($('#study-chart'), groups, v => (v > 0 ? '+' : v < 0 ? '\u2212' : '') + Math.abs(v).toFixed(m.scale === 100 ? 0 : dd), 'Average change in ' + m.label + ' before and after a sale, sold homes compared with homes not sold');
   const lp = pts.filter(p => p.sold != null);
-  drawChart($('#study-line'), { x: lp.map(p => p.months), xmin: -12, xmax: 24, series: [{ name: 'Sold homes', color: css('--sold'), values: lp.map(p => p.sold * m.scale), width: 3 }, { name: 'Comparable homes not sold', color: css('--ctrl'), values: lp.map(p => p.ctrl * m.scale), dash: '6 4' }],
+  drawChart($('#study-line'), { x: lp.map(p => p.months), xmin: -12, xmax: 24, series: [{ name: 'Sold homes', color: css('--sold'), values: lp.map(p => p.sold * m.scale), width: 3 }, { name: 'Similar homes not sold', color: css('--ctrl'), values: lp.map(p => p.ctrl * m.scale), dash: '6 4' }],
     ymin: null, zero: true, yfmt: v => (v > 0 ? '+' : v < 0 ? '\u2212' : '') + Math.abs(v).toFixed(m.scale === 100 ? 0 : dd), tfmt: v => sign(v, m.d), xlabel: v => v === 0 ? 'Last rating before the sale' : (v < 0 ? Math.abs(v) + ' months before' : v + ' months after'), height: 300,
     xticks: [-12, -6, 0, 6, 12, 18, 24].map(v => ({ v, l: v === 0 ? 'Sale' : (v > 0 ? '+' + v + ' mo' : v + ' mo') })), extra: bi => [el('div', { class: 'small', text: 'Homes in this comparison: ' + lp[bi].n })], aria: 'Month-by-month average change in ' + m.label });
   const t = $('#study-text'); t.replaceChildren(); const one = sm['12'], two = sm['24'], fmtd = v => sign(v * m.scale, m.d);
-  if (one) t.append(el('p', {}, el('b', { text: 'One year after the sale: ' }), `${one.n} homes changed by an average of ${fmtd(one.sold)} ${m.unit}, compared with ${fmtd(one.ctrl)} for comparable homes that were not sold over the same periods. ${one.worse} of ${one.n} moved in the wrong direction, ${one.same} were unchanged, ${one.better} moved in the right direction.`));
-  if (two) t.append(el('p', {}, el('b', { text: 'Two years after: ' }), `${two.n} homes changed by ${fmtd(two.sold)} ${m.unit} on average, compared with ${fmtd(two.ctrl)} for comparable homes.`));
+  if (one) t.append(el('p', {}, el('b', { text: 'One year after the sale: ' }), `${one.n} homes changed by an average of ${fmtd(one.sold)} ${m.unit}, compared with ${fmtd(one.ctrl)} for similar homes that were not sold over the same periods. ${one.worse} of ${one.n} moved in the wrong direction, ${one.same} were unchanged, ${one.better} moved in the right direction.`));
+  if (two) t.append(el('p', {}, el('b', { text: 'Two years after: ' }), `${two.n} homes changed by ${fmtd(two.sold)} ${m.unit} on average, compared with ${fmtd(two.ctrl)} for similar homes.`));
   const lvl = setKey === 'sold' && D.levels[metKey === 'hours' ? 'hours' : metKey] && D.levels[metKey === 'hours' ? 'hours' : metKey]['2'];
   if (two && lvl && lvl.n === two.n && metKey !== 'turnover') t.append(el('p', { class: 'small', text: `In levels: those homes averaged ${lvl.before.toFixed(metKey === 'hours' ? 2 : 1)} ${m.unit} at their last rating before the sale and ${lvl.after.toFixed(metKey === 'hours' ? 2 : 1)} two years after (the top rows of "The same homes, before and after"). The "year before" bar is a separate period: the change in the 12 months leading up to the sale.` }));
   if (pre.sold != null && Math.abs(pre.sold * m.scale) >= (m.scale === 100 ? 2 : 0.15) && (m.hb ? pre.sold > 0 : pre.sold < 0)) t.append(el('p', {}, el('b', { text: 'Many were already slipping before the sale: ' }), `in the year leading up to the sale these homes lost ${Math.abs(pre.sold * m.scale).toFixed(m.scale === 100 ? 0 : dd)} ${m.unit} on average.`));
   if (!one) t.append(el('p', { text: 'Not enough homes with data for this measure yet.' }));
-  $('#study-note').textContent = `Based on ${st_.n_events} sales (${st_.n_homes} homes) with a CMS rating before the sale, in files from April 2019. Months a home was in CMS's Special Focus Facility program count as 0 stars. "Comparable homes" are homes with no change of control or new operator from a year before to two years after the sale. A buyer sometimes runs a home under a management agreement before the state approves the sale, and CMS can take months to show a new operator, so the "before" rating may already reflect the buyer's management. This shows what happened, not why: ratings also move with inspections, staffing rules and the pandemic, which is why the comparison bars matter.`;
+  $('#study-note').textContent = `Based on ${st_.n_events} sales (${st_.n_homes} homes) with a CMS rating before the sale, in files from April 2019. Months a home was in CMS's Special Focus Facility program count as 0 stars. "Similar homes" were not sold and had no new operator from a year before to two years after the sale, and they started where the sold home started: the same CMS star rating on the same date (within one star if fewer than 3 homes matched), or, for staffing hours and turnover, the 8 homes with the closest figure. Matching the starting point matters because homes at the bottom of the ratings tend to rise, and homes at the top tend to fall, whoever owns them. The groups are small, so a difference of a few tenths can come from one or two homes. A buyer sometimes runs a home under a management agreement before the state approves the sale, and CMS can take months to show a new operator, so the "before" rating may already reflect the buyer's management. This shows what happened, not why: ratings also move with inspections, staffing rules and the pandemic, which is why the comparison bars matter.`;
   [...$('#set-tabs').children].forEach(b => b.setAttribute('aria-pressed', b.dataset.k === setKey)); [...$('#metric-tabs').children].forEach(b => b.setAttribute('aria-pressed', b.dataset.k === metKey));
 }
 [['sold', 'Homes sold to a new operator'], ['all', 'Including chain reorganizations']].forEach(a => $('#set-tabs').append(el('button', { class: 'tab', 'data-k': a[0], 'aria-pressed': 'false', text: a[1], onclick: () => { setKey = a[0]; drawStudy(); } })));
@@ -2413,7 +2428,7 @@ const ab = $('#about-body');
  ['Related-party money, home by home', 'The Related-party money table and the panel on each home\u2019s page come from the same Medicare cost reports. All related-party costs is what the home reported paying companies its owners also control. Rent and management fees are the two biggest pieces; the rest is shown as other related companies (therapy, supplies, billing and similar). Only company names are shown, not the people behind them. The before and after column compares the year before a home\u2019s first sale on this page with its newest report. Margin is the operating margin the home reported.'],
  ['"CMS records updated" dates', 'CMS\u2019s files are not updated the day a sale closes. Where a sale has one, this page shows the first monthly CMS file listing the new operator; across these sales that came a median of about eight months after the date of record. It is a reporting lag, not a second event, and it matters for two reasons: ratings in those months were still filed under the old operator\u2019s name, and a CMS operator change with no matching state record is a sign of a change that may not have gone through review.'],
  ['Management agreements and timing', 'A buyer sometimes takes over day-to-day management of a home under a management agreement before the state approves the sale, and CMS can take months to list a new operator. Where a management start date is known it is shown on the home’s timeline and beside the sale. So the last rating before a sale may already reflect the buyer\u2019s management, and the sales table shows when CMS first lists the new operator. These agreements are not published. They have been requested through APRA from RIDOH.'],
- ['The comparison line', 'Comparable homes are those with no change of control or new operator from a year before to two years after each sale. They are averaged over the same calendar dates as the sold homes, so statewide trends (the pandemic, staffing rules, rating changes) appear in both lines.'],
+ ['The comparison line', 'Similar homes are those with no change of control or new operator from a year before to two years after each sale, and that started at the same CMS star rating as the sold home on the same date (or, for staffing hours and turnover, the 8 homes with the closest figure). They are averaged over the same calendar dates as the sold homes, so statewide trends (the pandemic, staffing rules, rating changes) appear in both lines.'],
  ['What this does not show', 'Why ratings changed. A sale can happen because a home was struggling, and many homes were already slipping before the sale. With a few dozen sales, averages can be moved by a handful of homes; the counts are shown.'],
  ['Homes not shown in charts', 'Homes with no CMS data in these files (for example some Brookdale nursing beds and one pediatric facility) appear with their state review record only. Homes that closed or left the CMS files are marked.'],
  ['Corrections', '']].forEach(a => ab.append(el('details', { open: a[0] === 'Where the numbers come from' ? '' : null }, el('summary', { text: a[0] }), a[0] === 'Corrections' ? el('p', {}, D.meta.contact ? ['Send corrections to ', el('a', { href: 'mailto:' + D.meta.contact, text: D.meta.contact }), '.'] : 'Please report corrections to the organization that published this page.') : el('p', { text: a[1] }))));
