@@ -295,7 +295,7 @@ def render(g, homes, tr, cur, cur_stars, ri_avg, ri_hours, natl, about, D, lates
     L.append(f'<p class="small foot">Sources: CMS Care Compare '
              f'nursing home files, {month_year(latest)}; CMS Nursing Home Chain Performance Measures'
              + (f', {esc(D["chain_asof"])}' if D.get("chain_asof") else "") + '; RIDOH change in effective control applications. '
-             f'More at snfsales.abc-ri.org. Corrections: corrections@abc-ri.org.</p>')
+             f'More at <span class="nw">snfsales.abc-ri.org</span>. Corrections: <span class="nw">corrections@abc-ri.org</span>.</p>')
     body = "\n".join(x for x in L if x)
     other = f'{slug(g)}{"" if large else "-large"}.html'
     return (f'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
