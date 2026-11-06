@@ -2,7 +2,13 @@
 """Copy the documents linked from RIDOH's Annual Report of Reviews (Change in Effective Control rows) to the Internet Archive.
 
 Usage:
-  archive_cec.py [--xlsx path] [--dry-run] [--limit N] [--years 2025,2026] [--only text] [--max-mb 3000]
+  archive_cec.py [--xlsx path] [--dry-run] [--limit N] [--years 2025,2026] [--only text] [--max-mb 3000] [--all-cec]
+
+Only nursing home applications are archived unless --all-cec is given. RIDOH's sheet has no facility type column, so a row
+counts as a nursing home when its applicant or description matches a facility or applicant in the CEC Log
+(pipeline/cec_log_snapshot.json), or uses nursing home wording, and is not clearly home care, imaging, a hospital, or a
+surgery center. Rows for an applicant that matched in another year are kept too. Fix any miss in
+pipeline/cec_archive_scope.json: {"include": ["text"], "exclude": ["text"]}, matched against the applicant name.
 
 What it does:
   1. Gets RIDOH's sheet (downloads it, or uses --xlsx) and pulls every link out of the Change in Effective Control rows
@@ -74,10 +80,70 @@ def collect(xlsx):
                 if not link: continue
                 kind, fid = drive_ref(link)
                 recs.append({"year": sh, "sheet_row": c.row, "applicant": applicant,
+                             "desc": clean(rows[k][1].value) if len(rows[k]) > 1 else "",
                              "label": (labels[j] if j < len(labels) and labels[j] else f"Column {j + 1}"),
                              "link_text": clean(c.value), "url": link, "kind": kind, "id": fid})
             k += 1
     return recs, skipped_tabs
+
+KEYWORDS = re.compile(r"nursing home|skilled nursing|nursing (and|&) rehab|rehabilitation (and|&) (health ?care|care)|"
+                      r"rehab(ilitation)? (center|and)|nursing center|elderwood|\bopco\b|\bpropco\b", re.I)
+NOT_NURSING_HOME = re.compile(r"home (nursing|health)|home ?care|visiting|staffing|imaging|\bpet\b|hospital|ambulatory|fasc|"
+                              r"endoscopy|urolog|infusion|surgery center|brown (health|medicine|university)|lifespan|"
+                              r"sleep|orthop|dialysis|pharmacy|hospice", re.I)
+
+def norm(s):
+    s = s.lower(); s = re.sub(r"\(.*?\)", " ", s); s = s.replace("&", " and ")
+    s = re.sub(r"\b(llc|inc|l\.l\.c|corp|corporation|ltd|dba|d/b/a|the)\b", " ", s)
+    return re.sub(r"[^a-z0-9]+", " ", s).strip()
+
+def log_terms():
+    p = ROOT / "pipeline" / "cec_log_snapshot.json"
+    terms = set()
+    if not p.exists(): return terms
+    for v in json.loads(p.read_text()).values():
+        for t in (v[1], v[4]):
+            for part in re.split(r"\s*(?:\u2192|;| / | d/b/a )\s*", t):
+                n = norm(part)
+                if len(n) >= 8: terms.add(n)
+    return terms
+
+def scope_overrides():
+    p = ROOT / "pipeline" / "cec_archive_scope.json"
+    d = json.loads(p.read_text()) if p.exists() else {}
+    return [x.lower() for x in d.get("include", [])], [x.lower() for x in d.get("exclude", [])]
+
+def nursing_home_filter(recs):
+    """Split records into kept and dropped. Returns (kept, dropped, reasons) where reasons maps year|applicant to a reason."""
+    terms = log_terms(); inc, exc = scope_overrides(); why = {}
+    for r in recs:
+        key = f"{r['year']}|{r['applicant']}"
+        if key in why: continue
+        a = r["applicant"].lower(); text = r["applicant"] + " " + r["desc"]
+        if any(x in a for x in exc): why[key] = (False, "excluded by scope file")
+        elif any(x in a for x in inc): why[key] = (True, "included by scope file")
+        elif any(t in norm(text) for t in terms): why[key] = (True, "matches CEC Log")
+        elif KEYWORDS.search(text) and not NOT_NURSING_HOME.search(text): why[key] = (True, "nursing home wording")
+        else: why[key] = (False, "not a nursing home")
+    # An applicant that matched in one year is kept in every year (some rows only say "Change in Effective Control").
+    good = {norm(k.split("|", 1)[1]) for k, (ok, _) in why.items() if ok}
+    bad = {norm(k.split("|", 1)[1]) for k, (ok, w) in why.items() if not ok and w == "excluded by scope file"}
+    for k, (ok, w) in list(why.items()):
+        n = norm(k.split("|", 1)[1])
+        if not ok and w == "not a nursing home" and n in good and n not in bad: why[k] = (True, "same applicant matched in another year")
+    kept = [r for r in recs if why[f"{r['year']}|{r['applicant']}"][0]]
+    dropped = [r for r in recs if not why[f"{r['year']}|{r['applicant']}"][0]]
+    return kept, dropped, why
+
+def report_scope(why):
+    keep = sorted(k for k, (ok, _) in why.items() if ok); drop = sorted(k for k, (ok, _) in why.items() if not ok)
+    lines = [f"Nursing homes kept ({len(keep)} applications):"] + [f"  {k}  [{why[k][1]}]" for k in keep]
+    lines += [f"Left out as not nursing homes ({len(drop)} applications):"] + [f"  {k}" for k in drop]
+    log("\n".join(lines))
+    if os.environ.get("GITHUB_STEP_SUMMARY"):
+        with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
+            f.write(f"### Scope check\n\n**Kept ({len(keep)}):**\n\n" + "\n".join(f"- {k}" for k in keep) +
+                    f"\n\n**Left out ({len(drop)}):**\n\n" + "\n".join(f"- {k}" for k in drop) + "\n\n")
 
 def load_manifest():
     if MANIFEST.exists(): return json.loads(MANIFEST.read_text())
@@ -157,6 +223,7 @@ def main():
     ap.add_argument("--xlsx"); ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--limit", type=int, default=0); ap.add_argument("--years", default="")
     ap.add_argument("--only", default=""); ap.add_argument("--max-mb", type=int, default=3000)
+    ap.add_argument("--all-cec", action="store_true")
     a = ap.parse_args()
 
     xlsx = a.xlsx
@@ -165,7 +232,11 @@ def main():
     recs, skipped = collect(xlsx)
     if a.years: recs = [r for r in recs if r["year"] in {y.strip() for y in a.years.split(",")}]
     if a.only: recs = [r for r in recs if a.only.lower() in r["applicant"].lower()]
-    log(f"Found {len(recs)} links in Change in Effective Control rows. Tabs with no such section: {', '.join(skipped) or 'none'}.")
+    log(f"Found {len(recs)} links in Change in Effective Control rows of all kinds. Tabs with no such section: {', '.join(skipped) or 'none'}.")
+    if not a.all_cec:
+        recs, dropped, why = nursing_home_filter(recs)
+        log(f"Keeping {len(recs)} links from nursing home applications. Leaving out {len(dropped)} links from other kinds of applications.")
+        report_scope(why)
 
     # One entry per distinct URL. The first row that uses a link owns it.
     seen, uniq = set(), []
