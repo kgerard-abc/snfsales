@@ -242,8 +242,10 @@ def fetch(rec, workdir):
     if kind == "other": return [], "other_link", "Not a Drive link"
     try:
         if kind == "folder":
-            import gdown
-            got = gdown.download_folder(id=fid, output=str(out) + "/", quiet=True, remaining_ok=True)
+            import gdown, inspect
+            # Newer versions of gdown dropped the remaining_ok option, so only pass it when it is accepted.
+            extra = {"remaining_ok": True} if "remaining_ok" in inspect.signature(gdown.download_folder).parameters else {}
+            got = gdown.download_folder(id=fid, output=str(out) + "/", quiet=True, **extra)
             files = [Path(g.path) for g in (got or []) if Path(g.path).exists()]
             if not files: return [], "failed", "folder came back empty or could not be read"
             note = "Drive lists at most 50 files per folder and this one has 50, so it may be incomplete" if len(files) >= 50 else ""
