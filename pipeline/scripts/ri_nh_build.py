@@ -358,6 +358,7 @@ def read_cost_summary(wb, have):
 _RIDOH_DEBUG = []
 EXTRAS_PATH = None   # set by build_site.py: the Facility extras sheet (display names and owner groups the SNF dashboard uses)
 CHAINS = None        # set by build_site.py: rows of CMS's Nursing Home Chain Performance Measures, or None
+CHAINS_ASOF = None   # set by build_site.py: the date CMS gives for that release (YYYY-MM-DD), or None
 RIDOH_PATH = None   # set by build_site.py: RIDOH's own list of reviews ("Annual Report of Reviews"), downloaded from its Google Sheet; None when it could not be fetched
 
 def _dstr(v):
@@ -1684,6 +1685,9 @@ def run(out_dir, cec_path=None, config=None, std_dir=None, verbose=True):
     names = _json.load(open(names_path, encoding='utf-8')) if os.path.exists(names_path) else {}
     extras = pd.read_excel(EXTRAS_PATH, dtype=str) if EXTRAS_PATH and os.path.exists(EXTRAS_PATH) else None
     D = enrich.enrich(D, M['hu'], M['pu'], extras, CHAINS, names)
+    if CHAINS_ASOF:
+        try: D['chain_asof'] = 'updated ' + dt.date.fromisoformat(CHAINS_ASOF).strftime('%B %-d, %Y')
+        except ValueError: pass
     say(f"  names from the dashboard sheet: {'yes' if extras is not None else 'no'}; national chain file: {'yes' if CHAINS else 'no'}; {len(D['tenures'])} owner tenures")
     page = build_page(D, os.path.join(pub_dir, 'index.html')); say('Public page:', page)
     say('Writing workbook...')

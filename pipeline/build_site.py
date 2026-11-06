@@ -5,7 +5,7 @@ Usage: build_site.py <master-sheet-id>
 Writes: index.html (repo root, replaces the old page), pipeline/out/RI_Nursing_Homes_CMS_and_CEC.xlsx
 The logo already in the repo is left alone.
 """
-import gzip, io, os, shutil, sys, urllib.request
+import gzip, io, json, os, shutil, sys, urllib.request
 HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.dirname(HERE)
 sys.path.insert(0, os.path.join(HERE, "scripts"))
 import ri_nh_build as B
@@ -46,12 +46,18 @@ try:
 except Exception as e:
     print(f"WARNING: could not download the Facility extras sheet ({e}); CMS names are used.")
 # CMS's national figures for each nursing home chain. Best effort.
+import chains
+CHAINS_CSV = os.path.join(ROOT, "pipeline", "cms_chains.csv")
 try:
-    import chains
     B.CHAINS = chains.fetch()
-    print(f"CMS chain file: {len(B.CHAINS)} chains.")
+    B.CHAINS_ASOF = chains.version()
+    chains.save(B.CHAINS, CHAINS_CSV, B.CHAINS_ASOF)
+    print(f"CMS chain file: {len(B.CHAINS)} chains, as of {B.CHAINS_ASOF}.")
+    try: print("CMS chain file meta:", json.dumps(chains._get(chains.VIEWER).get("meta", {}))[:1500])
+    except Exception as e: print("meta:", e)
 except Exception as e:
-    print(f"WARNING: could not download CMS's chain performance file ({e}); no national figures this time.")
+    B.CHAINS, B.CHAINS_ASOF = chains.load(CHAINS_CSV)
+    print(f"WARNING: could not download CMS's chain performance file ({e}); using the saved copy ({len(B.CHAINS or [])} chains).")
 import openpyxl
 names = openpyxl.load_workbook(master, read_only=True).sheetnames
 need = ["CEC Log", "Event Overrides", "CCN Map", "Management Agreements"]
