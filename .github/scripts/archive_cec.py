@@ -310,6 +310,13 @@ def upload(identifier, path, filename, md, access, secret):
                        retries=8, retries_sleep=30, verbose=False, validate_identifier=True)
     return all(r.status_code == 200 for r in resp)
 
+def child_rec(r, u):
+    """A link found inside an HSC report, filed in the same item as the report."""
+    k2, id2 = drive_ref(u)
+    return {**{x: r[x] for x in ("year", "sheet_row", "applicant", "item", "first_year", "last_year")},
+            "label": "Public comments (linked from HSC report)", "link_text": "", "url": canon(u), "orig_url": u,
+            "kind": k2, "id": id2, "desc": r.get("desc", ""), "linked_from": r["url"]}
+
 def try_delete(item_name, file_name, access, secret):
     """Remove one file from archive.org. True if it is gone (removed, or was never there)."""
     try:
@@ -367,7 +374,15 @@ def main():
         if r["label"].lower().startswith("hsc recommendation") and not e.get("scanned"): return False
         return e.get("kind") == "folder" or has_extension(e.get("file", ""))
     queue = [r for r in uniq if not done(r)]
-    log(f"{len(uniq) - len(queue)} already archived. {len(queue)} to do. Links found inside HSC reports (public comments) are added as the run goes.")
+    # Links found inside a report on an earlier run that were never archived (for example, the run stopped first).
+    for r in uniq:
+        e = manifest["links"].get(r["url"], {})
+        if r["label"].lower().startswith("hsc recommendation") and e.get("links_found_in_report"):
+            for u in e["links_found_in_report"]:
+                if canon(u) in seen: continue
+                seen.add(canon(u)); c = child_rec(r, u)
+                if not done(c): queue.append(c)
+    log(f"{len(uniq) - len([q for q in queue if not q.get('linked_from')])} already archived. {len(queue)} to do. Links found inside HSC reports (public comments) are added as the run goes.")
 
     if a.dry_run:
         for r in queue[: a.limit or 25]:
@@ -408,9 +423,7 @@ def main():
                         cu = canon(u)
                         if k2 == "other" or cu in seen: continue
                         seen.add(cu); found.append(cu)
-                        queue.append({**{x: r[x] for x in ("year", "sheet_row", "applicant", "item", "first_year", "last_year")},
-                                      "label": "Public comments (linked from HSC report)",
-                                      "link_text": "", "url": cu, "orig_url": u, "kind": k2, "id": id2, "desc": r.get("desc", ""), "linked_from": r["url"]})
+                        queue.append(child_rec(r, u))
                 entry["scanned"] = True; entry["report_urls"] = every
                 log(f"   links inside this report: {len(every)} in all, {len(found)} new Drive link(s)")
                 for u in every: log(f"      {u}")
