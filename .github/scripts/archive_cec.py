@@ -333,13 +333,50 @@ def try_delete(item_name, file_name, access, secret):
     except Exception as e:
         log(f"   could not remove {file_name} from {item_name}: {str(e)[:120]}"); return False
 
+IA_OWN_FILES = re.compile(r"(_archive\.torrent|_files\.xml|_meta\.xml|_meta\.sqlite|_reviews\.xml|__ia_thumb\.jpg)$")
+
+def verify():
+    """Ask archive.org what each item holds and compare it with the manifest. Files the manifest says are archived but
+    that are not on archive.org are marked not_on_archive, so the next full run uploads them again."""
+    m = load_manifest(); items = {}
+    for u, e in m["links"].items():
+        if e.get("item"): items.setdefault(e["item"], []).append((u, e))
+    log(f"Checking {len(items)} items on archive.org. New uploads can take several minutes to show up, so run this a while after an upload.")
+    missing_total = 0; checked = 0
+    for item, lst in sorted(items.items()):
+        try:
+            req = urllib.request.Request(f"https://archive.org/metadata/{item}", headers={"User-Agent": "abc-ri-update/1.0"})
+            data = json.load(urllib.request.urlopen(req, timeout=60))
+        except Exception as ex:
+            log(f"  {item}: could not read it ({str(ex)[:80]})"); continue
+        have = {f["name"] for f in data.get("files", [])}
+        if not have: log(f"  {item}: not found on archive.org, or has no files")
+        expected = set()
+        for u, e in lst:
+            if e.get("status") not in ("archived", "partial", "not_on_archive"): continue
+            names = [e["file"]] if e.get("file") else [f["file"] for f in e.get("files", []) if f.get("status") == "archived"]
+            expected.update(names); checked += len(names)
+            gone = [n for n in names if n not in have]
+            if gone:
+                missing_total += len(gone); e["status"] = "not_on_archive"; e["note"] = "not found on archive.org: " + "; ".join(gone)[:150]
+                for n in gone: log(f"  MISSING in {item}: {n}")
+            elif e.get("status") == "not_on_archive":
+                e["status"] = "archived"; e["note"] = ""
+        stray = sorted(n for n in have - expected if not IA_OWN_FILES.search(n))
+        for n in stray: log(f"  on archive.org but not in the record, {item}: {n}")
+    save_manifest(m)
+    log(f"Checked {checked} files. Missing from archive.org: {missing_total}. Missing ones will be uploaded again by the next full run.")
+    if os.environ.get("GITHUB_STEP_SUMMARY"):
+        with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f: f.write(f"### Verify\n\nChecked {checked} files. Missing from archive.org: {missing_total}.\n")
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--xlsx"); ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--limit", type=int, default=0); ap.add_argument("--years", default="")
     ap.add_argument("--only", default=""); ap.add_argument("--max-mb", type=int, default=3000)
-    ap.add_argument("--all-cec", action="store_true")
+    ap.add_argument("--all-cec", action="store_true"); ap.add_argument("--verify", action="store_true")
     a = ap.parse_args()
+    if a.verify: verify(); return
 
     xlsx = a.xlsx
     if not xlsx:

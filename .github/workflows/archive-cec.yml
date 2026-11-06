@@ -9,9 +9,9 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: 'dry_run = look only, test_3 = upload 3 files, full = upload everything not yet archived'
+        description: 'dry_run = look only, test_3 = upload 3 files, full = upload everything not yet archived, verify = check archive.org has every file the record says it does'
         type: choice
-        options: [dry_run, test_3, full]
+        options: [dry_run, test_3, full, verify]
         default: dry_run
       years:
         description: 'Optional. Years to include, like 2025,2026. Blank means all years.'
@@ -50,6 +50,7 @@ jobs:
           ARGS=()
           if [ "$MODE" = "dry_run" ]; then ARGS+=(--dry-run); fi
           if [ "$MODE" = "test_3" ]; then ARGS+=(--limit 3); fi
+          if [ "$MODE" = "verify" ]; then ARGS+=(--verify); fi
           if [ -n "$YEARS" ]; then ARGS+=(--years "$YEARS"); fi
           if [ -n "$ONLY" ]; then ARGS+=(--only "$ONLY"); fi
           python3 .github/scripts/archive_cec.py "${ARGS[@]}"
