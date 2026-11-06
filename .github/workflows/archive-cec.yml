@@ -1,0 +1,64 @@
+name: Archive CEC documents to the Internet Archive
+
+# Run by hand from the Actions tab. It reads the links in RIDOH's Annual Report of Reviews (Change in Effective Control
+# rows), downloads each Drive file, and uploads it to archive.org, one item per applicant per year.
+# Needs the repository secrets IA_ACCESS and IA_SECRET.
+# Start with "dry_run", then "test_3", then "full". Re-running "full" skips files that are already archived.
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'dry_run = look only, test_3 = upload 3 files, full = upload everything not yet archived'
+        type: choice
+        options: [dry_run, test_3, full]
+        default: dry_run
+      years:
+        description: 'Optional. Years to include, like 2025,2026. Blank means all years.'
+        required: false
+        default: ''
+      only:
+        description: 'Optional. Only applicants whose name contains this text, like AdviniaCare.'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+concurrency:
+  group: archive-cec
+  cancel-in-progress: false
+
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install openpyxl gdown internetarchive
+      - name: Archive
+        env:
+          IA_ACCESS: ${{ secrets.IA_ACCESS }}
+          IA_SECRET: ${{ secrets.IA_SECRET }}
+          MODE: ${{ inputs.mode }}
+          YEARS: ${{ inputs.years }}
+          ONLY: ${{ inputs.only }}
+        run: |
+          ARGS=()
+          if [ "$MODE" = "dry_run" ]; then ARGS+=(--dry-run); fi
+          if [ "$MODE" = "test_3" ]; then ARGS+=(--limit 3); fi
+          if [ -n "$YEARS" ]; then ARGS+=(--years "$YEARS"); fi
+          if [ -n "$ONLY" ]; then ARGS+=(--only "$ONLY"); fi
+          python3 .github/scripts/archive_cec.py "${ARGS[@]}"
+      - name: Save the progress list
+        if: always() && inputs.mode != 'dry_run' && github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "abc-ri-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add pipeline/cec_archive_manifest.json || true
+          git commit -m "CEC archive progress" || echo "Nothing to commit."
+          git pull --rebase origin main
+          git push
