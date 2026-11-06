@@ -58,6 +58,7 @@
   "2025|AdviniaCare Pawtucket Pleasant Rehab Center, LLC (Oak Hill Center for Rehabilitation and Health Care)": "ri-cec-2025-adviniacare-pawtucket-pleasant-rehab-center-llc-oak-hill-center-for-re",
   "2025|AdviniaCare Providence Dodge Rehab Center, LLC (Bannister Center for Rehabilitation & Health Care)": "ri-cec-2025-adviniacare-providence-dodge-rehab-center-llc-bannister-center-for-reh",
   "2025|Cedar Haven Operations LLC d/b/a Lake Forest Health & Rehabilitation LLC": "ri-cec-2025-cedar-haven-operations-llc-d-b-a-lake-forest-health-rehabilitation-llc",
+  "2025|Cortland dba Stillwater": "ri-cec-2025-cortland-dba-stillwater",
   "2025|Coventry Operations RI, LLC": "ri-cec-2025-coventry-operations-ri-llc",
   "2025|Greenwood Operations RI, LLC": "ri-cec-2025-greenwood-operations-ri-llc",
   "2025|Greenwood RI Propco, LLC": "ri-cec-2025-greenwood-ri-propco-llc",
@@ -164,20 +165,20 @@
   },
   "https://drive.google.com/file/d/1TTQTlA9JFRsGWkgpbgzZwABKqS32q8UH/view?usp=sharing": {
    "applicant": "Cortland dba Stillwater",
-   "archive_url": "https://archive.org/download/ri-cec-2026-cortland-dba-stillwater/2025.09.26%20Cortland%20DBA%20Stillwater%20CEC%20Application%20_%20Exhibits%20resubmitted",
+   "archive_url": "https://archive.org/download/ri-cec-2025-cortland-dba-stillwater/2025.09.26%20Cortland%20DBA%20Stillwater%20CEC%20Application%20_%20Exhibits%20resubmitted.pdf",
    "archived_on": "2026-11-06",
    "bytes": 6181522,
    "checked": "2026-11-06",
-   "file": "2025.09.26 Cortland DBA Stillwater CEC Application _ Exhibits resubmitted",
-   "item": "ri-cec-2026-cortland-dba-stillwater",
+   "file": "2025.09.26 Cortland DBA Stillwater CEC Application _ Exhibits resubmitted.pdf",
+   "item": "ri-cec-2025-cortland-dba-stillwater",
    "kind": "file",
    "label": "Applicant",
    "link_text": "Cortland dba Stillwater",
    "note": "",
    "sha256": "90d61651b865f74d5a9c3a92f1593973980b1c34624625af6ae8040d7ac160e8",
-   "sheet_row": 168,
+   "sheet_row": 212,
    "status": "archived",
-   "year": "2026"
+   "year": "2025"
   },
   "https://drive.google.com/file/d/1aCkXd9_z2uNzGrh35OlWixzYKLxx0_Dq/view?usp=sharing": {
    "applicant": "Cortland dba Stillwater",
@@ -248,5 +249,5 @@
    "year": "2019"
   }
  },
- "updated": "2026-11-06T16:49Z"
+ "updated": "2026-11-06T17:01Z"
 }
