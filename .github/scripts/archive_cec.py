@@ -62,6 +62,14 @@ def drive_ref(url):
     if m: return ("gdoc:" + m.group(1), m.group(2))
     return ("other", None)
 
+def canon(url):
+    """One standard address per Drive file, folder, or Google doc, so .../view and .../view?usp=sharing match."""
+    kind, fid = drive_ref(url)
+    if kind == "file": return f"https://drive.google.com/file/d/{fid}"
+    if kind == "folder": return f"https://drive.google.com/drive/folders/{fid}"
+    if kind.startswith("gdoc:"): return f"https://docs.google.com/{kind.split(':', 1)[1]}/d/{fid}"
+    return url
+
 def collect(xlsx):
     """Every link in the Change in Effective Control rows of every year tab."""
     wb = openpyxl.load_workbook(xlsx, data_only=True)
@@ -83,8 +91,8 @@ def collect(xlsx):
                 kind, fid = drive_ref(link)
                 recs.append({"year": sh, "sheet_row": c.row, "applicant": applicant,
                              "desc": clean(rows[k][1].value) if len(rows[k]) > 1 else "",
-                             "label": (labels[j] if j < len(labels) and labels[j] else f"Column {j + 1}"),
-                             "link_text": clean(c.value), "url": link, "kind": kind, "id": fid})
+                             "label": (labels[j] if j < len(labels) and labels[j] else (f"{labels[j - 1]} (more)" if 0 < j <= len(labels) and labels[j - 1] else f"Column {j + 1}")),
+                             "link_text": clean(c.value), "url": canon(link), "orig_url": link, "kind": kind, "id": fid})
             k += 1
     return recs, skipped_tabs
 
@@ -156,6 +164,13 @@ def load_manifest():
     m = json.loads(MANIFEST.read_text()) if MANIFEST.exists() else {}
     for k in ("links", "apps"): m.setdefault(k, {})
     m.setdefault("cleanup", [])
+    for u in list(m["links"]):
+        cu = canon(u)
+        if cu != u:
+            e = m["links"].pop(u)
+            if cu not in m["links"]: m["links"][cu] = e
+    for e in m["links"].values():
+        if e.get("linked_from"): e["linked_from"] = canon(e["linked_from"])
     return m
 
 def save_manifest(m):
@@ -390,10 +405,12 @@ def main():
                     for u in pdf_links(p):
                         every.append(u)
                         k2, id2 = drive_ref(u)
-                        if k2 == "other" or u in seen: continue
-                        seen.add(u); found.append(u)
-                        queue.append({**{x: r[x] for x in ("year", "sheet_row", "applicant")}, "label": "Public comments (linked from HSC report)",
-                                      "link_text": "", "url": u, "kind": k2, "id": id2, "desc": r.get("desc", ""), "linked_from": r["url"]})
+                        cu = canon(u)
+                        if k2 == "other" or cu in seen: continue
+                        seen.add(cu); found.append(cu)
+                        queue.append({**{x: r[x] for x in ("year", "sheet_row", "applicant", "item", "first_year", "last_year")},
+                                      "label": "Public comments (linked from HSC report)",
+                                      "link_text": "", "url": cu, "orig_url": u, "kind": k2, "id": id2, "desc": r.get("desc", ""), "linked_from": r["url"]})
                 entry["scanned"] = True; entry["report_urls"] = every
                 log(f"   links inside this report: {len(every)} in all, {len(found)} new Drive link(s)")
                 for u in every: log(f"      {u}")
