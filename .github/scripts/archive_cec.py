@@ -246,7 +246,9 @@ def fetch(rec, workdir):
             # Newer versions of gdown dropped the remaining_ok option, so only pass it when it is accepted.
             extra = {"remaining_ok": True} if "remaining_ok" in inspect.signature(gdown.download_folder).parameters else {}
             got = gdown.download_folder(id=fid, output=str(out) + "/", quiet=True, **extra)
-            files = [Path(g.path) for g in (got or []) if Path(g.path).exists()]
+            # Some versions of gdown return file paths, others return objects that have a .path
+            paths_ = [Path(getattr(g, "path", g)) for g in (got or [])]
+            files = [p for p in paths_ if p.is_file()]
             if not files: return [], "failed", "folder came back empty or could not be read"
             note = "Drive lists at most 50 files per folder and this one has 50, so it may be incomplete" if len(files) >= 50 else ""
             return files, "ok", note
