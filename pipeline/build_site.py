@@ -63,6 +63,7 @@ if [n for n in need if n not in names]:
     print(f"ERROR: the Google Sheet is missing tabs: {[n for n in need if n not in names]}. Is it the INTERNAL copy?"); sys.exit(1)
 r = B.run(out, cec_path=master, std_dir=std)
 shutil.copy(os.path.join(out, "public", "index.html"), os.path.join(ROOT, "index.html"))
+shutil.copy(os.path.join(out, "public", "owners.html"), os.path.join(ROOT, "owners.html"))
 # sales.json: a small file the SNF dashboard reads to show each home's pending or most recent sale and link here.
 # One entry per home (by CMS number): pending applications and every completed sale, newest first, with buyer names
 # matching the dashboard's owner groups. The dashboard shows the newest sale and uses the rest to find when the
