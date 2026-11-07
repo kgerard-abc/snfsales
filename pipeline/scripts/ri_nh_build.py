@@ -854,6 +854,8 @@ def cost_panel(cec, S):
                                            rp_sh=[_r(v, 4) for v in g['rp_sh']], rent_sh=[_r(v, 4) for v in g['rent_sh']], mgmt_sh=[_r(v, 4) for v in g['mgmt_sh']], margin=[_r(v, 4) for v in g['margin']],
                                            parties=[(None if nz(v) is None else str(v)[:600]) for v in g['parties']], from_summary=True)
     # same-home before/after (year before the sale vs 1, 2, 3 years after)
+    chg_years = {}                                                                 # years each home changed control (any kind), for the same-years comparison
+    for r in changed.itertuples(): chg_years.setdefault(r.ccn, set()).add(T(r.evd).year)
     for k in ('rp_sh', 'rent0_sh', 'other_sh', 'mgmt_sh', 'margin'):
         res = {}
         for after in (1, 2, 3):
@@ -870,7 +872,7 @@ def cost_panel(cec, S):
                 cch = []
                 for (x0, x1, cc_), r_ in zip(pairs, [r for r in first.itertuples() if by.get(r.ccn) is not None and (T(r.evd).year - 1) in by[r.ccn].index and (T(r.evd).year + after) in by[r.ccn].index and nz(by[r.ccn].loc[T(r.evd).year - 1, k]) is not None and nz(by[r.ccn].loc[T(r.evd).year + after, k]) is not None and not (pd.isna(by[r.ccn].loc[T(r.evd).year - 1, k]) or pd.isna(by[r.ccn].loc[T(r.evd).year + after, k]))]):
                     ya, yb = T(r_.evd).year - 1, T(r_.evd).year + after
-                    dd = [float(g.loc[yb, k]) - float(g.loc[ya, k]) for cc2, g in by.items() if cc2 not in sold_ccns and ya in g.index and yb in g.index and not (pd.isna(g.loc[ya, k]) or pd.isna(g.loc[yb, k]))]
+                    dd = [float(g.loc[yb, k]) - float(g.loc[ya, k]) for cc2, g in by.items() if not (chg_years.get(cc2, set()) & set(range(ya, yb + 1))) and ya in g.index and yb in g.index and not (pd.isna(g.loc[ya, k]) or pd.isna(g.loc[yb, k]))]
                     if len(dd) >= 5: cch.append(float(np.mean(dd)))
                 res[str(after)] = dict(n=len(pairs), before=round(float(np.mean([x[0] for x in pairs])), 4), after=round(float(np.mean([x[1] for x in pairs])), 4), up=int(sum(1 for x in pairs if x[1] > x[0])),
                                        ctrl=(round(float(np.mean(cch)), 4) if len(cch) == len(pairs) else None))
@@ -2316,7 +2318,7 @@ drawMoney();
    the ratings and staffing rows from the similar-homes study (the same numbers as the bars below), the money rows from
    the cost reports, with every home that never changed hands as the comparison over the same years. */
 (function () {
-  const lv = D.levels, mn = D.money, rows = [], pct1 = v => (v * 100).toFixed(1) + '%', st1 = v => v.toFixed(1), hr = v => v.toFixed(2);
+  const lv = D.levels, mn = D.money, rows = [], pct1 = v => (v * 100).toFixed(1).replace('-', '\u2212') + '%', st1 = v => v.toFixed(1), hr = v => v.toFixed(2);
   const pm = (v, d) => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(d);
   const SM = k => D.study && D.study.sold && D.study.sold.metrics[k] && D.study.sold.metrics[k].summary && D.study.sold.metrics[k].summary['24'];
   const care = (k, label, sub, fmt, unit, d, eps) => { const x = SM(k); if (!x || x.before == null) return;
@@ -2326,8 +2328,8 @@ drawMoney();
   care('staffing', 'Staffing star rating', 'CMS rating, 5 is best', st1, 'stars', 2, 0.05);
   care('hours', 'Nurse hours per resident per day', 'all nursing staff', hr, 'hours', 2, 0.05);
   care('rn', 'RN hours per resident per day', 'registered nurses, including the director of nursing', hr, 'hours', 2, 0.02);
-  const c = (mn && mn.compare) || {};
-  const money = (k, label, sub, higherBad) => { const x = c[k] && c[k]['2']; if (!x) return; const dv = x.after - x.before, k_ = x.before > 0 ? x.after / x.before : null;
+  const cmp = (mn && mn.compare) || {};
+  const money = (k, label, sub, higherBad) => { const x = cmp[k] && cmp[k]['2']; if (!x) return; const dv = x.after - x.before, k_ = x.before > 0 ? x.after / x.before : null;
     const ptsTxt = v => Math.abs(v) < 0.005 ? 'no change' : pm(v * 100, 1) + ' points';
     rows.push({ label, sub, before: pct1(x.before), after: pct1(x.after), ch: ptsTxt(dv) + (k_ && k_ >= 2 && Math.abs(dv) >= 0.005 ? (k_ >= 2.5 ? ', about ' + Math.round(k_) + ' times as much' : ', more than double') : ''), bad: higherBad ? dv >= 0.005 : dv <= -0.005,
       worse: (higherBad ? x.up : x.n - x.up) + ' of ' + x.n, ctrl: x.ctrl == null ? '–' : ptsTxt(x.ctrl), n: x.n }); };
