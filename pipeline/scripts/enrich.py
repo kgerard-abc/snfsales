@@ -130,7 +130,7 @@ def enrich(D, hu, pu, extras=None, chains=None, names=None):
             by_home.setdefault(s["fid"], []).append(s)
     tenures = []
 
-    def add_tenure(fid, grp, start, end, cec):
+    def add_tenure(fid, grp, start, end, cec, via=None, owner_from=None, pending=False, end_by=None, end_via=None):
         f = fac[fid]
         lo, hi = max(start, floor) if start is not None else floor, min(end or latest, latest) + pd.Timedelta(days=1)
         if hi <= lo:
@@ -143,6 +143,8 @@ def enrich(D, hu, pu, extras=None, chains=None, names=None):
             fid=fid, name=f["name"], group=grp, cec=cec, start=start.strftime("%Y-%m-%d") if start is not None else None,
             end=end.strftime("%Y-%m-%d") if (end is not None and not current) else None, counted_from=lo.strftime("%Y-%m-%d"),
             years=round((hi - lo).days / 365.25, 1), current=current,
+            via=via, owner_from=owner_from, pending=bool(pending),
+            end_by=end_by if (end is not None and not current) else None, end_via=end_via if (end is not None and not current) else None,   # who ended it, and how: 'management', 'ownership' or 'closed'   # via: took over 'management' (an agreement before the sale) or 'ownership' (the sale); None before the records
             stars_start=stars_at(fid, start) if start is not None else None,
             stars_end=(f.get("now") or {}).get("overall") if current else stars_at(fid, end),
             harm=int(sc.isin(HARM).sum()), ij=int(sc.isin(IJ).sum()), fines=float(p.fine_amount.sum()), n_fines=int(len(p))))
@@ -152,19 +154,21 @@ def enrich(D, hu, pu, extras=None, chains=None, names=None):
         for i, s in enumerate(ss):
             if i and g(ss[i - 1]["buyer"]) == s["buyer"]:
                 continue   # a reorganization inside the same group does not start a new tenure
-            start = _t(s["date"])
+            start, via = _t(s["date"]), "ownership"
             if s.get("mgmt_start") and _t(s["mgmt_start"]) < start:
-                start = _t(s["mgmt_start"])
+                start, via = _t(s["mgmt_start"]), "management"
             nxt = next((x for x in ss[i + 1:] if x["buyer"] != s["buyer"]), None)
             end = _t(nxt["date"]) if nxt else None
+            end_by, end_via = (nxt["buyer"], "ownership") if nxt else (None, None)
             if nxt and nxt.get("mgmt_start") and _t(nxt["mgmt_start"]) < end:
-                end = _t(nxt["mgmt_start"])
+                end, end_via = _t(nxt["mgmt_start"]), "management"
             f = fac[fid]
             if end is None and not f.get("active", True):
-                end = _t(f.get("last_seen"))
+                end, end_via = _t(f.get("last_seen")), "closed"
             if end is not None and end <= floor:
                 continue   # entirely before CMS's records
-            add_tenure(fid, s["buyer"], start, end, s.get("cec"))
+            pend = s.get("outcome") == "Pending"
+            add_tenure(fid, s["buyer"], start, end, s.get("cec"), via=via, owner_from=None if pend else s["date"], pending=pend, end_by=end_by, end_via=end_via)
     # Homes a group runs now with no sale on record (it has run them since before the state's records): counted from
     # the start of CMS's records. Only when the home has no recorded sale at all, so nothing is guessed.
     for fid, grp in owner_group.items():
