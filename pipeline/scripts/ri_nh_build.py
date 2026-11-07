@@ -2695,7 +2695,7 @@ function showFacility(id, scroll) {
   // 1. the biggest fall in stars under one owner
   const falls = tens.filter(t => t.stars_start != null && t.stars_end != null).map(t => ({ ...t, d: t.stars_end - t.stars_start })).sort((a, b) => a.d - b.d || b.ij - a.ij);
   if (falls.length && falls[0].d <= -2) { const t = falls[0];
-    items.push(card(t.stars_start + ' → ' + t.stars_end + ' stars', t.fid, t.name, `${t.stars_start} stars when ${t.group} ${tookOver(t)} in ${fmtMon(t.start)}, ${t.stars_end === 0 ? '0 now: a Special Focus Facility, which CMS does not rate' : t.stars_end + (t.current ? ' now' : ' when it left')}. ` + (t.ij ? `${plural(t.ij, 'immediate jeopardy citation')} and ${money0(t.fines)} in fines in ${yrs(t.years)}.` : `${money0(t.fines)} in fines in ${yrs(t.years)}.`))); }
+    items.push(card(t.stars_start + ' → ' + t.stars_end + ' stars', t.fid, t.name, `${t.stars_start} stars when ${t.group} ${tookOver(t)} in ${fmtMon(t.start)}, ${t.stars_end === 0 ? '0 ' + (t.current ? 'now' : 'when it left in ' + fmtMon(t.end)) + ': a Special Focus Facility, which CMS does not rate' : t.stars_end + (t.current ? ' now' : ' when it left')}. ` + (t.ij ? `${plural(t.ij, 'immediate jeopardy citation')} and ${money0(t.fines)} in fines in ${yrs(t.years)}.` : `${money0(t.fines)} in fines in ${yrs(t.years)}.`))); }
   // 2. the most immediate jeopardy citations under one owner, if a different home
   const ijs = tens.filter(t => t.ij && (!falls.length || t.fid !== falls[0].fid || t.group !== falls[0].group)).sort((a, b) => b.ij - a.ij || b.fines - a.fines);
   if (ijs.length && ijs[0].ij >= 3) { const t = ijs[0];
@@ -2735,7 +2735,7 @@ function showFacility(id, scroll) {
   if (two) tile(sgn(two.sold) + ' stars', 'two years after a sale, average of ' + two.n + ' sold homes. Similar homes not sold: ' + sgn(two.ctrl), 'CMS overall star ratings', '#ba-panel');
   if (rp2) tile(pc(rp2.before) + ' → ' + pc(rp2.after), 'of revenue paid to companies the owners also control, the same ' + rp2.n + ' homes, the year before the sale and two years after', 'Medicare cost reports, worksheet A-8-1', '#ba-panel');
   const tens = (D.tenures || []).filter(x => x.start && x.years >= 0.5 && x.ij).sort((a, b) => b.ij - a.ij || b.ij / b.years - a.ij / a.years);
-  if (tens.length) { const x = tens[0]; tile(String(x.ij), 'immediate jeopardy citations at ' + x.name + ' in the ' + (x.years < 1 ? Math.max(1, Math.round(x.years * 12)) + ' months' : (Math.round(x.years * 10) / 10) + ' years') + ' since ' + x.group + ' ' + tookOver(x), 'CMS health inspection records', '#examples'); }
+  if (tens.length) { const x = tens[0]; tile(String(x.ij), 'immediate jeopardy citations at ' + x.name + ' in the ' + (x.years < 1 ? Math.max(1, Math.round(x.years * 12)) + ' months' : (Math.round(x.years * 10) / 10) + ' years') + (x.current ? ' since ' + x.group + ' ' + tookOver(x) : ' ' + x.group + ' ran it, after it ' + tookOver(x) + ' in ' + fmtMon(x.start)), 'CMS health inspection records', '#examples'); }
   if (!tiles.children.length) tiles.classList.add('hidden');
 })();
 
