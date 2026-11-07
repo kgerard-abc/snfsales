@@ -2701,9 +2701,9 @@ function showFacility(id, scroll) {
   // 1. the biggest fall in stars under one owner
   const falls = tens.filter(t => t.stars_start != null && t.stars_end != null).map(t => ({ ...t, d: t.stars_end - t.stars_start })).sort((a, b) => a.d - b.d || b.ij - a.ij);
   if (falls.length && falls[0].d <= -2) { const t = falls[0];
-    const sff = v => v === 0 ? '0' + (' (a CMS Special Focus Facility)') : String(v);
-    const nowStars = ((fac(t.fid) || {}).now || {}).overall;
-    const endTxt = t.current ? sff(t.stars_end) + ' now' : (t.stars_end === 0 ? '0' : String(t.stars_end)) + ' ' + endedHow(t) + (nowStars === t.stars_end ? ', and still ' + sff(nowStars) + ' now' : (t.stars_end === 0 ? ' (a CMS Special Focus Facility)' : ''));
+        const nowStars = ((fac(t.fid) || {}).now || {}).overall;
+    const SFF = ' (a CMS Special Focus Facility)';
+    const endTxt = t.current ? t.stars_end + ' now' + (t.stars_end === 0 ? SFF : '') : t.stars_end + ' ' + endedHow(t) + (nowStars === t.stars_end ? ', and still ' + nowStars + ' now' : '') + (t.stars_end === 0 ? SFF : '');
     items.push(card(t.stars_start + ' → ' + t.stars_end + ' stars', t.fid, t.name, `${t.stars_start} stars when ${t.group} ${tookOver(t)} in ${fmtMon(t.start)}, ${endTxt}. ` + (t.ij ? `${plural(t.ij, 'immediate jeopardy citation')} and ${money0(t.fines)} in fines in the ${yrs(t.years)} ${t.group} ran it.` : `${money0(t.fines)} in fines in the ${yrs(t.years)} ${t.group} ran it.`))); }
   // 2. the most immediate jeopardy citations under one owner, if a different home
   const ijs = tens.filter(t => t.ij && (!falls.length || t.fid !== falls[0].fid || t.group !== falls[0].group)).sort((a, b) => b.ij - a.ij || b.fines - a.fines);
@@ -2723,7 +2723,7 @@ function showFacility(id, scroll) {
   if (rises.length && rises[0].d >= 0.05) { const r = rises[0], pc = v => Math.round(v * 100) + '%';
     items.push(card(pc(r.s0) + ' → ' + pc(r.s1) + ' of revenue', r.id, r.name, `Money paid to the owners' own companies: ${pc(r.s0)} of revenue in ${r.y0}${r.n0 > 1 ? ', the years' : ', the year'} before it was sold, ${pc(r.s1)} in ${r.y1} (${money0(r.usd)}` + (r.rent ? `, of it ${money0(r.rent)} in rent to a landlord the owners control` : '') + ').')); }
   if (!items.length) { box.classList.add('hidden'); return; }
-  $('#examples-lede').textContent = 'The steepest fall in stars under one owner, the most immediate jeopardy citations under one owner at another home, and the biggest rise in money paid to the owners\u2019 own companies after a sale. Stars and citations count only the time that owner ran the home, back to ' + fmtMon(D.dates[0].slice(0, 4) - 3 + D.dates[0].slice(4)) + ', as far as CMS\u2019s inspection records reach. Click a home for its full record. (Chosen automatically from the data each time the page is updated.)';
+  $('#examples-lede').textContent = 'The steepest fall in stars under one owner, the most immediate jeopardy citations under one owner at another home, and the biggest rise in money paid to the owners\u2019 own companies after a sale. Citations and fines count only the time that owner ran the home, back to ' + fmtMon(D.dates[0].slice(0, 4) - 3 + D.dates[0].slice(4)) + ', as far as CMS\u2019s inspection records reach. Click a home for its full record. (Chosen automatically from the data each time the page is updated.)';
   items.forEach(li => ul.append(li));
 })();
 
