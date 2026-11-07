@@ -824,9 +824,10 @@ def cost_panel(cec, S):
     by_all = {ccn: g.set_index('year') for ccn, g in c.groupby('ccn')}   # every report, for the home pages and the table (partial years flagged)
     c = c[~c.partial.astype(bool)]                                           # the statewide comparisons use whole years only
     by = {ccn: g.set_index('year') for ccn, g in c.groupby('ccn')}
-    sold = S[S.counts & S.evd.notna() & S.ccn.notna()].sort_values('evd')
+    changed = S[S.counts & S.evd.notna() & S.ccn.notna()].sort_values('evd')        # every change of control the page counts
+    sold = changed[changed.type == 'Ownership/operator change']                    # sales to a new operator only, as in the bar chart: no chain reorganizations or internal restructurings
     first = sold.groupby('ccn').first().reset_index()[['ccn', 'evd', 'cec', 'facility']]
-    sold_ccns = set(first.ccn)
+    sold_ccns = set(changed.ccn)                                                   # the "never sold" comparison leaves out any home that changed control at all
     out = dict(years=sorted(int(y) for y in c.year.dropna().unique()), by_facility={}, compare={}, n_homes=0)
     for ccn, g in by_all.items():
         out['by_facility'][ccn] = dict(years=[int(y) for y in g.index], rev=[_r(v, 0) for v in g['rev']], rp=[_r(v, 0) for v in g['rp']], rent=[_r(v, 0) for v in g['rent']], mgmt=[_r(v, 0) for v in g['mgmt']],
@@ -864,12 +865,13 @@ def cost_panel(cec, S):
         ctrl[k] = {int(y): _r(v, 4) for y, v in rows.items() if nz(v) is not None}
     out['never_sold'] = ctrl; out['n_homes'] = len(first); out['last_year'] = (max([y for y in out['years'] if int((c.year == y).sum()) >= 20], default=(max(out['years']) if out['years'] else None))); out['n_facilities'] = len(by)
     out['first_sale'] = {r.ccn: dict(year=T(r.evd).year, date=_d(r.evd), cec=r.cec) for r in first.itertuples()}
-    sale_years = {}
+    sale_years, other_years = {}, {}
     for r in sold.itertuples(): sale_years.setdefault(r.ccn, set()).add(T(r.evd).year)
-    out['trend'] = _cost_trend(c, sale_years)
+    for r in changed[changed.type != 'Ownership/operator change'].itertuples(): other_years.setdefault(r.ccn, set()).add(T(r.evd).year)
+    out['trend'] = _cost_trend(c, sale_years, other_years)
     return out
 
-def _cost_trend(c, sale_years):
+def _cost_trend(c, sale_years, other_years=None):
     """Balanced panel: the homes that filed a cost report in EVERY well-covered year, split by whether
     they changed hands during the window. Shares are dollars summed across the group over revenue summed
     across the same group, so one small home cannot swing the line."""
@@ -886,7 +888,8 @@ def _cost_trend(c, sale_years):
     if len(core) < 20: return None
     win = set(yrs)                                               # "changed hands" means during the window shown, not at any point since 2007
     a = {x for x in core if sale_years.get(x) and (sale_years[x] & win)}
-    b = core - a
+    left_out = {x for x in core - a if (other_years or {}).get(x) and (other_years[x] & win)}   # reorganized within a chain in the window: neither sold nor unchanged
+    b = core - a - left_out
     if len(a) < 5 or len(b) < 5: return None
     def series(grp, col):
         vals = []
@@ -897,7 +900,8 @@ def _cost_trend(c, sale_years):
         return vals
     def dollars(grp, col):
         return [_r(float(c.loc[(c.year == y) & (c.ccn.isin(grp)), col].sum()), 0) for y in yrs]
-    return dict(years=yrs, n_sold=len(a), n_other=len(b),
+    return dict(years=yrs, n_sold=len(a), n_other=len(b), n_left_out=len(left_out),
+                rent_usd_total=dict(sold=_r(sum(float(c.loc[(c.year == y) & (c.ccn.isin(a)), 'rent'].sum()) for y in yrs), 0)),
                 rent=dict(sold=series(a, 'rent'), other=series(b, 'rent')),
                 rp=dict(sold=series(a, 'rp'), other=series(b, 'rp')),
                 rent_usd=dict(sold=dollars(a, 'rent'), other=dollars(b, 'rent')))
@@ -1885,6 +1889,7 @@ details.cecdetail{margin-top:6px;font-size:.86rem;max-width:62ch}details.cecdeta
 .tile:hover,.tile:focus{outline:2px solid var(--accent);outline-offset:2px}
 .tile .big{display:block;font-size:1.9rem;font-weight:800;line-height:1.1;letter-spacing:-.01em;color:var(--sold)}
 .tile .big.neutral{color:var(--fg)}
+.tile .big.fit{font-size:1.5rem;white-space:nowrap}
 .tile .what{display:block;margin-top:6px;font-size:.92rem;line-height:1.35}
 .tile .src{display:block;margin-top:6px;font-size:.78rem;color:var(--muted)}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin:0}
@@ -1894,7 +1899,7 @@ details.cecdetail{margin-top:6px;font-size:.86rem;max-width:62ch}details.cecdeta
 .card p{margin:0;font-size:.92rem;line-height:1.4}
 .chg{font-weight:700}
 .gap{font-size:1.08rem;margin:8px 0}
-@media (max-width:640px){.tile .big{font-size:1.6rem}.card .big{font-size:1.35rem}}
+@media (max-width:640px){.tile .big{font-size:1.6rem}.tile .big.fit{font-size:1.4rem}.card .big{font-size:1.35rem}}
 .small{font-size:.86rem;color:var(--muted)}
 .track{border-top:1px solid var(--grid);margin-top:10px;padding-top:8px}.track h5{margin:0 0 4px;font-size:.95rem}.track details summary{cursor:pointer;color:var(--accent);font-size:.86rem}
 sup.datemark{font-size:.75em;margin-left:2px}
@@ -2234,27 +2239,27 @@ function drawMoney() {
   if (!t || !panel) { if (panel) panel.classList.add('hidden'); return; }
   const n = t.years.length - 1, pc = v => v.toFixed(1) + '%';
   const span = t.years[0] + '\u2013' + t.years[n];
-  const mil0 = v => '$' + (v / 1e6).toFixed(1) + 'M';
-  const sold = { name: 'Changed hands', color: css('--sold'), values: t.rent.sold, width: 3.5, dots: 4, z: 2, ends: [pc(t.rent.sold[0]) + (t.rent_usd ? ' (' + mil0(t.rent_usd.sold[0]) + ')' : ''), pc(t.rent.sold[n]) + (t.rent_usd ? ' (' + mil0(t.rent_usd.sold[n]) + ' a year)' : '')] };
-  const other = { name: 'Did not', color: css('--teal'), values: t.rent.other, width: 2.4, dash: '7 4', dots: true, z: 1, ends: ['', pc(t.rent.other[n])], endsAbove: false };
+  const mil0 = v => '$' + (v / 1e6).toFixed(1) + 'm';
+  const sold = { name: 'Sold', color: css('--sold'), values: t.rent.sold, width: 3.5, dots: 4, z: 2, ends: [pc(t.rent.sold[0]) + (t.rent_usd ? ' (' + mil0(t.rent_usd.sold[0]) + ')' : ''), pc(t.rent.sold[n]) + (t.rent_usd ? ' (' + mil0(t.rent_usd.sold[n]) + ' a year)' : '')] };
+  const other = { name: 'Not sold', color: css('--teal'), values: t.rent.other, width: 2.4, dash: '7 4', dots: true, z: 1, ends: ['', pc(t.rent.other[n])], endsAbove: false };
   drawChart($('#money-chart'), {
     x: t.years, xmin: t.years[0] - .25, xmax: t.years[n] + .35, height: 290, left: 40, ymin: 0, ymax: Math.max(...t.rent.sold, ...t.rent.other) * 1.18, zero: true,
     xticks: t.years.map(y => ({ v: y, l: "'" + String(y).slice(2) })),
     yfmt: v => v + '%', tfmt: pc, xlabel: v => 'Fiscal year ' + v, series: [sold, other],
-    aria: 'Rent paid to a related landlord as a share of patient revenue, from ' + t.years[0] + ' to ' + t.years[n] + ', for homes that changed hands compared with homes that did not'
+    aria: 'Rent paid to a related landlord as a share of patient revenue, from ' + t.years[0] + ' to ' + t.years[n] + ', for homes sold in those years compared with homes not sold'
   });
   $('#money-legend').replaceChildren(
-    el('span', {}, el('i', { style: 'border-color:' + css('--sold') }), 'Changed hands in these years (' + t.n_sold + ' homes)'),
-    el('span', {}, el('i', { class: 'dash', style: 'border-color:' + css('--teal') }), 'Did not (' + t.n_other + ')'));
+    el('span', {}, el('i', { style: 'border-color:' + css('--sold') }), 'Sold in these years (' + t.n_sold + ' homes)'),
+    el('span', {}, el('i', { class: 'dash', style: 'border-color:' + css('--teal') }), 'Not sold (' + t.n_other + ')'));
   const s0 = t.rent.sold[0], s1 = t.rent.sold[n], o0 = t.rent.other[0], o1 = t.rent.other[n];
   const mil = v => '$' + (v / 1e6).toFixed(1) + ' million';
   const usd = t.rent_usd && t.rent_usd.sold, dollars = usd ? ' In dollars, rent at those ' + t.n_sold + ' homes went from ' + mil(usd[0]) + ' a year to ' + mil(usd[n]) + '.' : '';
   // Say the all-related-party figures too, so nobody has to find them in the CSV: the "did not" group includes homes
   // bought by chains before the window, which already paid rent and fees to their owners' companies.
-  const rp = t.rp && t.rp.sold && t.rp.other, allrp = rp ? ' Counting every related-party payment, not just rent (management fees, therapy, supplies, and the like), the ' + t.n_sold + ' homes that changed hands went from ' + pc(t.rp.sold[0]) + ' of revenue to ' + pc(t.rp.sold[n]) + ', and the ' + t.n_other + ' that did not went from ' + pc(t.rp.other[0]) + ' to ' + pc(t.rp.other[n]) + '. Many of those ' + t.n_other + ' were bought by chains before ' + t.years[0] + ' and were already paying their owners\u2019 companies.' : '';
+  const rp = t.rp && t.rp.sold && t.rp.other, allrp = rp ? ' Counting every related-party payment, not just rent (management fees, therapy, supplies, and the like), the ' + t.n_sold + ' homes sold went from ' + pc(t.rp.sold[0]) + ' of revenue to ' + pc(t.rp.sold[n]) + ', and the ' + t.n_other + ' not sold went from ' + pc(t.rp.other[0]) + ' to ' + pc(t.rp.other[n]) + '. Many of those ' + t.n_other + ' were bought by chains before ' + t.years[0] + ' and were already paying their owners\u2019 companies.' : '';
   $('#money-note').replaceChildren(
-    el('b', { text: 'At the ' + t.n_sold + ' homes that changed hands between ' + span + ', rent paid to a landlord under the same ownership went from ' + pc(s0) + ' of patient revenue to ' + pc(s1) + (usd ? ' (' + mil(usd[0]) + ' a year to ' + mil(usd[n]) + ')' : '') + '. At the ' + t.n_other + ' that did not change hands, it stayed near ' + pc(o1) + '.' }),
-    el('details', { style: 'margin-top:6px' }, el('summary', { text: 'How this was measured' }), el('p', { class: 'small', style: 'margin:6px 0 0', text: 'These are the same ' + (t.n_sold + t.n_other) + ' homes in every year, so this is not a change in which homes report. Each figure is rent and building costs the home itself reported paying to a property company its own owners control, on Worksheet A-8-1 of its Medicare cost report; rent to an unrelated landlord is not counted.' + allrp + ' Cost reports run about two years behind the CMS ratings above.' })));
+    el('b', { text: 'At the ' + t.n_sold + ' homes sold between ' + span + ', rent paid to a landlord under the same ownership went from ' + pc(s0) + ' of patient revenue to ' + pc(s1) + (usd ? ' (' + mil(usd[0]) + ' a year to ' + mil(usd[n]) + ')' : '') + '. At the ' + t.n_other + ' homes not sold, it stayed near ' + pc(o1) + '.' + (t.rent_usd_total && t.rent_usd_total.sold ? ' Over the ' + t.years.length + ' years, the sold homes paid ' + mil(t.rent_usd_total.sold) + ' in rent to their owners\u2019 own landlords.' : '') }),
+    el('details', { style: 'margin-top:6px' }, el('summary', { text: 'How this was measured' }), el('p', { class: 'small', style: 'margin:6px 0 0', text: 'These are the same ' + (t.n_sold + t.n_other) + ' homes in every year, so this is not a change in which homes report. Each figure is rent and building costs the home itself reported paying to a property company its own owners control, on Worksheet A-8-1 of its Medicare cost report; rent to an unrelated landlord is not counted.' + allrp + (t.n_left_out ? ' ' + t.n_left_out + (t.n_left_out === 1 ? ' home' : ' homes') + ' reorganized within a chain in these years (not a sale to a new operator) ' + (t.n_left_out === 1 ? 'is' : 'are') + ' left out of both groups.' : '') + ' A sale counts if the state approved it in any of these years, so some homes are measured for years before their sale. The chart ends in ' + t.years[n] + ' because cost reports are filed months after a home\u2019s year ends and CMS releases them later still: ' + t.years[n] + ' is the newest year most homes have filed. Cost reports run about two years behind the CMS ratings above.' })));
 }
 drawMoney();
 
@@ -2722,8 +2727,9 @@ function showFacility(id, scroll) {
   if (two) bits.push(`Two years after a sale, sold homes (${two.n} so far) averaged ${Math.abs(two.sold).toFixed(2)} ${two.sold < 0 ? 'fewer' : 'more'} stars than before the sale, while similar homes that were not sold ${Math.abs(two.ctrl) < 0.05 ? 'did not change' : 'changed by ' + sgn(two.ctrl)}.`);
   if (rp2) bits.push(`The money the sold homes paid to their owners' own companies went from ${pc(rp2.before)} of revenue to ${pc(rp2.after)}` + (rp2.after / rp2.before >= 1.9 ? ', more than doubling.' : '.'));
   fnd.textContent = bits.join(' ');
-  const tile = (big, what, src, href, neutral) => tiles.append(el('a', { class: 'tile', href }, el('span', { class: 'big' + (neutral ? ' neutral' : ''), text: big }), el('span', { class: 'what', text: what }), el('span', { class: 'src', text: src })));
-  if (t && t.rent_usd && t.rent_usd.sold) { const n = t.years.length - 1; tile(mil(t.rent_usd.sold[0]) + ' → ' + mil(t.rent_usd.sold[n]), 'rent a year paid to owners’ own landlords at ' + t.n_sold + ' homes that changed hands, ' + t.years[0] + ' to ' + t.years[n], 'Medicare cost reports, the same ' + t.n_sold + ' homes every year', '#money-panel'); }
+  const tile = (big, what, src, href, neutral, fit) => tiles.append(el('a', { class: 'tile', href }, el('span', { class: 'big' + (neutral ? ' neutral' : '') + (fit ? ' fit' : ''), text: big }), el('span', { class: 'what', text: what }), el('span', { class: 'src', text: src })));
+  if (t && t.rent_usd && t.rent_usd.sold) { const n = t.years.length - 1, m = v => '$' + (v / 1e6).toFixed(1) + 'm', u = t.rent_usd, o = u.other;
+    tile(m(u.sold[0]) + ' → ' + m(u.sold[n]), 'total yearly rent paid to the owners’ own real estate companies by the ' + t.n_sold + ' homes sold from ' + t.years[0] + ' to ' + t.years[n] + (u.sold[0] > 0 ? ', ' + (u.sold[n] / u.sold[0] >= 1.95 ? 'about ' + Math.round(u.sold[n] / u.sold[0]) + ' times as much' : 'up ' + Math.round((u.sold[n] / u.sold[0] - 1) * 100) + '%') : '') + (o ? '. The ' + t.n_other + ' homes not sold: ' + m(o[0]) + ' → ' + m(o[n]) : ''), 'Medicare cost reports, the same homes every year. ' + t.years[n] + ' is the newest year most homes have filed.', '#money-panel', false, 'fit'); }
   if (two) tile(sgn(two.sold) + ' stars', 'two years after a sale, average of ' + two.n + ' sold homes. Similar homes not sold: ' + sgn(two.ctrl), 'CMS overall star ratings', '#ba-panel');
   if (rp2) tile(pc(rp2.before) + ' → ' + pc(rp2.after), 'of revenue paid to companies the owners also control, the same ' + rp2.n + ' homes, the year before the sale and two years after', 'Medicare cost reports, worksheet A-8-1', '#ba-panel');
   const tens = (D.tenures || []).filter(x => x.start && x.years >= 0.5 && x.ij).sort((a, b) => b.ij - a.ij || b.ij / b.years - a.ij / a.years);
