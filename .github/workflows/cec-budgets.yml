@@ -37,7 +37,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils
+          sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils tesseract-ocr
           pip install pdfplumber
       - name: Read the tables
         env:

@@ -45,7 +45,8 @@ def norm(s): return re.sub(r"\s+", " ", (s or "")).strip()
 # ---------- what each line is ----------
 
 FIN_CATS = [  # checked in order; first match wins
-    ("operating_profit", r"operating\s*profit|profit\s*/?\s*\(?loss|net (income|loss)"),
+    ("subtotal", r"sub\s*-?\s*total"),
+    ("operating_profit", r"^\W*operating\b|operating\s*(profit|income|loss)|profit\s*/?\s*\(?loss|net (income|loss)"),
     ("total_revenue", r"total\s+revenue"),
     ("total_expenses", r"total\s+expense"),
     ("net_patient_revenue", r"net\s+patient\s+revenue"),
@@ -67,7 +68,9 @@ FIN_CATS = [  # checked in order; first match wins
     ("taxes", r"tax"),
 ]
 STAFF_CATS = [
-    ("total", r"^totals?\b"),
+    ("subtotal", r"sub\s*-?\s*total"),
+    ("total", r"^(grand\s+)?totals?\b"),
+    ("contract", r"contract|agency|purchased|pool"),
     ("medical_director", r"medical\s+director"),
     ("physicians", r"physician"),
     ("director_of_nursing", r"director\s+of\s+nurs|\bdon\b|\bdns\b"),
@@ -112,7 +115,7 @@ def parse_num(tok):
     return -v if neg else v
 
 def is_num(tok):
-    return bool(NUM.match(tok)) or tok in DASHES or bool(re.fullmatch(r"#\d+(\.\d+)?", tok)) or tok in ("#", "$")
+    return bool(NUM.match(tok)) or tok in DASHES or bool(re.fullmatch(r"#(?:\d+(?:\.\d+)?|\.\d+)", tok)) or tok in ("#", "$")
 
 # ---------- reading pages ----------
 
@@ -121,32 +124,135 @@ def page_texts(pdf):
     r = subprocess.run(["pdftotext", "-q", str(pdf), "-"], capture_output=True, timeout=600)
     return r.stdout.decode("utf-8", "replace").split("\f")
 
-def lines_with_words(pdf, pageno):
-    """Words on one page (1-based) grouped into lines, each word with its x position."""
-    import pdfplumber
-    with pdfplumber.open(str(pdf)) as doc:
-        if pageno > len(doc.pages): return []
-        words = doc.pages[pageno - 1].extract_words(keep_blank_chars=False, x_tolerance=1.5, y_tolerance=2)
-    words.sort(key=lambda w: (round(w["top"]), w["x0"]))
+OCR_SCAN_PAGES = 60  # in a scanned PDF, Appendix A is looked for in the first this many pages
+OCR = {}  # pdf path -> True when its text came from OCR
+
+def group_lines(words):
+    """Words (dicts with t, x0, x1, top) grouped into lines, left to right."""
+    words.sort(key=lambda w: (w["top"], w["x0"]))
     lines, cur, top = [], [], None
     for w in words:
         if top is not None and abs(w["top"] - top) > 3:
             lines.append(cur); cur = []
         if not cur: top = w["top"]
-        cur.append({"t": w["text"], "x0": w["x0"], "x1": w["x1"], "xc": (w["x0"] + w["x1"]) / 2})
+        cur.append({"t": w["t"], "x0": w["x0"], "x1": w["x1"], "xc": (w["x0"] + w["x1"]) / 2})
     if cur: lines.append(cur)
     for ln in lines: ln.sort(key=lambda w: w["x0"])
-    return lines
+    return [join_split_numbers(ln) for ln in lines]
+
+def join_split_numbers(ln):
+    """Some PDFs break one number into pieces ('1' ',539,648', or an FTE of 13 as '1' '3'). Join pieces that touch."""
+    out = []
+    for w in ln:
+        if out:
+            p = out[-1]; gap = w["x0"] - p["x1"]
+            digits = re.fullmatch(r"[\$\(]?[\d,\.]+", p["t"]) and re.fullmatch(r"[\d,\.]+\)?", w["t"])
+            if digits and (w["t"].startswith(",") or p["t"].endswith(",") or gap < 1.2) and gap < 4:
+                p.update(t=p["t"] + w["t"], x1=w["x1"], xc=(p["x0"] + w["x1"]) / 2); continue
+        out.append(dict(w))
+    return out
+
+def ocr_fix(tok):
+    """OCR often reads 0 as O and 1 as l or I inside numbers."""
+    if re.fullmatch(r"[\$\(\-#]*[\dOoIl,\.]*\d[\dOoIl,\.]*\)?", tok) and sum(c.isdigit() for c in tok) >= 2:
+        return tok.replace("O", "0").replace("o", "0").replace("I", "1").replace("l", "1")
+    return tok
+
+def ocr_words(pdf, pageno, dpi=300):
+    """Words on one scanned page, with positions converted to PDF points so the table reader works the same way."""
+    with tempfile.TemporaryDirectory() as d:
+        subprocess.run(["pdftoppm", "-r", str(dpi), "-gray", "-png", "-f", str(pageno), "-l", str(pageno), str(pdf), f"{d}/p"],
+                       capture_output=True, timeout=300)
+        imgs = sorted(Path(d).glob("p*.png"))
+        if not imgs: return []
+        r = subprocess.run(["tesseract", str(imgs[0]), "-", "--psm", "6", "tsv"], capture_output=True, timeout=300)
+    k = 72 / dpi
+    out = []
+    for row in r.stdout.decode("utf-8", "replace").splitlines()[1:]:
+        f = row.split("\t")
+        if len(f) < 12 or f[0] != "5" or not f[11].strip(): continue
+        left, top, width = int(f[6]), int(f[7]), int(f[8])
+        out.append({"t": ocr_fix(f[11].strip()), "x0": left * k, "x1": (left + width) * k, "top": top * k})
+    return out
+
+def ocr_texts(pdf, pages, dpi=150):
+    """Plain OCR text for the first pages of a scanned PDF (quick, low resolution), to find the tables."""
+    texts = []
+    with tempfile.TemporaryDirectory() as d:
+        subprocess.run(["pdftoppm", "-r", str(dpi), "-gray", "-png", "-f", "1", "-l", str(pages), str(pdf), f"{d}/p"],
+                       capture_output=True, timeout=1800)
+        for img in sorted(Path(d).glob("p*.png"), key=lambda q: int(re.sub(r"\D", "", q.stem) or 0)):
+            r = subprocess.run(["tesseract", str(img), "-", "--psm", "3"], capture_output=True, timeout=300)
+            texts.append(r.stdout.decode("utf-8", "replace"))
+    return texts
+
+def page_count(pdf):
+    r = subprocess.run(["pdfinfo", str(pdf)], capture_output=True, timeout=60)
+    m = re.search(r"Pages:\s+(\d+)", r.stdout.decode("utf-8", "replace"))
+    return int(m.group(1)) if m else 0
+
+def lines_with_words(pdf, pageno):
+    """Words on one page (1-based) grouped into lines, each word with its x position."""
+    if OCR.get(str(pdf)):
+        return group_lines(ocr_words(pdf, pageno))
+    import pdfplumber
+    with pdfplumber.open(str(pdf)) as doc:
+        if pageno > len(doc.pages): return []
+        words = doc.pages[pageno - 1].extract_words(keep_blank_chars=False, x_tolerance=1.5, y_tolerance=2)
+    return group_lines([{"t": w["text"], "x0": w["x0"], "x1": w["x1"], "top": w["top"]} for w in words])
 
 def text_of(ln): return " ".join(w["t"] for w in ln)
 
 def year_columns(ln):
-    """x positions of the fiscal years named on a header line, merging 'FY:' and '2023' when split."""
+    """x positions of the fiscal years named on a header line. When the years skip one (a heading OCR could not
+    read), the missing year is put halfway between its neighbors."""
     out = []
     for w in ln:
-        m = YEAR.match(w["t"].replace(" ", ""))
+        t = w["t"].replace(" ", "").strip(":.,;'\"|_")
+        m = YEAR.match(t)
+        d = re.fullmatch(r"\d{1,2}/\d{1,2}/(\d{2}|\d{4})", t)  # a heading like 1/1/2019 or 12/31/23
         if m: out.append((int(m.group(1)), w["xc"]))
+        elif d: out.append((int(d.group(1)) + (2000 if len(d.group(1)) == 2 else 0), w["xc"]))
+    out.sort(key=lambda t: t[1])
+    if len(out) == 7 and not all(b[0] == a[0] + 1 for a, b in zip(out, out[1:])) and out[0][0] + 6 >= out[-1][0]:
+        # A heading repeats or skips a year (Pawtucket 2023 lists 2024 twice). Seven columns are always seven years.
+        out = [(out[0][0] + k, x) for k, (_, x) in enumerate(out)]
+    if len(out) >= 3 and all(b[0] > a[0] for a, b in zip(out, out[1:])):
+        filled = [out[0]]
+        for a, b in zip(out, out[1:]):
+            gap = b[0] - a[0]
+            if 1 < gap <= 3:
+                for k in range(1, gap):
+                    filled.append((a[0] + k, a[1] + (b[1] - a[1]) * k / gap))
+            filled.append(b)
+        out = filled
     return out
+
+def number_columns(lines, k):
+    """Find k columns from where the numbers on full rows line up (they are usually right-aligned, so headings can sit
+    off-center). Returns k (low, high, center) ranges, or None when the numbers don't split cleanly into k groups."""
+    xs = []
+    for ln in lines:
+        nums = [w for w in ln if is_num(w["t"]) and w["t"] not in ("#", "$")]
+        if len(nums) >= k: xs += [w["x1"] for w in nums]
+    if len(xs) < k * 2: return None
+    xs.sort()
+    gaps = sorted(range(1, len(xs)), key=lambda i: xs[i] - xs[i - 1], reverse=True)[:k - 1]
+    if len(gaps) < k - 1: return None
+    cuts = sorted(gaps)
+    groups, start = [], 0
+    for c in cuts + [len(xs)]:
+        groups.append(xs[start:c]); start = c
+    if any(not g for g in groups): return None
+    small = min(xs[i] - xs[i - 1] for i in cuts)
+    widest = max(g[-1] - g[0] for g in groups)
+    if small < 8 or widest > small * 1.5: return None  # the groups are not clearly apart
+    return [(g[0], g[-1], sum(g) / len(g)) for g in groups]
+
+def nearest(cols, x):
+    for i, (lo, hi, _) in enumerate(cols):
+        if lo - 2 <= x <= hi + 2: return i
+    return min(range(len(cols)), key=lambda i: abs(cols[i][2] - x))
 
 # ---------- Table 3: revenue and expenses ----------
 
@@ -154,7 +260,7 @@ def parse_table3(lines, start_idx):
     """Rows from the line after the Table 3 question to the profit/loss line. Returns (years, rows, notes)."""
     years, rows, notes = [], [], []
     section, pending, i = "revenues", [], start_idx + 1
-    first_x = None
+    first_x, cols = None, None
     while i < len(lines):
         ln = lines[i]; low = text_of(ln).lower()
         if any(e in low for e in T3_END): break
@@ -162,6 +268,9 @@ def parse_table3(lines, start_idx):
         if len(yc) >= 3 and not rows:
             years = yc if len(yc) > len(years) else years
             first_x = min(x for _, x in years) - 25
+            end = next((j for j in range(i + 1, len(lines)) if any(e in text_of(lines[j]).lower() for e in T3_END)), len(lines))
+            cols = number_columns(lines[i + 1:end], len(years))
+            if cols: first_x = min(first_x, cols[0][0] - 60)
             i += 1; continue
         if re.match(r"^\s*revenues?\b", low) and not [w for w in ln if is_num(w["t"])]:
             section = "revenues"; i += 1; continue
@@ -184,8 +293,9 @@ def parse_table3(lines, start_idx):
                 label = norm(" ".join(w["t"] for w in nxt if w["xc"] < first_x)); i += 1
         label = norm(" ".join(pending + [label])); pending = []
         vals = {}
+        ys = sorted(years, key=lambda t: t[1])
         for w in nums:
-            yr = min(years, key=lambda y: abs(y[1] - w["xc"]))
+            yr = ys[nearest(cols, w["x1"])] if cols else min(years, key=lambda y: abs(y[1] - w["xc"]))
             v = parse_num(w["t"])
             if yr[0] in vals and v is not None and vals[yr[0]] is not None:
                 notes.append(f"two numbers fell under {yr[0]} on line '{label}'")
@@ -204,9 +314,14 @@ def parse_table2(lines, start_idx, stop_idx):
     for ln in lines[start_idx + 1:stop_idx]:
         yc = year_columns(ln)
         if len(yc) >= 2:
-            cur = {"years": sorted(yc, key=lambda t: t[1]), "rows": []}; blocks.append(cur); pending = []; continue
+            cur = {"years": sorted(yc, key=lambda t: t[1]), "rows": [], "cols": None}; blocks.append(cur); pending = []
+            here = lines.index(ln)
+            nxt = next((j for j in range(here + 1, stop_idx) if len(year_columns(lines[j])) >= 2), stop_idx)
+            cur["cols"] = number_columns(lines[here + 1:nxt], 2 * len(yc))
+            continue
         if cur is None: continue
         first_x = cur["years"][0][1] - 45
+        if cur["cols"]: first_x = min(first_x, cur["cols"][0][0] - 40)
         nums = [w for w in ln if w["xc"] >= first_x and is_num(w["t"])]
         label = norm(" ".join(w["t"] for w in ln if w["xc"] < first_x))
         if not nums:
@@ -217,10 +332,14 @@ def parse_table2(lines, start_idx, stop_idx):
         if not label: continue
         vals = defaultdict(dict)
         for w in nums:
-            yr = min(cur["years"], key=lambda y: abs(y[1] - w["xc"]))[0]
             v = parse_num(w["t"])
             if v is None: continue
-            kind = "fte" if (w["t"].startswith("#") or (v < 1000 and "$" not in w["t"])) else "payroll"
+            if cur["cols"]:
+                c = nearest(cur["cols"], w["x1"])
+                yr, kind = cur["years"][c // 2][0], ("fte" if c % 2 == 0 else "payroll")
+            else:
+                yr = min(cur["years"], key=lambda y: abs(y[1] - w["xc"]))[0]
+                kind = "fte" if (w["t"].startswith("#") or (v < 1000 and "$" not in w["t"])) else "payroll"
             vals[yr][kind] = v
         cur["rows"].append({"label": label, "vals": dict(vals)})
     return blocks, notes
@@ -289,7 +408,7 @@ def sources(manifest, only, years):
         if key in seen: continue
         seen.add(key)
         urls = []
-        if v.get("status") == "archived" and v.get("archive_url"):
+        if v.get("status") == "archived" and v.get("archive_url") and v.get("kind") != "folder":
             urls = [v["archive_url"]]
         elif v.get("status") == "archived" and v.get("kind") == "folder" and v.get("item"):
             try:
@@ -310,9 +429,16 @@ def sources(manifest, only, years):
 
 def extract(pdf, src, cec, out_rows, report):
     texts = page_texts(pdf)
+    read_by = "text"
     if sum(len(t.strip()) for t in texts[:20]) < 200:
-        report.append(f"- **No text in the PDF** ({len(texts)} pages). It is a scan and needs OCR.")
-        return 0
+        total = page_count(pdf) or len(texts)
+        n = min(total, OCR_SCAN_PAGES)
+        log(f"  scanned PDF ({total} pages), reading the first {n} with OCR")
+        texts = ocr_texts(pdf, n) + [""] * max(0, total - n)
+        OCR[str(pdf)] = True
+        read_by = "ocr"
+        report.append(f"- Scanned PDF ({total} pages). Read with OCR (first {n} pages searched). "
+                      "Check these numbers against the page before relying on them.")
     flat = [norm(t).lower() for t in texts]
     t3_pages = [i + 1 for i, t in enumerate(flat) if T3_START in t]
     t2_pages = [i + 1 for i, t in enumerate(flat) if T2_START in t]
@@ -325,6 +451,16 @@ def extract(pdf, src, cec, out_rows, report):
         idx = next((k for k, ln in enumerate(lines) if T3_START in text_of(ln).lower()), None)
         if idx is None: continue
         years, rows, notes = parse_table3(lines, idx)
+        t3_read = read_by
+        if not any(x["vals"] for x in rows) and read_by == "text":
+            # The question is text but the table is a picture. Read the two pages with OCR instead.
+            o = group_lines(ocr_words(pdf, p3)) + group_lines(ocr_words(pdf, p3 + 1))
+            k = next((k for k, ln in enumerate(o) if "following table" in text_of(ln).lower()), None)
+            if k is not None:
+                y2, r2, n2 = parse_table3(o, k)
+                if any(x["vals"] for x in r2):
+                    lines, idx, years, rows, notes, t3_read = o, k, y2, r2, n2, "ocr"
+        if not any(x["vals"] for x in rows): notes.append("the table has no numbers (left blank, or not readable)")
         dump = lambda n: DEBUG.append(f"===== {src['year']} {src['applicant']} | page {p3} | {'; '.join(n)}\n" + "\n".join(
             " ".join(f"{w['t']}@{w['xc']:.0f}" for w in ln) for ln in lines[idx: idx + 70]))
         home = home_name(texts, p3)
@@ -342,7 +478,7 @@ def extract(pdf, src, cec, out_rows, report):
         if tot:
             for y in years:
                 parts = [x["vals"].get(y) for x in rows if x["section"] == "expenses"
-                         and categorize(x["label"], FIN_CATS, x["section"]) not in ("total_expenses", "operating_profit")]
+                         and categorize(x["label"], FIN_CATS, x["section"]) not in ("total_expenses", "operating_profit", "subtotal")]
                 s = sum(v for v in parts if v)
                 t = tot["vals"].get(y)
                 if t and abs(s - t) > max(2, abs(t) * 0.005):
@@ -351,7 +487,7 @@ def extract(pdf, src, cec, out_rows, report):
             cat = categorize(x["label"], FIN_CATS, x["section"])
             for k, y in enumerate(years):
                 if y not in x["vals"]: continue
-                out_rows.append({**base(src, p3, home, r), "table": "finances", "section": x["section"], "line": x["label"],
+                out_rows.append({**base(src, p3, home, r, t3_read), "table": "finances", "section": x["section"], "line": x["label"],
                                  "category": cat, "fy": y, "column": cols[k] if cols else "", "fte": "",
                                  "amount": fmt(x["vals"][y])})
         if notes: dump(notes)
@@ -366,6 +502,18 @@ def extract(pdf, src, cec, out_rows, report):
         stop = next((k for k, ln in enumerate(lines) if T3_START in text_of(ln).lower()), len(lines))
         if idx is None: continue
         blocks, notes = parse_table2(lines, idx, stop)
+        t2_read = read_by
+        if not any(x["vals"] for b in blocks for x in b["rows"]) and read_by == "text":
+            o = []
+            for p in range(p2, min(nxt, p2 + 2) + 1): o += group_lines(ocr_words(pdf, p))
+            k = next((k for k, ln in enumerate(o) if "number of ftes" in text_of(ln).lower()), None)
+            if k is not None:
+                st = next((j for j, ln in enumerate(o) if "following table" in text_of(ln).lower()), len(o))
+                b2, n2 = parse_table2(o, k, st)
+                if any(x["vals"] for b in b2 for x in b["rows"]):
+                    lines, idx, stop, blocks, notes, t2_read = o, k, st, b2, n2, "ocr"
+        if not any(x["vals"] for b in blocks for x in b["rows"]):
+            notes.append("the table has no numbers (left blank, or not readable)")
         home = home_name(texts, p2) or src["applicant"]
         for ln in lines[idx: idx + 4]:
             m = re.match(r"(.+?)\s+Past\s+Three", text_of(ln))
@@ -378,7 +526,8 @@ def extract(pdf, src, cec, out_rows, report):
             tot = next((x for x in blk["rows"] if categorize(x["label"], STAFF_CATS) == "total"), None)
             for y in yrs:
                 if tot and tot["vals"].get(y, {}).get("payroll"):
-                    s = sum(x["vals"].get(y, {}).get("payroll") or 0 for x in blk["rows"] if x is not tot)
+                    s = sum(x["vals"].get(y, {}).get("payroll") or 0 for x in blk["rows"]
+                            if x is not tot and categorize(x["label"], STAFF_CATS) not in ("subtotal", "total"))
                     t = tot["vals"][y]["payroll"]
                     if abs(s - t) > max(2, t * 0.005): notes.append(f"{y}: payroll lines add to {s:,.0f} but Totals says {t:,.0f}")
             for x in blk["rows"]:
@@ -386,11 +535,12 @@ def extract(pdf, src, cec, out_rows, report):
                 for k, y in enumerate(yrs):
                     v = x["vals"].get(y)
                     if not v: continue
-                    out_rows.append({**base(src, p2, home, r), "table": "staff", "section": "", "line": x["label"],
+                    out_rows.append({**base(src, p2, home, r, t2_read), "table": "staff", "section": "", "line": x["label"],
                                      "category": cat, "fy": y, "column": kinds[k], "fte": fmt(v.get("fte")),
                                      "amount": fmt(v.get("payroll"))})
                     nrows += 1
-        if len(blocks) < 2: notes.append(f"found {len(blocks)} year blocks, expected 2 (past and projected)")
+        if len(blocks) < 2 and any(x["vals"] for b in blocks for x in b["rows"]):
+            notes.append(f"found {len(blocks)} year blocks, expected 2 (past and projected)")
         if notes:
             DEBUG.append(f"===== {src['year']} {src['applicant']} | page {p2} | {'; '.join(notes)}\n" + "\n".join(
                 " ".join(f"{w['t']}@{w['xc']:.0f}" for w in ln) for ln in lines[idx: min(stop, idx + 90)]))
@@ -399,8 +549,8 @@ def extract(pdf, src, cec, out_rows, report):
                       + ("" if not notes else " **Check:** " + "; ".join(notes)))
     return found
 
-def base(src, page, home, r):
-    return {"applicant": src["applicant"], "application_year": src["year"], "archive_item": src["item"],
+def base(src, page, home, r, read_by="text"):
+    return {"read_by": read_by, "applicant": src["applicant"], "application_year": src["year"], "archive_item": src["item"],
             "link": src["link"], "pdf_page": page, "home": home,
             "cec_id": r["id"] if r else "", "cec_facility": r["facility"] if r else "",
             "cec_outcome": r["outcome"] if r else ""}
@@ -412,7 +562,7 @@ def fmt(v):
     if v is None: return ""
     return str(int(v)) if float(v).is_integer() else f"{v:.2f}"
 
-FIELDS = ["applicant", "application_year", "archive_item", "link", "pdf_page", "home", "cec_id", "cec_facility",
+FIELDS = ["read_by", "applicant", "application_year", "archive_item", "link", "pdf_page", "home", "cec_id", "cec_facility",
           "cec_outcome", "table", "section", "line", "category", "fy", "column", "fte", "amount"]
 
 def main():
