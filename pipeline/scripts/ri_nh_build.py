@@ -1817,7 +1817,7 @@ PAGE_TEMPLATE = r'''<!DOCTYPE html>
 <meta property="og:image" content="https://snfsales.abc-ri.org/abcri-logo.png">
 <meta property="og:image:alt" content="ABC-RI logo">
 <meta name="twitter:card" content="summary">
-<link rel="icon" href="abcri-logo.png">
+<link rel="icon" href="favicon.ico" sizes="any"><link rel="icon" type="image/png" href="favicon.png"><link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap">
