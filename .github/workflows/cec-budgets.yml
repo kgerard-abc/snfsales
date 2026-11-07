@@ -47,12 +47,14 @@ jobs:
           ARGS=()
           if [ -n "$YEARS" ]; then ARGS+=(--years "$YEARS"); fi
           if [ -n "$ONLY" ]; then ARGS+=(--only "$ONLY"); fi
+          if [ "${{ github.event_name }}" = "push" ]; then ARGS+=(--debug); fi
           python3 .github/scripts/cec_budgets.py "${ARGS[@]}"
       - name: Save the results
         run: |
           git config user.name "abc-ri-bot"
           git config user.email "actions@users.noreply.github.com"
           git add pipeline/cec_budgets.csv pipeline/cec_budgets_report.md
+          if [ -f pipeline/cec_budgets_debug.txt ]; then git add pipeline/cec_budgets_debug.txt; fi
           git diff --cached --quiet && echo "Nothing new" && exit 0
           git commit -m "Budget tables from CEC applications $(date +%F)"
           git pull --rebase origin "${GITHUB_REF_NAME}"

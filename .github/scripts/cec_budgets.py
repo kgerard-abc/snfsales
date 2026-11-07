@@ -28,12 +28,13 @@ CEC_LOG = ROOT / "pipeline" / "cec_log_snapshot.json"
 OUT_CSV = ROOT / "pipeline" / "cec_budgets.csv"
 OUT_REPORT = ROOT / "pipeline" / "cec_budgets_report.md"
 UA = {"User-Agent": "abc-ri-update/1.0"}
+DEBUG = []  # with --debug, the raw lines of tables that failed a check go to pipeline/cec_budgets_debug.txt
 
 T2_START = "total number of ftes"
 T3_START = "complete the following table for the facility"
 T3_END = ("net patient revenues (dollar value", "please provide net patient revenues")
 YEAR = re.compile(r"^(?:FY[:\-]?)?\(?((?:19|20)\d\d)\)?:?$", re.I)
-NUM = re.compile(r"^\(?-?\$?\s?-?\(?[\d,]+(?:\.\d+)?\)?$")
+NUM = re.compile(r"^\(?-?\$?\s?-?\(?(?:[\d,]+(?:\.\d+)?|\.\d+)\)?$")
 DASHES = {"-", "–", "—", "$-", "$–"}
 COLS7 = ["actual", "actual", "actual", "budget", "projected", "projected", "projected"]
 
@@ -243,7 +244,8 @@ def match_home(home, applicant, app_year, cec):
     for r in cec:
         if r["year"] is None or not (app_year - 1 <= r["year"] <= app_year + 2): continue
         ft = name_tokens(r["facility"]) | name_tokens(r["town"])
-        s = len(toks & ft) * 2 + len(name_tokens(applicant) & (name_tokens(r["buyer"]) | ft)) * 0.5
+        # The home name decides; the applicant name only breaks ties (one PDF can hold several homes).
+        s = len(toks & ft) * 2 + min(len(name_tokens(applicant) & (name_tokens(r["buyer"]) | ft)), 2) * 0.25
         if s > score: best, score = r, s
     return (best, score) if score >= 2 else (None, score)
 
@@ -323,6 +325,8 @@ def extract(pdf, src, cec, out_rows, report):
         idx = next((k for k, ln in enumerate(lines) if T3_START in text_of(ln).lower()), None)
         if idx is None: continue
         years, rows, notes = parse_table3(lines, idx)
+        dump = lambda n: DEBUG.append(f"===== {src['year']} {src['applicant']} | page {p3} | {'; '.join(n)}\n" + "\n".join(
+            " ".join(f"{w['t']}@{w['xc']:.0f}" for w in ln) for ln in lines[idx: idx + 70]))
         home = home_name(texts, p3)
         heading = ""
         for ln in lines[idx: idx + 4]:
@@ -350,6 +354,7 @@ def extract(pdf, src, cec, out_rows, report):
                 out_rows.append({**base(src, p3, home, r), "table": "finances", "section": x["section"], "line": x["label"],
                                  "category": cat, "fy": y, "column": cols[k] if cols else "", "fte": "",
                                  "amount": fmt(x["vals"][y])})
+        if notes: dump(notes)
         found += 1
         report.append(f"- Table 3, page {p3}: **{home}** ({match_text(r, score)}), years {years[0] if years else '?'}-{years[-1] if years else '?'}, "
                       f"{len(rows)} lines." + ("" if not notes else " **Check:** " + "; ".join(notes)))
@@ -386,6 +391,9 @@ def extract(pdf, src, cec, out_rows, report):
                                      "amount": fmt(v.get("payroll"))})
                     nrows += 1
         if len(blocks) < 2: notes.append(f"found {len(blocks)} year blocks, expected 2 (past and projected)")
+        if notes:
+            DEBUG.append(f"===== {src['year']} {src['applicant']} | page {p2} | {'; '.join(notes)}\n" + "\n".join(
+                " ".join(f"{w['t']}@{w['xc']:.0f}" for w in ln) for ln in lines[idx: min(stop, idx + 90)]))
         found += 1
         report.append(f"- Table 2, page {p2}: **{home}** ({match_text(r, score)}), {nrows} numbers."
                       + ("" if not notes else " **Check:** " + "; ".join(notes)))
@@ -412,6 +420,7 @@ def main():
     ap.add_argument("--only", default="")
     ap.add_argument("--years", default="")
     ap.add_argument("--keep-pdfs", default="")
+    ap.add_argument("--debug", action="store_true")
     a = ap.parse_args()
     years = {y.strip() for y in a.years.split(",") if y.strip()}
     manifest = json.loads(MANIFEST.read_text())
@@ -466,6 +475,8 @@ def main():
         f"No copy to read: {summary['no copy']}. Homes with numbers: {len(homes)}. Numbers saved: {len(out_rows)}.",
     ]
     OUT_REPORT.write_text("\n".join(head + report) + "\n")
+    if a.debug:
+        (ROOT / "pipeline" / "cec_budgets_debug.txt").write_text("\n\n".join(DEBUG) + "\n")
     log("\n".join(head[-1:]))
 
 if __name__ == "__main__":
