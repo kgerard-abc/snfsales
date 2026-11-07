@@ -1114,7 +1114,7 @@ def build_public_data(M, S, val, cec, mp, ccn_of, fn, cfg):
     # same-home levels before vs after (for the before/after chart)
     def levels(metric, col):
         out = {}
-        # the same sales as the "One measure at a time" chart's default view, so the two agree
+        # the same sales as the "Change by measure" chart's default view, so the two agree
         base = S[S.counts & S.type.isin(('Ownership/operator change',)) & S.before.notna() & ~S.pre_method]
         for k, lbl in (('y1', '1'), ('y2', '2')):
             pr = [(getattr(r, f'{metric}_before'), getattr(r, f'{metric}_{k}')) for r in base.itertuples() if nz(getattr(r, f'{metric}_before')) is not None and nz(getattr(r, f'{metric}_{k}')) is not None]
@@ -1964,7 +1964,7 @@ footer a{color:var(--fg)}
 <span class="asof" id="asof"></span>
 </div></header>
 <nav class="jump" aria-label="Sections"><div class="wrap">
-<a href="#sold">When homes were sold</a><a href="#lookup">Look up a home</a><a href="#groups">Owner groups</a><a href="#related">Related-party money</a><a href="#about">About the data</a>
+<a href="#sold">When homes were sold</a><a href="#lookup">Look up a home</a><a href="#groups">Owner groups</a><a href="#related">Money to owners’ companies</a><a href="#about">About the data</a>
 </div></nav>
 <main class="wrap">
 <section id="sold"><h2>What happened when homes were sold</h2>
@@ -1977,7 +1977,7 @@ footer a{color:var(--fg)}
 <div class="panel" id="ba-panel"><h3 style="margin-top:0">The same homes, before and after</h3>
 <p class="lede" id="ba-lede"></p><div class="chartbox" id="ba-chart"></div><p class="small" id="ba-count"></p><p class="small" id="ba-note"></p></div>
 
-<h3>One measure at a time</h3>
+<h3>Change by measure: sold homes compared with similar homes</h3>
 <div class="panel">
 <div class="row"><div class="tabs" role="group" aria-label="Which changes" id="set-tabs" style="margin:0"></div><div class="tabs" role="group" aria-label="Choose a measure" id="metric-tabs" style="margin:0"></div></div>
 <p class="small" id="study-howto" style="margin:4px 0 0"></p>
@@ -2013,7 +2013,7 @@ footer a{color:var(--fg)}
 </details>
 </section>
 
-<section id="related"><h2>Related-party money, home by home</h2>
+<section id="related"><h2>Money paid to owners’ own companies, by home</h2>
 <p class="lede">Every nursing home that takes Medicare files a yearly cost report with the federal government. One part of it, Worksheet A-8-1, lists what the home paid to "related parties": companies the home's own owners also control, such as the landlord it pays rent to, a management company, or a therapy or staffing company. This table shows those payments for each Rhode Island home, from its newest cost report on file. The reports come from CMS's <a href="https://www.cms.gov/data-research/statistics-trends-and-reports/cost-reports" target="_blank" rel="noopener">Healthcare Cost Report Information System (HCRIS)</a>, form CMS-2540-10; the public files run about two years behind.</p>
 <details class="small" style="margin:0 0 10px"><summary>How to read this table</summary>
 <ul style="margin:6px 0 0">
@@ -2646,13 +2646,20 @@ function showFacility(id, scroll) {
   const cell = (p, label) => el('td', { class: 'num' + (p ? few(p.n) : '') }, p ? [chipAvg(p.before), el('span', { class: 'arrow', text: '\u2192' }), chipAvg(p.after), el('div', { class: 'small', text: p.n + (p.n === 1 ? ' home' : ' homes') + (p.n < 3 ? ', too few to average' : '') })] : el('span', { class: 'small', text: 'not yet' }));
   function chipAvg(v) { return el('b', { text: v.toFixed(1) }); }
   D.groups.forEach(g => { const ten = (D.tenures || []).filter(x => x.group === g.group), tr_ = (D.track || {})[g.group];
-    const tOf = name => ten.find(x => x.name === name);
+    // A group can have run the same home twice (Health Concepts at Crystal Lake, 2007 to 2019 and again from 2026), so match the tenure to the sale date.
+    const tOf = (name, date) => { const c = ten.filter(x => x.name === name); if (!c.length) return null; if (!date) return c[c.length - 1];
+      return c.find(x => x.start && x.start <= date && (!x.end || x.end > date)) || c.find(x => x.start && Math.abs(new Date(x.start) - new Date(date)) < 120 * 864e5) || c[c.length - 1]; };
     const detail = el('tr', { class: 'hidden' }, el('td', { colspan: 8 }, el('table', {}, el('thead', {}, el('tr', {}, ['Home', 'Sale date', 'When it took over', 'After 1 year', 'After 2 years', 'Latest (years since)', 'Ran it from', 'Immediate jeopardy', 'Harm citations', 'Fines'].map(x => el('th', { text: x })))),
-      el('tbody', {}, g.homes.map(h2 => { const t2 = tOf(h2.name); return el('tr', {}, el('td', { text: h2.name }), el('td', {}, fmtDay(h2.date), h2.managed_from ? el('div', { class: 'small', text: 'Managing from ' + fmtMon(h2.managed_from) }) : null), el('td', {}, chip(h2.before)), el('td', {}, chip(h2.y1)), el('td', {}, chip(h2.y2)), el('td', {}, chip(h2.latest), h2.yrs != null ? el('span', { class: 'small', text: '  (' + h2.yrs + ' yrs' + (t2 && t2.end ? ', until it sold in ' + fmtMon(t2.end) : '') + ')' }) : null),
+      el('tbody', {}, g.homes.map(h2 => { const t2 = tOf(h2.name, h2.managed_from || h2.date); return el('tr', {}, el('td', { text: h2.name }), el('td', {}, fmtDay(h2.date), h2.managed_from ? el('div', { class: 'small', text: 'Managing from ' + fmtMon(h2.managed_from) }) : null), el('td', {}, chip(h2.before)), el('td', {}, chip(h2.y1)), el('td', {}, chip(h2.y2)), el('td', {}, chip(h2.latest), h2.yrs != null ? el('span', { class: 'small', text: '  (' + h2.yrs + ' yrs' + (t2 && t2.end ? ', until it sold in ' + fmtMon(t2.end) : '') + ')' }) : null),
         el('td', { text: t2 ? ranIt(t2) : '\u2013' }), el('td', { class: 'num', text: t2 ? String(t2.ij) : '\u2013' }), el('td', { class: 'num', text: t2 ? String(t2.harm) : '\u2013' }), el('td', { class: 'num', text: t2 ? money0(t2.fines) : '\u2013' })); })))));
     const btn = el('button', { class: 'linkbtn', text: g.group, 'aria-expanded': 'false', onclick: () => { detail.classList.toggle('hidden'); btn.setAttribute('aria-expanded', String(!detail.classList.contains('hidden'))); } });
-    const ended = g.homes.map(h2 => tOf(h2.name)).filter(t2 => t2 && t2.end), allLeft = g.homes.length > 0 && ended.length === g.homes.length, someLeft = ended.length > 0 && !allLeft;
-    tb.append(el('tr', {}, el('td', {}, btn, el('div', { class: 'small', text: 'click to see each home' })), el('td', { class: 'num', text: String(g.n) }), cell(g.y1), cell(g.y2), el('td', { class: 'num' + (g.latest ? few(g.latest.n) : '') }, g.latest ? [chipAvg(g.latest.before), el('span', { class: 'arrow', text: '\u2192' }), chipAvg(g.latest.after), el('div', { class: 'small', text: g.latest.n + (g.latest.n === 1 ? ' home' : ' homes') + (g.latest.n < 3 ? ' (too few to average)' : '') + (g.yrs != null ? ', typically ' + g.yrs + (g.yrs === 1 ? ' yr' : ' yrs') + (allLeft ? ' later, when it sold' : someLeft ? ' later (some since sold)' : ' later') : '') })] : '\u2013'),
+    const ended = g.homes.map(h2 => tOf(h2.name, h2.managed_from || h2.date)).filter(t2 => t2 && t2.end), allLeft = g.homes.length > 0 && ended.length === g.homes.length, someLeft = ended.length > 0 && !allLeft;
+    // Internal ownership restructurings approved for this group's homes (one owner buying out the others, an estate, a new holding
+    // company) are not sales and are not counted; say so under the count, so a group with few sales but many such reviews is not misread.
+    const key = g.group.toLowerCase().replace(/,? (ltd|llc|inc)\.?$/, '').split(' / ')[0].trim();
+    const internal = D.facilities.flatMap(f => (f.events || []).filter(e => e.kind === 'internal' && e.outcome !== 'Pending' && e.date && ((e.buyer || '').toLowerCase() === g.group.toLowerCase() || (e.who || '').toLowerCase().includes(key))).map(e => ({ ...e, home: f.name })));
+    const iyrs = [...new Set(internal.map(r => r.date.slice(0, 4)))].sort();
+    tb.append(el('tr', {}, el('td', {}, btn, el('div', { class: 'small', text: 'click to see each home' })), el('td', { class: 'num' }, String(g.n), internal.length ? el('div', { class: 'small', text: 'plus ' + internal.length + ' internal ownership restructuring' + (internal.length === 1 ? '' : 's') + ' (' + iyrs.join(', ') + '), not counted as sales' }) : null), cell(g.y1), cell(g.y2), el('td', { class: 'num' + (g.latest ? few(g.latest.n) : '') }, g.latest ? [chipAvg(g.latest.before), el('span', { class: 'arrow', text: '\u2192' }), chipAvg(g.latest.after), el('div', { class: 'small', text: g.latest.n + (g.latest.n === 1 ? ' home' : ' homes') + (g.latest.n < 3 ? ' (too few to average)' : '') + (g.yrs != null ? ', typically ' + g.yrs + (g.yrs === 1 ? ' yr' : ' yrs') + (allLeft ? ' later, when it sold' : someLeft ? ' later (some since sold)' : ' later') : '') })] : '\u2013'),
       el('td', { class: 'num' }, tr_ ? [el('b', { text: String(tr_.ij) }), el('div', { class: 'small', text: 'over ' + tr_.years + ' home-years' })] : '\u2013'),
       el('td', { class: 'num', text: tr_ ? String(tr_.harm) : '\u2013' }), el('td', { class: 'num', text: tr_ ? money0(tr_.fines) : '\u2013' })), detail); }); }
 
@@ -2735,7 +2742,7 @@ const ab = $('#about-body');
  ['Payroll data problems', 'When a home does not send its payroll-based staffing data on time, fails a CMS staffing audit, or reports 4 or more days in a quarter with no RN, CMS gives it 1 staffing star (Five-Star Technical Users\' Guide, September 2026), and the hours it publishes can be implausibly low. Reported hours under 1.5 per resident per day, and turnover of 90% or more (CMS assigns its worst turnover score when payroll data is missing), are treated as that kind of problem and left out (gray bands on the hours and turnover charts).'],
  ['Homes without a star rating', 'CMS does not publish star ratings for homes in its Special Focus Facility program, which targets homes with a history of serious quality problems. Those months are counted as 0 stars (0 is not a CMS score) so that a home being in the program shows up in statewide averages, the share of low-rated homes, the star-mix chart (gray layer) and the sold-versus-not-sold comparison, including in the downloadable CSVs.'],
  ['Money paid to related parties', 'Each home files a Medicare cost report that lists payments to related parties: companies the same owners control, such as the landlord or a management company. Those payments are costs to the home, so a home can report thin or negative margins while its owners are paid through rent and fees. The before-and-after chart compares the same homes between the year before the sale and two years after, which is why its home counts are smaller than the ratings comparison.'],
- ['Related-party money, home by home', 'The Related-party money table and the panel on each home\u2019s page come from the same Medicare cost reports. All related-party costs is what the home reported paying companies its owners also control. Rent and management fees are the two biggest pieces; the rest is shown as other related companies (therapy, supplies, billing and similar). Only company names are shown, not the people behind them. The before and after column compares the year before a home\u2019s first sale on this page with its newest report. Margin is the operating margin the home reported.'],
+ ['Money paid to owners\u2019 own companies, by home', 'The money table and the panel on each home\u2019s page come from the same Medicare cost reports. All related-party costs is what the home reported paying companies its owners also control. Rent and management fees are the two biggest pieces; the rest is shown as other related companies (therapy, supplies, billing and similar). Only company names are shown, not the people behind them. The before and after column compares the year before a home\u2019s first sale on this page with its newest report. Margin is the operating margin the home reported.'],
  ['"CMS records updated" dates', 'CMS\u2019s files are not updated the day a sale closes. Where a sale has one, this page shows the first monthly CMS file listing the new operator; across these sales that came a median of about eight months after the date of record. It is a reporting lag, not a second event, and it matters for two reasons: ratings in those months were still filed under the old operator\u2019s name, and a CMS operator change with no matching state record is a sign of a change that may not have gone through review.'],
  ['Management agreements and timing', 'A buyer sometimes takes over day-to-day management of a home under a management agreement before the state approves the sale, and CMS can take months to list a new operator. Where a management start date is known it is shown on the home’s timeline and beside the sale. So the last rating before a sale may already reflect the buyer\u2019s management, and the sales table shows when CMS first lists the new operator. These agreements are not published. They have been requested through APRA from RIDOH.'],
  ['The comparison line', 'Similar homes are those with no change of control or new operator from a year before to two years after each sale, and that started at the same CMS star rating as the sold home on the same date (or, for staffing hours and turnover, the 8 homes with the closest figure). They are averaged over the same calendar dates as the sold homes, so statewide trends (the pandemic, staffing rules, rating changes) appear in both lines.'],
