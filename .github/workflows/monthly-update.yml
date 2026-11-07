@@ -72,7 +72,7 @@ jobs:
           bad = []
           if new['meta']['latest'] < old['meta']['latest']: bad.append(f"latest date went backwards: {old['meta']['latest']} to {new['meta']['latest']}")
           if len(new['facilities']) < len(old['facilities']): bad.append(f"facilities dropped from {len(old['facilities'])} to {len(new['facilities'])}")
-          dated = [s for s in old['sales'] if s.get('date')]      # undated sales are no longer listed
+          dated = [s for s in old['sales'] if s.get('date') and s.get('kind') != 'closed']      # undated sales are no longer listed, and closures are no longer rows in the sales table
           if len(new['sales']) < len(dated): bad.append(f"sales dropped from {len(dated)} to {len(new['sales'])}")
           print(f"::notice::Page now: latest {new['meta']['latest']}, {len(new['facilities'])} facilities, {len(new['sales'])} sales (was: latest {old['meta']['latest']}, {len(old['facilities'])} facilities, {len(old['sales'])} sales)")
           if bad:

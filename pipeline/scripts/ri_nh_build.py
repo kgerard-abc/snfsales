@@ -994,8 +994,7 @@ def build_public_data(M, S, val, cec, mp, ccn_of, fn, cfg):
     for r in log.itertuples():       # sales the CMS before/after analysis does not cover still get a row: no exact date (approximate date used) or a deal that fell through
         if r.cec in have or r.type not in cfg['public_include_types']: continue
         ovr = OVR.get(r.cec); d_, note_, kind_, tlab_ = T(r.chow) or T(r.decision), None, ('sale' if r.type == 'Ownership/operator change' else 'parent'), TYPE_LABEL.get(r.type, r.type)
-        if ovr and ovr['treat'] in ('closure', 'not a sale'):
-            d_ = T(ovr['date']) if ovr.get('date') else d_; note_ = 'Date from the workbook note'; kind_ = 'closed'; tlab_ = nz(ovr.get('label')) or 'Closed (not a sale)'
+        if ovr and ovr['treat'] in ('closure', 'not a sale'): continue   # a home that closed instead of being sold is not a sale: it stays on the home's own timeline, but not in the sales table or the sale counts
         elif ovr and ovr['treat'] == 'not completed': continue
         elif nz(r.outcome) == 'Pending':       # still under review: dated by the first filing date, else the review-commenced date
             d_ = _approx_date(getattr(r, 'filed_raw', None)) or _approx_date(getattr(r, 'decision_raw', None)); note_ = 'Application filing date'
@@ -2209,7 +2208,8 @@ function trio(a, b, c, fmt, cell) { const parts = [a, b, c].filter((v, i) => i =
 function drawSales() {
   const q = $('#sale-q').value.trim().toLowerCase(), incP = $('#sale-parent').checked, onlyC = $('#sale-cms').checked;
   let rows = D.sales.filter(r => (incP || r.kind !== 'parent') && (!onlyC || r.has_cms) && (!q || [r.name, r.town, r.buyer, r.who].join(' ').toLowerCase().includes(q)));
-  rows.sort((a, b) => { const A = a[sortKey] == null ? '' : a[sortKey], B = b[sortKey] == null ? '' : b[sortKey]; return (A < B ? -1 : A > B ? 1 : 0) * sortDir; });
+  const sortVal = r => { const v = r[sortKey] == null ? '' : r[sortKey]; return sortKey === 'date' && r.outcome === 'Pending' ? '9999-' + v : v; };   // sales still under review sort as newer than every decided sale, newest filing first
+  rows.sort((a, b) => { const A = sortVal(a), B = sortVal(b); return (A < B ? -1 : A > B ? 1 : 0) * sortDir; });
   const tb = $('#sales-tbl tbody'); tb.replaceChildren();
   rows.forEach(r => { const m = r.m;
     const newOwner = el('td', {}, r.buyer ? el('b', { text: r.buyer }) : null, r.buyer ? el('br') : null, el('span', { class: 'small', text: r.who }));
@@ -2220,7 +2220,7 @@ function drawSales() {
     const hrs = el('td', { class: 'num' }, r.has_cms && m.hours.before != null ? [f2(m.hours.before), el('span', { class: 'arrow', text: '\u2192' }), f2(m.hours.y1)] : '\u2013');
     const ser = el('td', { class: 'num' }, r.ser.before != null ? [String(r.ser.before), el('span', { class: 'arrow', text: '\u2192' }), r.ser.y1 == null ? '\u2013' : String(r.ser.y1)] : '\u2013');
     const fin = el('td', { class: 'num' }, r.fines.before != null ? [money(r.fines.before), el('span', { class: 'arrow', text: '\u2192' }), r.fines.y1 == null ? '\u2013' : money(r.fines.y1)] : '\u2013');
-    tb.append(el('tr', {}, el('td', { class: 'num', title: r.date_note }, fmtDay(r.date), dateMark(r.date_note), r.date_note === 'Approximate date' ? el('div', { class: 'small', text: 'Approximate. The state record does not give an exact date.' }) : null, r.mgmt_start ? el('div', { class: 'small', text: 'Buyer managing from ' + fmtMon(r.mgmt_start) }) : null, r.cms_op ? el('div', { class: 'small', text: 'CMS records updated ' + fmtMon(r.cms_op) }) : null), el('td', {}, D.facilities.some(f => f.id === r.fid) ? el('button', { class: 'linkbtn', text: r.name, onclick: () => showFacility(r.fid, true) }) : r.name, r.town ? el('div', { class: 'small', text: r.town }) : null), el('td', {}, r.label, r.outcome === 'Pending' ? el('div', { class: 'small', text: 'Pending' }) : null), newOwner, stars, hrs, ser, fin)); const cd = cecDetail(r.cec, 'Conditions and documents for this sale'); if (cd) tb.append(el('tr', { class: 'cecrow' }, el('td', { colspan: 8 }, cd))); });
+    tb.append(el('tr', {}, el('td', { class: 'num', title: r.date_note }, r.outcome === 'Pending' ? 'Pending, application submitted ' + fmtDay(r.date) : [fmtDay(r.date), dateMark(r.date_note)], r.date_note === 'Approximate date' ? el('div', { class: 'small', text: 'Approximate. The state record does not give an exact date.' }) : null, r.mgmt_start ? el('div', { class: 'small', text: 'Buyer managing from ' + fmtMon(r.mgmt_start) }) : null, r.cms_op ? el('div', { class: 'small', text: 'CMS records updated ' + fmtMon(r.cms_op) }) : null), el('td', {}, D.facilities.some(f => f.id === r.fid) ? el('button', { class: 'linkbtn', text: r.name, onclick: () => showFacility(r.fid, true) }) : r.name, r.town ? el('div', { class: 'small', text: r.town }) : null), el('td', {}, r.label, r.outcome === 'Pending' ? el('div', { class: 'small', text: 'Pending' }) : null), newOwner, stars, hrs, ser, fin)); const cd = cecDetail(r.cec, 'Conditions and documents for this sale'); if (cd) tb.append(el('tr', { class: 'cecrow' }, el('td', { colspan: 8 }, cd))); });
   if (!rows.length) tb.append(el('tr', {}, el('td', { colspan: 8, text: 'No sales match.' })));
 }
 $('#date-legend').textContent = dateLegend();
