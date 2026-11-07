@@ -1958,7 +1958,7 @@ footer a{color:var(--fg)}
 </head>
 <body>
 <header class="masthead"><div class="wrap">
-<a class="site-logo-link" href="https://abc-ri.org"><img class="site-logo" src="abcri-logo.png" width="420" height="160" alt="ABC-RI: Advocates for Better Care in Rhode Island"></a>
+<a class="site-logo-link" href="https://www.abc-ri.org/"><img class="site-logo" src="abcri-logo.png" width="420" height="160" alt="ABC-RI: Advocates for Better Care in Rhode Island"></a>
 <h1 id="ttl"></h1>
 <p>What CMS's public data shows about how Rhode Island nursing homes' ratings, staffing and inspections changed after the homes were sold, and who has owned each home over time.</p>
 <span class="asof" id="asof"></span>
@@ -2749,7 +2749,10 @@ const ab = $('#about-body');
  ['What this does not show', 'Why ratings changed. A sale can happen because a home was struggling, and many homes were already slipping before the sale. With a few dozen sales, averages can be moved by a handful of homes; the counts are shown.'],
  ['Homes not shown in charts', 'Homes with no CMS data in these files (for example some Brookdale nursing beds and one pediatric facility) appear with their state review record only. Homes that closed or left the CMS files are marked.'],
  ['Corrections', '']].forEach(a => ab.append(el('details', { open: a[0] === 'Where the numbers come from' ? '' : null }, el('summary', { text: a[0] }), a[0] === 'Corrections' ? el('p', {}, D.meta.contact ? ['Send corrections to ', el('a', { href: 'mailto:' + D.meta.contact, text: D.meta.contact }), '.'] : 'Please report corrections to the organization that published this page.') : el('p', { text: a[1] }))));
-$('#foot').append(el('p', {}, el('b', {}, el('a', { href: 'https://abc-ri.org', text: 'ABC-RI' })), ' \u00B7 Advocates for Better Care in Rhode Island'),
+/* The same footer as the other two ABC-RI sites: who we are, the three sites, where the data comes from, and where to send corrections. */
+$('#foot').append(
+  el('p', {}, el('b', {}, el('a', { href: 'https://www.abc-ri.org/', text: 'Advocates for Better Care in Rhode\u00A0Island (ABC-RI)' })), ' \u00B7 a grassroots advocacy group for the rights, dignity, and quality of life of Rhode Islanders in long-term care.'),
+  el('p', {}, 'Our public data sites: ', el('a', { href: 'https://snfdashboard.abc-ri.org/', text: 'Nursing home dashboard' }), ' \u00B7 ', el('b', { text: 'Nursing home sales (this site)' }), ' \u00B7 ', el('a', { href: 'https://alinspections.abc-ri.org/', text: 'Assisted living inspections' })),
   el('p', {}, [D.meta.credit, 'Data through ' + D.meta.updated + '. Page built ' + D.meta.built + '.'].filter(Boolean).join(' \u00B7 '), D.meta.contact ? [' \u00B7 Corrections: ', el('a', { href: 'mailto:' + D.meta.contact, text: D.meta.contact })] : null));
 function download(name, rows) { const esc = v => { v = v == null ? '' : String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }; const blob = new Blob([rows.map(r => r.map(esc).join(',')).join('\n')], { type: 'text/csv' }); const a = el('a', { href: URL.createObjectURL(blob), download: name }); document.body.append(a); a.click(); a.remove(); }
 $('#dl-sales').addEventListener('click', () => download('ri_nursing_home_sales.csv', [['cec_id', 'date', 'date_source', 'home', 'town', 'type', 'outcome', 'buyer_group', 'applicant', 'stars_before', 'stars_1yr', 'stars_2yr', 'nurse_hrs_before', 'nurse_hrs_1yr', 'serious_cites_before', 'serious_cites_after', 'fines_before', 'fines_after', 'conditions_beyond_standard', 'conditions_triggered', 'documents']].concat(D.sales.map(r => [r.cec, r.date, r.date_note, r.name, r.town, r.label, r.outcome, r.buyer, r.who, r.m.overall.before, r.m.overall.y1, r.m.overall.y2, r.m.hours.before, r.m.hours.y1, r.ser.before, r.ser.y1, r.fines.before, r.fines.y1, (CD[r.cec] || {}).extra || (CD[r.cec] || {}).cond || '', (CD[r.cec] || {}).trig || '', ((CD[r.cec] || {}).links || []).map(l => l.role + ': ' + l.url).join(' | ')]))));
