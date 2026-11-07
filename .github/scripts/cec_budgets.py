@@ -18,8 +18,9 @@ What it does:
 
 Usage: cec_budgets.py [--only text] [--years 2025,2026] [--keep-pdfs folder]
 """
-import argparse, csv, json, re, shutil, subprocess, sys, tempfile, time, urllib.request, urllib.error
+import argparse, csv, json, os, re, shutil, subprocess, sys, tempfile, time, urllib.request, urllib.error
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -32,6 +33,9 @@ DEBUG = []  # with --debug, the raw lines of tables that failed a check go to pi
 
 T2_START = "total number of ftes"
 T3_START = "complete the following table for the facility"
+T2_RE = r"number\s+of\s+ftes?\b"                     # looser versions, for OCR text and wrapped lines
+T2_PAGE_RE = r"total\s+number\s+of\s+ftes?\b"
+T3_RE = r"following\s+tab[il1]e\s+for\s+the\s+facil"
 T3_END = ("net patient revenues (dollar value", "please provide net patient revenues")
 YEAR = re.compile(r"^(?:FY[:\-]?)?\(?((?:19|20)\d\d)\)?:?$", re.I)
 NUM = re.compile(r"^\(?-?\$?\s?-?\(?(?:[\d,]+(?:\.\d+)?|\.\d+)\)?$")
@@ -124,7 +128,8 @@ def page_texts(pdf):
     r = subprocess.run(["pdftotext", "-q", str(pdf), "-"], capture_output=True, timeout=600)
     return r.stdout.decode("utf-8", "replace").split("\f")
 
-OCR_SCAN_PAGES = 60  # in a scanned PDF, Appendix A is looked for in the first this many pages
+OCR_CHUNK = 24     # a scanned PDF is searched this many pages at a time, stopping once both tables are found
+OCR_WORKERS = 4    # pages read at the same time (GitHub's runners have 4 processors)
 OCR = {}  # pdf path -> True when its text came from OCR
 
 def group_lines(words):
@@ -175,16 +180,36 @@ def ocr_words(pdf, pageno, dpi=300):
         out.append({"t": ocr_fix(f[11].strip()), "x0": left * k, "x1": (left + width) * k, "top": top * k})
     return out
 
-def ocr_texts(pdf, pages, dpi=150):
-    """Plain OCR text for the first pages of a scanned PDF (quick, low resolution), to find the tables."""
-    texts = []
+def ocr_page_text(pdf, pageno, dpi=150):
+    """Plain OCR text of one page (quick, low resolution), used only to find the tables."""
     with tempfile.TemporaryDirectory() as d:
-        subprocess.run(["pdftoppm", "-r", str(dpi), "-gray", "-png", "-f", "1", "-l", str(pages), str(pdf), f"{d}/p"],
-                       capture_output=True, timeout=1800)
-        for img in sorted(Path(d).glob("p*.png"), key=lambda q: int(re.sub(r"\D", "", q.stem) or 0)):
-            r = subprocess.run(["tesseract", str(img), "-", "--psm", "3"], capture_output=True, timeout=300)
-            texts.append(r.stdout.decode("utf-8", "replace"))
-    return texts
+        subprocess.run(["pdftoppm", "-r", str(dpi), "-gray", "-png", "-f", str(pageno), "-l", str(pageno), str(pdf), f"{d}/p"],
+                       capture_output=True, timeout=300)
+        imgs = sorted(Path(d).glob("p*.png"))
+        if not imgs: return ""
+        r = subprocess.run(["tesseract", str(imgs[0]), "-", "--psm", "3"], capture_output=True, timeout=300,
+                           env={**os.environ, "OMP_THREAD_LIMIT": "1"})
+    return r.stdout.decode("utf-8", "replace")
+
+def ocr_texts(pdf, total):
+    """OCR text of a scanned PDF, read in chunks, stopping a chunk after both tables have been found.
+    Returns (texts, pages read); pages not read are blank."""
+    texts = [""] * total
+    done = 0
+    with ThreadPoolExecutor(OCR_WORKERS) as ex:
+        while done < total:
+            chunk = list(range(done + 1, min(total, done + OCR_CHUNK) + 1))
+            for p, t in zip(chunk, ex.map(lambda q: ocr_page_text(pdf, q), chunk)): texts[p - 1] = t
+            done = chunk[-1]
+            flat = [norm(t).lower() for t in texts[:done]]
+            if any(re.search(T3_RE, t) for t in flat) and any(re.search(T2_PAGE_RE, t) for t in flat):
+                # one more chunk, in case the application covers more than one home
+                if done < total:
+                    chunk = list(range(done + 1, min(total, done + OCR_CHUNK) + 1))
+                    for p, t in zip(chunk, ex.map(lambda q: ocr_page_text(pdf, q), chunk)): texts[p - 1] = t
+                    done = chunk[-1]
+                    if not any(re.search(T3_RE, norm(t).lower()) for t in texts[chunk[0] - 1:done]): break
+    return texts, done
 
 def page_count(pdf):
     r = subprocess.run(["pdfinfo", str(pdf)], capture_output=True, timeout=60)
@@ -203,6 +228,15 @@ def lines_with_words(pdf, pageno):
 
 def text_of(ln): return " ".join(w["t"] for w in ln)
 
+def find_line(lines, pattern, start=0):
+    """Index of the first line holding the pattern, also when the words wrap onto the next line."""
+    for k in range(start, len(lines)):
+        here = text_of(lines[k]).lower()
+        both = here + " " + (text_of(lines[k + 1]).lower() if k + 1 < len(lines) else "")
+        if re.search(pattern, here) or (re.search(pattern, both) and not re.search(pattern, both[len(here) + 1:])):
+            return k
+    return None
+
 def year_columns(ln):
     """x positions of the fiscal years named on a header line. When the years skip one (a heading OCR could not
     read), the missing year is put halfway between its neighbors."""
@@ -214,6 +248,9 @@ def year_columns(ln):
         if m: out.append((int(m.group(1)), w["xc"]))
         elif d: out.append((int(d.group(1)) + (2000 if len(d.group(1)) == 2 else 0), w["xc"]))
     out.sort(key=lambda t: t[1])
+    if len(out) >= 3:
+        mid = sorted(y for y, _ in out)[len(out) // 2]
+        out = [(y, x) for y, x in out if abs(y - mid) <= 7]
     if len(out) == 7 and not all(b[0] == a[0] + 1 for a, b in zip(out, out[1:])) and out[0][0] + 6 >= out[-1][0]:
         # A heading repeats or skips a year (Pawtucket 2023 lists 2024 twice). Seven columns are always seven years.
         out = [(out[0][0] + k, x) for k, (_, x) in enumerate(out)]
@@ -228,12 +265,14 @@ def year_columns(ln):
         out = filled
     return out
 
-def number_columns(lines, k):
+def number_columns(lines, k, min_x=0):
     """Find k columns from where the numbers on full rows line up (they are usually right-aligned, so headings can sit
-    off-center). Returns k (low, high, center) ranges, or None when the numbers don't split cleanly into k groups."""
+    off-center). Returns k (low, high, center) ranges, or None when the numbers don't split cleanly into k groups.
+    A dash left of min_x is part of the label ("Other – RI Medicaid"), not an empty number."""
     xs = []
     for ln in lines:
-        nums = [w for w in ln if is_num(w["t"]) and w["t"] not in ("#", "$")]
+        nums = [w for w in ln if is_num(w["t"]) and w["t"] not in ("#", "$")
+                and not (w["t"] in DASHES and w["x1"] < min_x)]
         if len(nums) >= k: xs += [w["x1"] for w in nums]
     if len(xs) < k * 2: return None
     xs.sort()
@@ -269,7 +308,18 @@ def parse_table3(lines, start_idx):
             years = yc if len(yc) > len(years) else years
             first_x = min(x for _, x in years) - 25
             end = next((j for j in range(i + 1, len(lines)) if any(e in text_of(lines[j]).lower() for e in T3_END)), len(lines))
-            cols = number_columns(lines[i + 1:end], len(years))
+            cols = number_columns(lines[i + 1:end], len(years), first_x)
+            if len(years) < 7:
+                # OCR missed or misread some headings. Table 3 always has seven consecutive years, so when the numbers
+                # line up in seven columns, place the years from the headings that were read.
+                c7 = number_columns(lines[i + 1:end], 7, first_x)
+                if c7:
+                    starts = defaultdict(int)
+                    for y, x in years: starts[y - nearest(c7, x + 15)] += 1
+                    s0, votes = max(starts.items(), key=lambda kv: kv[1])
+                    if votes >= 2:
+                        years, cols = [(s0 + k, c[2]) for k, c in enumerate(c7)], c7
+                        notes.append("some year headings could not be read; years placed from the columns")
             if cols: first_x = min(first_x, cols[0][0] - 60)
             i += 1; continue
         if re.match(r"^\s*revenues?\b", low) and not [w for w in ln if is_num(w["t"])]:
@@ -317,7 +367,7 @@ def parse_table2(lines, start_idx, stop_idx):
             cur = {"years": sorted(yc, key=lambda t: t[1]), "rows": [], "cols": None}; blocks.append(cur); pending = []
             here = lines.index(ln)
             nxt = next((j for j in range(here + 1, stop_idx) if len(year_columns(lines[j])) >= 2), stop_idx)
-            cur["cols"] = number_columns(lines[here + 1:nxt], 2 * len(yc))
+            cur["cols"] = number_columns(lines[here + 1:nxt], 2 * len(yc), cur["years"][0][1] - 90)
             continue
         if cur is None: continue
         first_x = cur["years"][0][1] - 45
@@ -429,33 +479,33 @@ def sources(manifest, only, years):
 
 def extract(pdf, src, cec, out_rows, report):
     texts = page_texts(pdf)
-    read_by = "text"
+    read_by, n = "text", len(texts)
     if sum(len(t.strip()) for t in texts[:20]) < 200:
         total = page_count(pdf) or len(texts)
-        n = min(total, OCR_SCAN_PAGES)
-        log(f"  scanned PDF ({total} pages), reading the first {n} with OCR")
-        texts = ocr_texts(pdf, n) + [""] * max(0, total - n)
+        log(f"  scanned PDF ({total} pages), searching it with OCR")
+        texts, n = ocr_texts(pdf, total)
         OCR[str(pdf)] = True
         read_by = "ocr"
-        report.append(f"- Scanned PDF ({total} pages). Read with OCR (first {n} pages searched). "
+        report.append(f"- Scanned PDF ({total} pages). Read with OCR ({'all' if n >= total else f'first {n}'} pages searched). "
                       "Check these numbers against the page before relying on them.")
     flat = [norm(t).lower() for t in texts]
-    t3_pages = [i + 1 for i, t in enumerate(flat) if T3_START in t]
-    t2_pages = [i + 1 for i, t in enumerate(flat) if T2_START in t]
+    t3_pages = [i + 1 for i, t in enumerate(flat) if T3_START in t or (read_by == "ocr" and re.search(T3_RE, t))]
+    t2_pages = [i + 1 for i, t in enumerate(flat) if T2_START in t or (read_by == "ocr" and re.search(T2_PAGE_RE, t))]
     if not t3_pages and not t2_pages:
-        report.append(f"- No Appendix A tables found in {len(texts)} pages.")
+        report.append(f"- No Appendix A tables found in {n if read_by == 'ocr' else len(texts)} pages.")
         return 0
     found = 0
     for p3 in t3_pages:
         lines = lines_with_words(pdf, p3) + lines_with_words(pdf, p3 + 1)
-        idx = next((k for k, ln in enumerate(lines) if T3_START in text_of(ln).lower()), None)
-        if idx is None: continue
+        idx = find_line(lines, T3_RE)
+        if idx is None:
+            report.append(f"- Table 3 question found on page {p3}, but the table could not be lined up. Look at the page."); continue
         years, rows, notes = parse_table3(lines, idx)
         t3_read = read_by
         if not any(x["vals"] for x in rows) and read_by == "text":
             # The question is text but the table is a picture. Read the two pages with OCR instead.
             o = group_lines(ocr_words(pdf, p3)) + group_lines(ocr_words(pdf, p3 + 1))
-            k = next((k for k, ln in enumerate(o) if "following table" in text_of(ln).lower()), None)
+            k = find_line(o, T3_RE)
             if k is not None:
                 y2, r2, n2 = parse_table3(o, k)
                 if any(x["vals"] for x in r2):
@@ -498,17 +548,19 @@ def extract(pdf, src, cec, out_rows, report):
         nxt = next((p for p in t3_pages if p >= p2), p2 + 2)
         lines = []
         for p in range(p2, min(nxt, p2 + 3) + 1): lines += lines_with_words(pdf, p)
-        idx = next((k for k, ln in enumerate(lines) if T2_START in text_of(ln).lower()), None)
-        stop = next((k for k, ln in enumerate(lines) if T3_START in text_of(ln).lower()), len(lines))
-        if idx is None: continue
+        idx = find_line(lines, T2_RE)
+        stop = find_line(lines, T3_RE)
+        stop = len(lines) if stop is None else stop
+        if idx is None:
+            report.append(f"- Table 2 question found on page {p2}, but the table could not be lined up. Look at the page."); continue
         blocks, notes = parse_table2(lines, idx, stop)
         t2_read = read_by
         if not any(x["vals"] for b in blocks for x in b["rows"]) and read_by == "text":
             o = []
             for p in range(p2, min(nxt, p2 + 2) + 1): o += group_lines(ocr_words(pdf, p))
-            k = next((k for k, ln in enumerate(o) if "number of ftes" in text_of(ln).lower()), None)
+            k = find_line(o, T2_RE)
             if k is not None:
-                st = next((j for j, ln in enumerate(o) if "following table" in text_of(ln).lower()), len(o))
+                st = find_line(o, T3_RE); st = len(o) if st is None else st
                 b2, n2 = parse_table2(o, k, st)
                 if any(x["vals"] for b in b2 for x in b["rows"]):
                     lines, idx, stop, blocks, notes, t2_read = o, k, st, b2, n2, "ocr"
