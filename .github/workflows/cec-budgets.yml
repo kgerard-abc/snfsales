@@ -1,0 +1,56 @@
+name: Read budget tables from CEC applications
+
+# Run by hand from the Actions tab. It downloads each nursing home CEC application from our Internet Archive copies
+# (listed in pipeline/cec_archive_manifest.json), reads the Appendix A staff and budget tables, and saves
+# pipeline/cec_budgets.csv and pipeline/cec_budgets_report.md. Nothing on the website changes.
+# Run "Archive CEC documents to the Internet Archive" first when new applications are posted, so they have a copy.
+
+on:
+  workflow_dispatch:
+    inputs:
+      years:
+        description: 'Optional. Application years to read, like 2025,2026. Blank means all years. A partial run replaces the saved files, so use blank for the real run.'
+        required: false
+        default: ''
+      only:
+        description: 'Optional. Only applicants whose name contains this text, like AdviniaCare.'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cec-budgets
+  cancel-in-progress: false
+
+jobs:
+  read:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils tesseract-ocr
+          pip install pdfplumber
+      - name: Read the tables
+        env:
+          YEARS: ${{ inputs.years }}
+          ONLY: ${{ inputs.only }}
+        run: |
+          ARGS=()
+          if [ -n "$YEARS" ]; then ARGS+=(--years "$YEARS"); fi
+          if [ -n "$ONLY" ]; then ARGS+=(--only "$ONLY"); fi
+          python3 .github/scripts/cec_budgets.py "${ARGS[@]}"
+      - name: Save the results
+        run: |
+          git config user.name "abc-ri-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add pipeline/cec_budgets.csv pipeline/cec_budgets_report.md
+          git diff --cached --quiet && echo "Nothing new" && exit 0
+          git commit -m "Budget tables from CEC applications $(date +%F)"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
