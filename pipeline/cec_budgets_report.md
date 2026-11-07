@@ -41,8 +41,8 @@ Applications read: 71. With tables: 44. Without tables: 26. No copy to read: 1. 
 ### 2017: Oak hill Operations Associates LLC (Centers Health Care)
 
 [RIDOH link](https://drive.google.com/file/d/0B9lx-sHDAL9qUlh1cHFEWVZURTA)
-- Table 3, page 12: **Oak hill Operations Associates LLC (Centers Health Care)** (CEC-066, Oak Hill Center for Rehabilitation and Health Care, Approved), years 2013-2015, 13 lines. **Check:** found 3 year columns ([2013, 2014, 2015]), expected 7; column types left blank
-- Table 2, page 11: **Oak hill Operations Associates LLC (Centers Health Care)** (CEC-066, Oak Hill Center for Rehabilitation and Health Care, Approved), 12 numbers.
+- Table 3, page 12: **Oak hill Operations Associates LLC (Centers Health Care)** (CEC-063, Oak Hill Center for Rehabilitation and Health Care, Approved), years 2013-2015, 13 lines. **Check:** found 3 year columns ([2013, 2014, 2015]), expected 7; column types left blank
+- Table 2, page 11: **Oak hill Operations Associates LLC (Centers Health Care)** (CEC-063, Oak Hill Center for Rehabilitation and Health Care, Approved), 12 numbers.
 
 ### 2018: CL Operating LLC d/b/a Crystal Lake Rehabilitation and Care Center
 
@@ -369,10 +369,10 @@ Applications read: 71. With tables: 44. Without tables: 26. No copy to read: 1. 
 ### 2025: Cedar Haven Operations LLC d/b/a Lake Forest Health & Rehabilitation LLC
 
 [RIDOH link](https://drive.google.com/file/d/1YcOUlti1PKC2flkGu7OGtm4ELLJjoPJe) | [our copy](https://archive.org/details/ri-cec-2025-cedar-haven-operations-llc-d-b-a-lake-forest-health-rehabilitation-llc)
-- Table 3, page 13: **Hebert Health Center** (CEC-109, Lake Forest Health & Rehabilitation, Decision letter issued), years ?-?, 0 lines. **Check:** found 0 year columns ([]), expected 7; column types left blank
-- Table 3, page 40: **Trinity Health & Rehab Center** (CEC-109, Lake Forest Health & Rehabilitation, Decision letter issued), years ?-?, 0 lines. **Check:** found 0 year columns ([]), expected 7; column types left blank
-- Table 2, page 11: **Hebert Health Center** (CEC-109, Lake Forest Health & Rehabilitation, Decision letter issued), 57 numbers.
-- Table 2, page 38: **Trinity Health & Rehab Center** (CEC-109, Lake Forest Health & Rehabilitation, Decision letter issued), 39 numbers.
+- Table 3, page 13: **Hebert Health Center** (no CEC Log match, check by hand), years ?-?, 0 lines. **Check:** found 0 year columns ([]), expected 7; column types left blank
+- Table 3, page 40: **Trinity Health & Rehab Center** (no CEC Log match, check by hand), years ?-?, 0 lines. **Check:** found 0 year columns ([]), expected 7; column types left blank
+- Table 2, page 11: **Hebert Health Center** (no CEC Log match, check by hand), 57 numbers.
+- Table 2, page 38: **Trinity Health & Rehab Center** (no CEC Log match, check by hand), 39 numbers.
 
 ### 2025: Coventry Operations RI, LLC
 
@@ -427,10 +427,10 @@ Applications read: 71. With tables: 44. Without tables: 26. No copy to read: 1. 
 ### 2026: AdviniaCare Respiratory at Coventry, LLC (Operator) and Rehabilitation and 10 Woodland Drive, LLC
 
 [RIDOH link](https://drive.google.com/file/d/1eUI4_E7RDWSin3k_0FgM3DpBWJJ0eLHd) | [our copy](https://archive.org/details/ri-cec-2026-adviniacare-respiratory-at-coventry-llc-operator-and-rehabilitation-an)
-- Table 3, page 14: **Respiratory and Rehabilitation Center of RI** (CEC-127, Respiratory and Rehabilitation Center of Rhode Island, Pending), years 2023-2029, 17 lines. **Check:** 2023: expense lines add to 19,068,272 but Total Expenses says 20,961,199; 2024: expense lines add to 16,498,654 but Total Expenses says 17,612,924; 2025: expense lines add to 18,460,402 but Total Expenses says 18,728,788; 2026: expense lines add to 22,491,606 but Total Expenses says 18,152,828; 2027: expense lines add to 15,500,000 but Total Expenses says 14,515,000; 2028: expense lines add to 16,000,000 but Total Expenses says 14,755,450; 2029: expense lines add to 16,500,000 but Total Expenses says 14,991,059
+- Table 3, page 14: **Respiratory and Rehabilitation Center of RI** (CEC-114, Respiratory and Rehabilitation Center of Rhode Island, Decision letter issued), years 2023-2029, 17 lines. **Check:** 2023: expense lines add to 19,068,272 but Total Expenses says 20,961,199; 2024: expense lines add to 16,498,654 but Total Expenses says 17,612,924; 2025: expense lines add to 18,460,402 but Total Expenses says 18,728,788; 2026: expense lines add to 22,491,606 but Total Expenses says 18,152,828; 2027: expense lines add to 15,500,000 but Total Expenses says 14,515,000; 2028: expense lines add to 16,000,000 but Total Expenses says 14,755,450; 2029: expense lines add to 16,500,000 but Total Expenses says 14,991,059
 - Table 3, page 49: **Greenville Center** (CEC-124, Greenville Skilled Nursing and Rehabilitation, Pending), years 2023-2029, 17 lines. **Check:** 2023: expense lines add to 9,704,607 but Total Expenses says 12,588,556; 2024: expense lines add to 9,651,589 but Total Expenses says 12,351,052; 2025: expense lines add to 8,652,928 but Total Expenses says 10,146,361; 2026: expense lines add to 10,766,592 but Total Expenses says 9,650,066; 2028: expense lines add to 10,250,000 but Total Expenses says 10,134,077; 2029: expense lines add to 10,800,000 but Total Expenses says 10,504,069
 - Table 3, page 84: **Warren Center** (CEC-132, Warren Center (Warren Skilled Nursing and Rehabilitation), Pending), years 2023-2029, 17 lines. **Check:** 2023: expense lines add to 6,716,457 but Total Expenses says 7,169,516; 2024: expense lines add to 8,316,348 but Total Expenses says 8,426,936; 2025: expense lines add to 8,573,939 but Total Expenses says 8,435,971; 2026: expense lines add to 9,287,024 but Total Expenses says 7,607,702; 2027: expense lines add to 8,750,000 but Total Expenses says 7,380,000; 2028: expense lines add to 9,050,000 but Total Expenses says 7,605,000; 2029: expense lines add to 9,300,000 but Total Expenses says 7,740,000
-- Table 2, page 12: **Respiratory and Rehabilitation Center of RI** (CEC-127, Respiratory and Rehabilitation Center of Rhode Island, Pending), 88 numbers.
+- Table 2, page 12: **Respiratory and Rehabilitation Center of RI** (CEC-114, Respiratory and Rehabilitation Center of Rhode Island, Decision letter issued), 88 numbers.
 - Table 2, page 47: **Greenville Center** (CEC-124, Greenville Skilled Nursing and Rehabilitation, Pending), 88 numbers.
 - Table 2, page 82: **Warren Center** (CEC-132, Warren Center (Warren Skilled Nursing and Rehabilitation), Pending), 88 numbers. **Check:** 2027: payroll lines add to 4,030,000 but Totals says 4,000,000; 2029: payroll lines add to 4,243,000 but Totals says 4,200,000
 
@@ -456,9 +456,9 @@ Applications read: 71. With tables: 44. Without tables: 26. No copy to read: 1. 
 
 [RIDOH link](https://drive.google.com/file/d/1GvBj6qGGO69jyQF0pvVEbQ98Uodv9W4s) | [our copy](https://archive.org/details/ri-cec-2026-middletown-nursing-and-rehab-llc-and-193-forest-avenue-llc)
 - Table 3, page 15: **Royal Middletown Nursing Center** (CEC-128, Royal Middletown Nursing Center, Pending), years 2023-2029, 17 lines.
-- Table 3, page 47: **Royal of Westerly Nursing Center** (CEC-128, Royal Middletown Nursing Center, Pending), years 2023-2029, 17 lines.
+- Table 3, page 47: **Royal of Westerly Nursing Center** (CEC-129, Royal Westerly Nursing Center, Pending), years 2023-2029, 17 lines.
 - Table 2, page 11: **Royal Middletown Nursing Center** (CEC-128, Royal Middletown Nursing Center, Pending), 140 numbers. **Check:** 2023: payroll lines add to 6,088,202 but Totals says 3,044,101; 2024: payroll lines add to 7,174,648 but Totals says 3,587,324; 2025: payroll lines add to 7,790,268 but Totals says 3,895,134; 2026: payroll lines add to 7,790,268 but Totals says 3,895,134; 2027: payroll lines add to 8,023,976 but Totals says 4,011,988; 2028: payroll lines add to 8,264,693 but Totals says 4,132,348; 2029: payroll lines add to 8,512,635 but Totals says 4,256,318
-- Table 2, page 43: **Royal of Westerly Nursing Center** (CEC-128, Royal Middletown Nursing Center, Pending), 151 numbers. **Check:** 2023: payroll lines add to 9,406,499 but Totals says 4,703,250; 2024: payroll lines add to 10,254,241 but Totals says 5,127,120; 2025: payroll lines add to 10,392,180 but Totals says 5,196,090; 2026: payroll lines add to 10,392,180 but Totals says 5,196,090; 2027: payroll lines add to 10,703,947 but Totals says 5,351,973; 2028: payroll lines add to 11,025,063 but Totals says 5,512,532; 2029: payroll lines add to 11,355,814 but Totals says 5,677,908
+- Table 2, page 43: **Royal of Westerly Nursing Center** (CEC-129, Royal Westerly Nursing Center, Pending), 151 numbers. **Check:** 2023: payroll lines add to 9,406,499 but Totals says 4,703,250; 2024: payroll lines add to 10,254,241 but Totals says 5,127,120; 2025: payroll lines add to 10,392,180 but Totals says 5,196,090; 2026: payroll lines add to 10,392,180 but Totals says 5,196,090; 2027: payroll lines add to 10,703,947 but Totals says 5,351,973; 2028: payroll lines add to 11,025,063 but Totals says 5,512,532; 2029: payroll lines add to 11,355,814 but Totals says 5,677,908
 
 ### 2026: Pascoag Health Center Inc.
 
