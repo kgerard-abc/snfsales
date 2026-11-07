@@ -122,7 +122,11 @@ def enrich(D, hu, pu, extras=None, chains=None, names=None):
 
     by_home = {}
     for s in D["sales"]:
-        if s.get("fid") in fac and s.get("date") and s.get("outcome") != "Pending" and s.get("kind") in ("sale", "parent") and s.get("buyer"):
+        if s.get("fid") in fac and s.get("date") and s.get("kind") in ("sale", "parent") and s.get("buyer"):
+            # A pending sale counts only when the buyer is already managing the home under a management agreement:
+            # from that date the home's record is the buyer's, not the seller's.
+            if s.get("outcome") == "Pending" and not (s.get("mgmt_start") and _t(s["mgmt_start"]) <= latest):
+                continue
             by_home.setdefault(s["fid"], []).append(s)
     tenures = []
 

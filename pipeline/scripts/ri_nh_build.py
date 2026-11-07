@@ -2394,6 +2394,7 @@ function heldText(r) {
   const start = r.mgmt_start && r.mgmt_start < r.date ? r.mgmt_start : r.date;
   if (next) return 'Held ' + yrsText(yrsBetween(start, next.mgmt_start && next.mgmt_start < next.date ? next.mgmt_start : next.date)) + ', then sold to ' + next.buyer + (next.date > D.meta.latest ? ' (approved ' + fmtMon(next.date) + ', not yet closed)' : ' in ' + next.date.slice(0, 4));
   if (notClosed(r)) return '';   // the date cell already says "Approved, not yet closed"
+  if (pend && pend.mgmt_start && pend.mgmt_start <= D.meta.latest) return 'Ran it ' + yrsText(yrsBetween(start, pend.mgmt_start)) + '; ' + pend.buyer + ' has managed it since ' + fmtMon(pend.mgmt_start) + ', and its purchase is pending with the state';
   const so = 'Running it ' + yrsText(yrsBetween(start, D.meta.latest)) + ' so far';
   return pend ? so + '; a sale to ' + pend.buyer + ' is pending with the state' : so;
 }
@@ -2432,7 +2433,8 @@ $('#date-legend').textContent = dateLegend();
   if (lags.length >= 3) { const mid = lags.length % 2 ? lags[(lags.length - 1) / 2] : (lags[lags.length / 2 - 1] + lags[lags.length / 2]) / 2;
     paras.push(el('p', {}, el('b', { text: 'CMS\u2019s public files run months behind. ' }), `Where a decided sale has a CMS operator change on record and no CMS takeover date, CMS\u2019s files first showed the new operator a median of ${Math.round(mid)} months after the state\u2019s decision (${lags[0]} to ${lags[lags.length - 1]} months, ${lags.length} sales). Until then the home\u2019s ratings, citations, and fines are published under the old operator\u2019s name.`)); }
   const held = []; done.forEach(r => { if (!r.buyer) return; const later = D.sales.filter(x => x.fid === r.fid && x.date > r.date && x.kind === 'sale' && x.buyer && x.buyer !== r.buyer && x.outcome !== 'Pending'); if (later.length) held.push({ name: r.name, buyer: r.buyer, yrs: yrsBetween(r.mgmt_start && r.mgmt_start < r.date ? r.mgmt_start : r.date, later.sort((a, b) => a.date < b.date ? -1 : 1)[0].date) }); });
-  const pend = done.filter(r => r.buyer && D.sales.some(x => x.fid === r.fid && x.outcome === 'Pending' && x.buyer && x.buyer !== r.buyer)).map(r => ({ name: r.name, buyer: r.buyer, yrs: yrsBetween(r.mgmt_start && r.mgmt_start < r.date ? r.mgmt_start : r.date, D.meta.latest) }));
+  const pendOf = r => D.sales.find(x => x.fid === r.fid && x.outcome === 'Pending' && x.buyer && x.buyer !== r.buyer);
+  const pend = done.filter(r => r.buyer && pendOf(r) && !D.sales.some(x => x.fid === r.fid && x.date > r.date && x.kind === 'sale' && x.outcome !== 'Pending')).map(r => { const p = pendOf(r), stop = p.mgmt_start && p.mgmt_start <= D.meta.latest ? p.mgmt_start : D.meta.latest; return { name: r.name, buyer: r.buyer, yrs: yrsBetween(r.mgmt_start && r.mgmt_start < r.date ? r.mgmt_start : r.date, stop) }; });
   const quick = held.filter(h => h.yrs < 4).concat(pend.filter(h => h.yrs < 4));
   if (held.length || pend.length) {
     const bits = [];
