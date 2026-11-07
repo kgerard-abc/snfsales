@@ -1,0 +1,75 @@
+3.   Please complete the following table for the facility. Round all amounts to the nearest dollar.
+
+
+                                           Past Three Fiscal Years              Budgeted               Projected Three Fiscal Years
+                                                                                 Current                       (if approved)
+                                                                               Fiscal Year
+                             FY:2022            FY:2023         FY:2024       FY:2025        FY:2026           FY:2027         FY:2028
+ REVENUES
+ Net Patient Revenue         Unavailable        $11,294,005     $13,443,643   $13,500,000    $14,000,000       $14,000,000     $14,000,000
+ Other: (_______)            to
+             Total Revenue   Seller             $11,294,005     $13,443,643   $13,500,000    $14,000,000       $14,000,000     $14,000,000
+
+ EXPENSES
+ Payroll w/Fringes           $                  $8,894,551      $9,687,265    $9,000,000     $8,675,000        $8,675,000      $8,675,000
+ Bad Debt                    $                  $83,921         $10,976       $50,000        $30,000           $30,000         $30,000
+ Supplies                    $                  $1,200,000      $1,200,000    $1,200,000     $1,100,000        $1,100,000      $1,100,000
+ Office Expenses             $                  $240,000        $240,000      $240,000       $230,000          $230,000        $230,000
+ Utilities                   $                  $293,098        $319,854      $315,000       $280,000          $280,000        $280,000
+ Insurance                   $                  $5,204          $8,844        $8,844         $50,000           $50,000         $50,000
+ Interest                    $                  $               $100,482      $100,000       $25,000           $25,000         $25,000
+ Depreciation/Amortization   $                  $118,032        $115,028      $115,000       $50,000           $50,000         $50,000
+ Lease/Rent Expense          $                  $1,038,808      $1,039,528    $1,039,000     $1,360,000        $1,387,200      $1,414,944
+ Leasehold Expenses          $0                 $0              $0            $0             $0                $0              $0
+ Other: (___________)        $                  $               $             $              $                 $               $
+ Other: (___________)        $                  $347,363        $1,115,868    $1,000,000     $1,500,000        $1,200,000      $1,100,000
+            Total Expenses   $                  $12,220,977     $13,837,845   $13,068,372    $13,300,000       $13,027,200     $13,049,544
+
+ OPERATING                                      $-926,972       $-394,202     $431,628       $700,000          $972,800        $1,045,056
+ PROFIT/LOSS
+
+
+
+
+                                                                     12
+4.   Please provide Net Patient Revenues (dollar value and percentage) for the existing facility by completing the table below for the
+requested years.
+
+                                                             Past Three Fiscal Years (Actual)                                           Budgeted Current Year
+
+                                 FY:2022                      FY:2023                           FY:2024                             FY:2025
+      PAYOR SOURCE:                    $             %             $                 %                $                %                      $            %
+
+ Medicare                        $Unavailable       %         $1,960,745         17%            $1,878,810         4%               $2,000,000          15%
+ Medicaid                        $ to               %         $7,963,768         71%            $10,869,834        80%              $10,200,000         76%
+ Blue Cross                      $ buyer            %         $                   %             $                   %               $                   %
+ Commercial                      $                  %         $                   %             $                   %               $                   %
+ HMO's                           $                  %         $                   %             $                   %               $                   %
+ Self-Pay                        $                  %         $1,012,116         9%             $628,467           5%               $800,000            6%
+ Other:                          $                  %         $357,376           3%             $66,532            1%               $500,000            3%
+ TOTAL Net Patient Revenue       $                  %         $11,294,005        100%           $13,443,643        100%             $13,500,000         100%
+
+ Charity Care*                   $                  %         $                  %              $0                 %                $                   1%
+
+                                                   Projected First Three Operating Years (if approved)
+
+                                 FY:2026                           FY:2027                           FY:2028
+      PAYOR SOURCE:                    $                 %               $                 %                $                   %
+
+ Medicare                        $2,000,000         14%            $2,000,000            14%         $2,000,000            14%
+ Medicaid                        $10,700,000        76%            $10,700,000           76%         $10,700,000           76%
+ Blue Cross                      $                   %             $                      %          $                      %
+ Commercial                      $                   %             $                      %          $                      %
+ HMO's                           $                   %             $                      %          $                      %
+ Self-Pay                        $800,000           6%             $800,000              6%          $800,000              6%
+ Other:                          $500,000           4%             $500,000              4%          $500,000              4%
+  TOTAL Net Patient Revenue      $14,000,000        100%           $14,000,000           100%        $14,000,000           100%
+
+ Charity Care*                   $                  1%             $                     1%          $                     1%
+*Charity Care does not include bad debt and is based on costs (not charges). For Home Nursing Care Providers, the statewide community standard
+shall be one percent (1%) of net patient revenue earned on an annual basis.
+
+NOTE: TOTAL Net Patient Revenues should equal Net Patient Revenues identified in Appendix A, Table 3.
+
+                                                                            13
+

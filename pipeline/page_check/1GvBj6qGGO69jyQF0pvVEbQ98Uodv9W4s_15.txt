@@ -1,0 +1,79 @@
+      3.    Please complete the following table for the facility. Round all amounts to the nearest dollar.
+                                                                                           Budgeted
+                                                   Past Three Fiscal Years (Actual)                                Projected (if approved)
+                                                                                           Current Yr
+                 $ (rounded)                      FY2023        FY2024         FY2025       FY2026            FY2027       FY2028       FY2029
+
+REVENUES
+Net Patient Revenue                             $3,777,070     $5,018,569    $5,575,866     $5,575,866       $6,757,214   $6,959,930   $7,168,728
+Other Revenue (ancillary, therapy, interest,
+                                                    $65,614      $157,272       $94,129        $94,129        $162,901     $167,788     $172,822
+misc, grants)
+Total Revenue                                   $3,842,684     $5,175,841    $5,669,995     $5,669,995       $6,920,115   $7,127,718   $7,341,550
+
+EXPENSES
+Payroll w/Fringes                               $3,044,101     $3,587,324    $3,895,134     $3,895,134       $4,011,988   $4,132,348   $4,256,318
+Bad Debt                                           $60,766        $88,636       $86,010        $86,010          $88,590      $91,248      $93,985
+Supplies (food, nursing, pharmacy, dietary,
+                                                  $332,415       $428,971      $644,849       $644,849        $664,194     $684,120     $704,644
+hskpg, maint)
+Office Expenses (admin, IT, professional,
+                                                  $149,753       $154,233      $193,054       $193,054        $198,846     $204,811     $210,955
+advertising)
+Utilities                                         $116,923       $141,087      $143,860       $143,860        $148,176     $152,621     $157,200
+Insurance (property/liability)                      $5,251         $5,484        $5,681         $5,681          $5,851       $6,027       $6,208
+Interest                                                 -              -             -              -               -            -            -
+Depreciation / Amortization                          $776               -             -              -               -            -            -
+Lease / Rent Expense (related party)              $400,273       $129,100      $130,162       $130,162        $400,000     $412,000     $424,360
+Leasehold Expenses                                       -              -             -              -               -            -            -
+Other – RI Medicaid Provider Assessment           $143,784       $275,800      $307,009       $307,009        $316,219     $325,706     $335,477
+Other – Mgmt fee, taxes, R&M & residual           $318,844       $412,132      $821,615       $821,615        $846,263     $871,651     $897,801
+Total Expenses                                  $4,572,886     $5,222,767    $6,227,374     $6,227,374       $6,680,128   $6,880,532   $7,086,948
+
+OPERATING PROFIT / (LOSS)                        ($730,202)      ($46,926)    ($557,379)    ($557,379)        $239,986     $247,186     $254,601
+
+
+
+
+                                                                        13
+4.   Please provide Net Patient Revenues (dollar value and percentage) for the existing facility by completing the table below for the
+requested years.
+                                                                                                                             Budgeted Current
+                                                                   Past Three Fiscal Years (Actual)
+                                                                                                                                    Yr
+              PAYOR SOURCE                              FY2023                    FY2024                  FY2025                  FY2026
+                                                     $            %            $           %           $             %          $         %
+ Medicare                                          $839,461     22.2%        $600,343    12.0%       $503,540       9.0%      $503,540   9.0%
+ Medicaid                                        $2,363,948     62.6%      $3,241,578    64.6%     $3,475,221      62.3%    $3,475,221 62.3%
+ Blue Cross                                               -      0.0%               -     0.0%              -       0.0%             -   0.0%
+ Commercial                                               -      0.0%               -     0.0%              -       0.0%             -   0.0%
+ Managed Care                                      $239,601      6.3%        $625,477    12.5%       $808,650      14.5%      $808,650 14.5%
+ Self-Pay / Private                                $334,060      8.8%        $551,171    11.0%       $788,455      14.1%      $788,455 14.1%
+
+ Other (hospice, SCO & other)                               -     0.0%               -     0.0%                -   0.0%                -    0.0%
+
+                                                 $3,777,070 100.0% $5,018,569 100.0% $5,575,866 100.0% $5,575,866 100.0%
+ TOTAL Net Patient Revenue
+ Charity Care
+                                                                  1%                       1%                       1%                       1%
+
+              PAYOR SOURCE                                                        Projected (if approved)
+                                                            FY2027                           FY2028                       FY2029
+ Medicare                                          $1,517,539            22.5%       $1,563,065    22.5%           $1,609,957   22.5%
+ Medicaid                                            $3,699,213          54.7%       $3,810,189    54.7%           $3,924,495   54.7%
+ Blue Cross                                                   -           0.0%                 -    0.0%                    -    0.0%
+ Commercial                                                   -           0.0%                 -    0.0%                    -    0.0%
+ Managed Care                                          $700,625          10.4%         $721,644    10.4%             $743,293   10.4%
+ Self-Pay / Private                                    $839,837          12.4%         $865,033    12.4%             $890,983   12.4%
+ Other (hospice, SCO & other)                                 -           0.0%                 -    0.0%                    -    0.0%
+
+                                                     $6,757,214          100.0%      $6,959,930       100.0%       $7,168,728     100.0%
+ TOTAL Net Patient Revenue
+ Charity Care
+                                                                          1%                            1%                           1%
+*Charity Care does not include bad debt and is based on costs (not charges). For Home Nursing Care Providers, the statewide community standard
+shall be one percent (1%) of net patient revenue earned on an annual basis.
+NOTE: TOTAL Net Patient Revenues should equal Net Patient Revenues identified in Appendix A, Table 3.
+
+                                                                    14
+
