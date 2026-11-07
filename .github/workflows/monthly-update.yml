@@ -73,7 +73,12 @@ jobs:
           if new['meta']['latest'] < old['meta']['latest']: bad.append(f"latest date went backwards: {old['meta']['latest']} to {new['meta']['latest']}")
           if len(new['facilities']) < len(old['facilities']): bad.append(f"facilities dropped from {len(old['facilities'])} to {len(new['facilities'])}")
           dated = [s for s in old['sales'] if s.get('date') and s.get('kind') != 'closed']      # undated sales are no longer listed, and closures are no longer rows in the sales table
-          if len(new['sales']) < len(dated): bad.append(f"sales dropped from {len(dated)} to {len(new['sales'])}")
+          # A sale may leave the table on purpose: an Event Overrides row marks it "not completed" (approved, never closed),
+          # "closure" or "not a sale". That is allowed only when the CEC now shows on its home's timeline as such.
+          marked = {e.get('cec') for f in new['facilities'] for e in (f.get('events') or []) if e.get('kind') in ('unclosed', 'closed') and e.get('cec')}
+          left = [s for s in dated if s.get('cec') and s['cec'] in marked and s['cec'] not in {x.get('cec') for x in new['sales']}]
+          if left: print("::notice::Taken out of the sales table on purpose (Event Overrides): " + ", ".join(sorted({s['cec'] for s in left})))
+          if len(new['sales']) < len(dated) - len(left): bad.append(f"sales dropped from {len(dated)} to {len(new['sales'])}")
           print(f"::notice::Page now: latest {new['meta']['latest']}, {len(new['facilities'])} facilities, {len(new['sales'])} sales (was: latest {old['meta']['latest']}, {len(old['facilities'])} facilities, {len(old['sales'])} sales)")
           if bad:
               for b in bad: print(f"::error::STOPPED: {b}")
