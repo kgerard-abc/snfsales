@@ -1879,6 +1879,7 @@ th{position:sticky;top:0;z-index:3;background:var(--card);font-weight:600;white-
 th button{all:unset;cursor:pointer;font-weight:600}
 th button:focus-visible{outline:2px solid var(--gold)}
 td.num,th.num{text-align:center;white-space:nowrap}
+td.few{opacity:.55}
 .tblwrap{overflow-x:auto;max-height:640px;border:1px solid var(--line);border-radius:10px;background:var(--card)}
 .chip{display:inline-block;min-width:1.6em;padding:1px 6px;border-radius:6px;text-align:center;font-weight:700;color:var(--chip-fg)}
 .chip.s0{background:var(--s0);color:#fff}.chip.s3,.chip.s4{color:#17201A}
@@ -1942,6 +1943,7 @@ footer a{color:var(--fg)}
 <main class="wrap">
 <section id="sold"><h2>What happened when homes were sold</h2>
 <p class="lede">Rhode Island's Health Department reviews each change in a nursing home's effective control. This compares each home's ratings and staffing before and after such a change, using the last CMS rating before the sale as the starting point, and compares them with homes that were not sold over the same periods.</p>
+<div class="panel" id="examples"><h3 style="margin-top:0;font-size:1rem">Examples from this page</h3><p class="small" id="examples-lede" style="margin-top:0"></p><ul id="examples-list"></ul></div>
 <div class="grid2"><div class="panel"><h3 style="margin-top:0;font-size:1rem">Changes of control approved, by year</h3><div class="chartbox" id="peryear-chart" style="max-width:420px"></div><p class="small" id="peryear-note"></p></div>
 <div class="panel" id="money-panel"><h3 style="margin-top:0;font-size:1rem">Rent paid to a landlord the owners also control</h3><div class="chartbox" id="money-chart"></div><div class="legend" id="money-legend"></div><p class="small" id="money-note"></p></div></div>
 <div class="panel" id="ba-panel"><h3 style="margin-top:0">The same homes, before and after</h3>
@@ -1961,6 +1963,7 @@ footer a{color:var(--fg)}
 <div class="row"><input type="search" id="sale-q" placeholder="Search by home, town or owner" aria-label="Search sales"><label class="chk"><input type="checkbox" id="sale-parent" checked> Include chain reorganizations</label><label class="chk"><input type="checkbox" id="sale-cms"> Only homes with CMS data</label><button class="btn" id="dl-sales">Download this table (CSV)</button></div>
 <div class="tblwrap"><table id="sales-tbl"><caption>Dates are the CMS takeover date where CMS lists one, otherwise the state's decision date. Stars are CMS overall ratings (5 is best). Nurse hours are what homes report to CMS, per resident per day. The line under them is CMS's case-mix adjusted figure, which accounts for how much care the residents need. A note under the hours marks a figure that changed by more than 1 hour in one CMS update, which is rare and can mean a payroll reporting problem.</caption><thead></thead><tbody></tbody></table></div><p class="small" id="date-legend"></p>
 <p class="small">Blank cells mean CMS data is not available for that period: the sale was before CMS data starts in April 2019, is too recent for a year to have passed, or the home left the CMS files.</p>
+<div class="callout" id="timing-note"></div>
 
 <h3 id="pending-h">Sales under review now</h3>
 <div id="pending-box"></div>
@@ -1974,8 +1977,12 @@ footer a{color:var(--fg)}
 </section>
 
 <section id="groups"><h2>Owner groups</h2>
-<p class="lede">Average CMS overall stars for the homes each group acquired: at the last rating before the group took over, then one year later, two years later, and at the latest rating under that owner. Taking over means the start of a management agreement where the state record shows one before the sale, otherwise the sale date, the same starting point the home pages and the citation counts use. Each comparison uses only homes that have reached that point, so recent purchases drop out of the one- and two-year columns; the count under each average says how many homes it covers. The last three columns count CMS citations and fines only while the group ran each home, from the start of any management agreement or the sale date, whichever came first, and only as far back as CMS's files reach (about April 2016). Click a group to see every home.</p>
-<div class="tblwrap"><table id="groups-tbl"><thead><tr><th>Owner group</th><th class="num">Sales analyzed</th><th class="num">Took over → after 1 year</th><th class="num">Took over → after 2 years</th><th class="num">Took over → latest</th><th class="num">Immediate jeopardy while it ran the homes</th><th class="num">Harm citations while it ran the homes</th><th class="num">Fines while it ran the homes</th></tr></thead><tbody></tbody></table></div>
+<p class="lede">Average CMS overall stars for the homes each group acquired: at the last rating before the group took over, then one year later, two years later, and at the latest rating under that owner. Taking over means the start of a management agreement where the state record shows one before the sale, otherwise the sale date, the same starting point the home pages and the citation counts use. Each comparison uses only homes that have reached that point, so recent purchases drop out of the one- and two-year columns; the count under each average says how many homes it covers. The last three columns count CMS citations and fines at every Rhode Island home the group has run, including homes it has owned since before the state's records, only while it ran each home, from the start of any management agreement or the sale date, whichever came first, and only as far back as CMS's files reach (about April 2016). An average over 1 or 2 homes is shown in gray: it is those homes' own ratings, not a pattern. Click a group to see every home.</p>
+<div class="tblwrap"><table id="groups-tbl"><thead><tr><th>Owner group</th><th class="num">Sales analyzed</th><th class="num">Took over → after 1 year</th><th class="num">Took over → after 2 years</th><th class="num">Took over → latest, or when it sold</th><th class="num">Immediate jeopardy at all homes it ran</th><th class="num">Harm citations at all homes it ran</th><th class="num">Fines at all homes it ran</th></tr></thead><tbody></tbody></table></div>
+<details id="allgroups" style="margin-top:12px"><summary>Every group that has run a Rhode Island home since April 2016, including the sellers</summary>
+<p class="small">The table above only lists buyers in sales since April 2019. This one lists every owner group with time in charge of a Rhode Island home in CMS's files, including groups that have since sold, counted the same way: from the start of a management agreement or the sale date, or from April 2016 for homes a group owned before the state's records, to the sale to the next group or today. "Per 10 home-years" divides the count by the time in charge, so a group that ran many homes for many years can be compared with one that has run a few for a year.</p>
+<div class="tblwrap"><table id="allgroups-tbl"><thead><tr><th>Owner group</th><th class="num">Homes run (runs now)</th><th class="num">Home-years counted</th><th class="num">Stars: took over → now or when it left</th><th class="num">Immediate jeopardy</th><th class="num">per 10 home-years</th><th class="num">Harm citations</th><th class="num">per 10 home-years</th><th class="num">Fines</th><th class="num">per home-year</th></tr></thead><tbody></tbody></table></div>
+</details>
 </section>
 
 <section id="related"><h2>Related-party money, home by home</h2>
@@ -2087,16 +2094,21 @@ function dumbbells(box, rows, aria) {
   box.append(svg);
 }
 function groupedBars(box, groups, fmt, aria, zeroNote) {
-  box.replaceChildren(); const W = Math.max(300, Math.min(760, box.clientWidth || 760)), H = 300, L = 54, R = 12, T = 26, B = 58, pw = W - L - R, ph = H - T - B;
-  const vals = groups.flatMap(g => [g.sold, g.ctrl]).filter(v => v != null); let lo = Math.min(0, ...vals), hi = Math.max(0, ...vals); const pad = (hi - lo) * .15 || .1; lo -= pad; hi += pad;
+  box.replaceChildren(); const W = Math.max(300, Math.min(760, box.clientWidth || 760)), narrow = W < 520, H = 300, L = 54, R = 12, T = 30, B = narrow ? 70 : 58, pw = W - L - R, ph = H - T - B;
+  // Room above and below the bars for their value labels, so a label on a short bar is not clipped at the top.
+  const vals = groups.flatMap(g => [g.sold, g.ctrl]).filter(v => v != null); let lo = Math.min(0, ...vals), hi = Math.max(0, ...vals); const pad = (hi - lo) * .25 || .1; lo -= pad; hi += pad;
+  // On a phone the group labels are split onto two lines so they do not run into each other.
+  const wrap2 = txt => { if (!narrow) return [txt]; const w = txt.split(' '); if (w.length < 3) return [txt]; const k = Math.ceil(w.length / 2); return [w.slice(0, k).join(' '), w.slice(k).join(' ')]; };
   const Y = v => T + ph - (v - lo) / (hi - lo) * ph, svg = sv('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': aria }); const yt = niceTicks(lo, hi, 5);
   yt.forEach(t => { if (t < lo - 1e-9 || t > hi + 1e-9) return; svg.append(sv('line', { x1: L, x2: W - R, y1: Y(t), y2: Y(t), stroke: css('--grid'), 'stroke-width': Math.abs(t) < 1e-9 ? 0 : 1 }), sv('text', { x: L - 6, y: Y(t) + 4, 'text-anchor': 'end', 'font-size': 11, fill: css('--muted') }, fmt(t))); });
   svg.append(sv('line', { x1: L, x2: W - R, y1: Y(0), y2: Y(0), stroke: css('--fg'), 'stroke-width': 1.5 }));
   const gw = pw / groups.length, bw = Math.min(70, gw * .32);
   groups.forEach((g, i) => { const cx = L + gw * i + gw / 2;
     [[g.sold, css('--sold'), -bw - 3, 'Sold homes'], [g.ctrl, css('--ctrl'), 3, 'Similar homes not sold']].forEach(b => { if (b[0] == null) return; const y0 = Y(0), y1 = Y(b[0]), top = Math.min(y0, y1), hgt = Math.max(1.5, Math.abs(y1 - y0));
-      svg.append(sv('rect', { x: cx + b[2], y: top, width: bw, height: hgt, fill: b[1], rx: 2 }, sv('title', {}, b[3] + ': ' + fmt(b[0]))), sv('text', { x: cx + b[2] + bw / 2, y: b[0] >= 0 ? top - 5 : top + hgt + 13, 'text-anchor': 'middle', 'font-size': 12, 'font-weight': 700, fill: css('--fg') }, fmt(b[0]))); });
-    svg.append(sv('text', { x: cx, y: H - 30, 'text-anchor': 'middle', 'font-size': 12.5, 'font-weight': 600, fill: css('--fg') }, g.label), sv('text', { x: cx, y: H - 14, 'text-anchor': 'middle', 'font-size': 11, fill: css('--muted') }, g.n == null ? 'not enough homes' : g.n + ' homes')); });
+      svg.append(sv('rect', { x: cx + b[2], y: top, width: bw, height: hgt, fill: b[1], rx: 2 }, sv('title', {}, b[3] + ': ' + fmt(b[0]))), sv('text', { x: cx + b[2] + bw / 2, y: b[0] >= 0 ? top - 5 : top + hgt + 13, 'text-anchor': 'middle', 'font-size': narrow ? 10.5 : 12, 'font-weight': 700, fill: css('--fg') }, fmt(b[0]))); });
+    const lines = wrap2(g.label), fs = narrow ? 11 : 12.5;
+    lines.forEach((ln, k) => svg.append(sv('text', { x: cx, y: H - 30 - (lines.length - 1 - k) * (fs + 2), 'text-anchor': 'middle', 'font-size': fs, 'font-weight': 600, fill: css('--fg') }, ln)));
+    svg.append(sv('text', { x: cx, y: H - 14, 'text-anchor': 'middle', 'font-size': 11, fill: css('--muted') }, g.n == null ? 'not enough homes' : g.n + ' homes')); });
   box.append(svg);
 }
 function barChart(box, labels, values, color, fmt, aria, integer, opts) {
@@ -2138,6 +2150,23 @@ function drawStudy() {
   if (two && lvl && lvl.n === two.n && metKey !== 'turnover') t.append(el('p', { class: 'small', text: `In levels: those homes averaged ${lvl.before.toFixed(metKey === 'hours' ? 2 : 1)} ${m.unit} at their last rating before the sale and ${lvl.after.toFixed(metKey === 'hours' ? 2 : 1)} two years after (the top rows of "The same homes, before and after"). The "year before" bar is a separate period: the change in the 12 months leading up to the sale.` }));
   if (pre.sold != null && Math.abs(pre.sold * m.scale) >= (m.scale === 100 ? 2 : 0.15) && (m.hb ? pre.sold > 0 : pre.sold < 0)) t.append(el('p', {}, el('b', { text: 'Many were already slipping before the sale: ' }), `in the year leading up to the sale these homes lost ${Math.abs(pre.sold * m.scale).toFixed(m.scale === 100 ? 0 : dd)} ${m.unit} on average` + (pre.ctrl != null ? `, and similar homes that were not sold changed by ${fmt(-pre.ctrl)} ${m.unit} over the same months.` + (Math.abs((pre.sold - pre.ctrl) * m.scale) < (m.scale === 100 ? 2 : 0.1) ? ' The two groups moved alike before the sale; the difference shows up after it.' : '') : '.')));
   if (!one) t.append(el('p', { text: 'Not enough homes with data for this measure yet.' }));
+  // Every home behind the bars, so the averages can be checked and nobody has to guess how much one home moves them.
+  const kinds = setKey === 'sold' ? ['sale'] : ['sale', 'parent', 'internal'];
+  const hs = D.sales.filter(r => kinds.includes(r.kind) && r.outcome !== 'Pending' && r.has_cms && r.m && r.m[metKey] && r.m[metKey].before != null && r.date >= D.dates[0])
+    .map(r => ({ name: r.name, date: r.date, buyer: r.buyer, b: r.m[metKey].before, y1: r.m[metKey].y1, y2: r.m[metKey].y2 }));
+  const fmtv = v => v == null ? '\u2013' : (m.scale === 100 ? Math.round(v * 100) + '%' : (metKey === 'hours' ? v.toFixed(2) : String(v)));
+  const fmts = v => sgn(v, m.scale === 100 ? 0 : dd);
+  const chg = (a, b) => b == null ? null : (b - a) * m.scale, med = a => { const x = a.slice().sort((p, q) => p - q), n = x.length; return n ? (n % 2 ? x[(n - 1) / 2] : (x[n / 2 - 1] + x[n / 2]) / 2) : null; };
+  const with2 = hs.filter(h => h.y2 != null).map(h => ({ ...h, d: chg(h.b, h.y2) })).sort((a, b) => (m.hb ? a.d - b.d : b.d - a.d));
+  if (hs.length) {
+    const sum = with2.reduce((a, h) => a + h.d, 0), big = with2.length ? with2[0] : null, medv = with2.length ? med(with2.map(h => h.d)) : null;
+    const lines = [];
+    if (with2.length) lines.push(`At two years, the median change was ${fmts(medv)} ${m.unit}` + (big && Math.abs(sum) > 0 ? `. The ${with2.length} changes add up to ${fmts(sum)}; the largest single one is ${big.name} (${fmts(big.d)}), ` + (Math.abs(big.d) / Math.abs(sum) >= 0.25 ? 'which is ' + Math.round(100 * Math.abs(big.d) / Math.abs(sum)) + '% of that total, so one home moves the average noticeably' : 'so no single home drives the total') + '.' : '.'));
+    t.append(el('details', {}, el('summary', { text: 'Each home behind these bars' }), lines.length ? el('p', { class: 'small', text: lines.join(' ') }) : null,
+      el('div', { class: 'tblwrap' }, el('table', {}, el('thead', {}, el('tr', {}, ['Home', 'Sold', 'New owner', 'Before', '1 year', '2 years', 'Change at 2 years'].map(x => el('th', { scope: 'col', text: x })))),
+        el('tbody', {}, hs.slice().sort((a, b) => { const da = chg(a.b, a.y2), db = chg(b.b, b.y2); if (da == null && db == null) return a.date < b.date ? 1 : -1; if (da == null) return 1; if (db == null) return -1; return m.hb ? da - db : db - da; })
+          .map(h => { const d = chg(h.b, h.y2); return el('tr', {}, el('td', { text: h.name }), el('td', { text: fmtMon(h.date) }), el('td', { class: 'small', text: h.buyer || '' }), el('td', { class: 'num', text: fmtv(h.b) }), el('td', { class: 'num', text: fmtv(h.y1) }), el('td', { class: 'num', text: fmtv(h.y2) }), el('td', { class: 'num', text: d == null ? 'not yet' : fmts(d) })); }))))));
+  }
   $('#study-note').textContent = `Based on ${st_.n_events} sales (${st_.n_homes} homes) with a CMS rating before the sale, in files from April 2019. Months a home was in CMS's Special Focus Facility program count as 0 stars. "Similar homes" were not sold and had no new operator from a year before to two years after the sale, and they started where the sold home started: the same CMS star rating on the same date (within one star if fewer than 3 homes matched), or, for staffing hours and turnover, the 8 homes with the closest figure. Matching the starting point matters because homes at the bottom of the ratings tend to rise, and homes at the top tend to fall, whoever owns them. The groups are small, so a difference of a few tenths can come from one or two homes. A buyer sometimes runs a home under a management agreement before the state approves the sale, and CMS can take months to show a new operator, so the "before" rating may already reflect the buyer's management. This shows what happened, not why: ratings also move with inspections, staffing rules and the pandemic, which is why the comparison bars matter.`;
   [...$('#set-tabs').children].forEach(b => b.setAttribute('aria-pressed', b.dataset.k === setKey)); [...$('#metric-tabs').children].forEach(b => b.setAttribute('aria-pressed', b.dataset.k === metKey));
 }
@@ -2191,6 +2220,9 @@ drawMoney();
     const c = mn.compare;
     if (c.rp_sh && c.rp_sh['2']) add({ label: 'Money paid to related parties', sub: 'share of the home\u2019s patient revenue', before: c.rp_sh['2'].before, after: c.rp_sh['2'].after, n: c.rp_sh['2'].n, fmt: pct, higherBad: true, eps: 0.01 });
     if (c.rent_sh && c.rent_sh['2']) add({ label: 'Rent paid to a related party', sub: 'share of patient revenue', before: c.rent_sh['2'].before, after: c.rent_sh['2'].after, n: c.rent_sh['2'].n, fmt: pct, higherBad: true, eps: 0.01 });
+    // Operating margin, as the home reported it. Shown so nobody has to ask why it is missing: the money above leaves
+    // the home as a cost before the margin is struck, so a rising margin and rising related-party payments can go together.
+    if (c.margin && c.margin['2']) add({ label: 'Operating margin the home reported', sub: 'after rent and fees to related parties are paid', before: c.margin['2'].before, after: c.margin['2'].after, n: c.margin['2'].n, fmt: v => (v * 100).toFixed(1) + '%', higherBad: false, eps: 0.01, neutral: true });
   }
   if (!rows.length) { $('#ba-panel').classList.add('hidden'); return; }
   $('#ba-lede').textContent = 'Each row follows the same homes from before the sale (left) to two years after (right). For ratings and staffing, "before" is the last CMS figure before the sale; for the money rows it is the cost-report year before the sale. Orange means the measure moved the wrong way for residents; gray means it barely moved. Chain reorganizations are not included.';
@@ -2207,6 +2239,8 @@ drawMoney();
   const tr = D.money && D.money.trend;
   if (tr && tr.rp && tr.rp.other && tr.rp.other.length) { const k = tr.rp.other.length - 1, o0 = tr.rp.other[0], o1 = tr.rp.other[k], peak = Math.max(...tr.rp.other);
     bits.push(`At the ${tr.n_other} homes that did not change hands between ${tr.years[0]} and ${tr.years[k]} (the comparison group in the rent chart above), related-party payments were ${o0.toFixed(1)}% of revenue in ${tr.years[0]} and ${o1.toFixed(1)}% in ${tr.years[k]}` + (peak > o1 + 1 ? `, after rising to ${peak.toFixed(1)}% in ${tr.years[tr.rp.other.indexOf(peak)]}` : '') + `. Many of those homes were bought by chains before ${tr.years[0]} and already paid rent and management fees to their owners' companies.`); }
+  if (c.margin && c.margin['2']) { const m = c.margin['2'], tr2 = D.money && D.money.trend, pm = v => (v * 100).toFixed(1) + '%';
+    bits.push(`The margins these homes reported went from ${pm(m.before)} the year before the sale to ${pm(m.after)} two years after (${m.up} of ${m.n} improved). That is not the whole picture: rent and fees paid to the owners' own companies come out before the margin is struck, so a home can pay its owners more and still report a better margin. Revenue also rose at most homes in those years as Medicaid rates went up` + (D.money.never_sold && D.money.never_sold.margin ? ', and margins improved at homes that were not sold too' : '') + '.'); }
   $('#ba-note').textContent = bits.join(' ') + ' Nurse hours barely moved, so the extra money did not go into more nursing time at the bedside. Related-party figures come from the homes\u2019 own Medicare cost reports: payments to companies the owners also control, such as a landlord or a management company. Money moved this way leaves the home\u2019s books as a cost, so a home can look unprofitable while its owners are paid.';
 })();
 
@@ -2225,15 +2259,17 @@ function cecDetail(id, label) {
 const money0 = v => '$' + Math.round(v || 0).toLocaleString('en-US');
 const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
 const ranIt = x => (x.start ? fmtMon(x.start) : 'Before the records') + (x.end ? ' to ' + fmtMon(x.end) : ' to now');
-function nationalLine(c) {
+function nationalLine(c, riHomes) {
   if (!c) return null;
   const N = D.chain_national || {}, bits = [];
+  // CMS's chain file lags and can undercount (it listed AdviniaCare as 10 homes in 3 states while it ran 8 in Rhode Island alone).
+  const lag = ' CMS\u2019s chain file lags months behind its ownership records and can undercount a chain\u2019s homes' + (riHomes && c.homes != null && riHomes > c.homes ? ' (it shows ' + plural(c.homes, 'home') + ' in all while this group runs ' + riHomes + ' in Rhode Island)' : '') + ', so these are the figures CMS publishes, not a full count.';
   if (c.overall != null) bits.push('average overall rating ' + c.overall.toFixed(1) + ' stars' + (N.overall != null ? ' (all U.S. homes: ' + N.overall.toFixed(1) + ')' : ''));
   if (c.abuse_pct != null) bits.push(Math.round(c.abuse_pct) + '% of its homes carry CMS\u2019s abuse warning' + (N.abuse_pct != null ? ' (all U.S. homes: ' + Math.round(N.abuse_pct) + '%)' : ''));
   if (c.sff) bits.push(plural(c.sff, 'Special Focus Facility') + (c.sff === 1 ? '' : ''));
   if (c.hours != null) bits.push(c.hours.toFixed(1) + ' nurse hours per resident per day' + (N.hours != null ? ' (all U.S.: ' + N.hours.toFixed(1) + ')' : ''));
   if (c.fines_avg != null) bits.push(money0(c.fines_avg) + ' in fines per home' + (N.fines_avg != null ? ' (all U.S.: ' + money0(N.fines_avg) + ')' : ''));
-  return el('p', { class: 'small', style: 'margin:8px 0 0' }, el('b', { text: 'Nationally: ' }), 'CMS lists ' + c.name + ' as a chain of ' + plural(c.homes || 0, 'home') + ' in ' + plural(c.states || 0, 'state') + ', with ' + bits.join('; ') + '. From CMS\u2019s Nursing Home Chain Performance Measures' + (D.chain_asof ? ', ' + D.chain_asof : '') + '.');
+  return el('p', { class: 'small', style: 'margin:8px 0 0' }, el('b', { text: 'Nationally: ' }), 'CMS lists ' + c.name + ' as a chain of ' + plural(c.homes || 0, 'home') + ' in ' + plural(c.states || 0, 'state') + ', with ' + bits.join('; ') + '. From CMS\u2019s Nursing Home Chain Performance Measures' + (D.chain_asof ? ', ' + D.chain_asof : '') + '.' + lag);
 }
 function trackRecord(g) {
   const t = (D.track || {})[g], ten = (D.tenures || []).filter(x => x.group === g).sort((a, b) => a.start < b.start ? 1 : -1);
@@ -2255,7 +2291,7 @@ function trackRecord(g) {
     el('td', { class: 'num', text: String(x.ij) }), el('td', { class: 'num', text: String(x.harm) }), el('td', { class: 'num', text: money0(x.fines) }))));
   wrap.append(el('details', {}, el('summary', { text: 'Each home it has run' }), el('div', { class: 'tblwrap' }, el('table', {}, el('thead', {}, el('tr', {}, ['Home', 'Ran it', 'Stars: took over \u2192 now or left', 'Immediate jeopardy', 'Harm citations', 'Fines'].map(x => el('th', { scope: 'col', class: /Home|Ran/.test(x) ? '' : 'num', text: x })))), tb))));
   wrap.append(el('p', { class: 'small', style: 'margin:6px 0 0', text: 'Counted from when the group began running each home: the start of a management agreement if there was one, otherwise the sale date. Citations and fines are CMS\u2019s, counted only while the group ran the home and only as far back as CMS\u2019s files reach (about April 2016).' }));
-  if (t.chain) wrap.append(nationalLine(t.chain));
+  if (t.chain) wrap.append(nationalLine(t.chain, t.homes_now || t.homes));
   return wrap;
 }
 /* sales under review now */
@@ -2292,6 +2328,20 @@ const JUMP_WHY = 'A change that big in one update is rare. It can be real hiring
 const cols = [['date', 'Date'], ['name', 'Home'], ['label', 'Type'], ['buyer', 'New owner'], ['overall', 'Overall stars: before \u2192 1 yr \u2192 2 yrs'], ['hours', 'Nurse hours: before \u2192 1 yr (case-mix adjusted below)'], ['ser', 'Serious citations: year before \u2192 year after'], ['fines', 'Fines: year before \u2192 year after']];
 $('#sales-tbl thead').append(el('tr', {}, cols.map(c => el('th', { scope: 'col', class: ['overall', 'hours', 'ser', 'fines'].includes(c[0]) ? 'num' : '' }, ['date', 'name', 'label', 'buyer'].includes(c[0]) ? el('button', { text: c[1], onclick: () => { sortDir = sortKey === c[0] ? -sortDir : 1; sortKey = c[0]; drawSales(); }, 'aria-label': 'Sort by ' + c[1] }) : c[1]))));
 function trio(a, b, c, fmt, cell) { const parts = [a, b, c].filter((v, i) => i === 0 || v != null || (i === 1)); return parts; }
+/* How long a buyer kept the home: years from this sale to the next sale to a different group, or to today (with any pending application noted). */
+const yrsBetween = (a, b) => (new Date(MS(b)) - new Date(MS(a))) / (365.25 * 864e5);
+const yrsText = y => y < 1 ? Math.max(1, Math.round(y * 12)) + ' months' : (Math.round(y * 10) / 10) + ' years';
+const notClosed = r => r.outcome !== 'Pending' && r.date && D.meta.latest && r.date > D.meta.latest;   // decided after the newest CMS file: approved, but CMS does not show it yet and it may not have closed
+function heldText(r) {
+  if (r.outcome === 'Pending' || !r.fid || !r.date || r.kind !== 'sale' || !r.buyer) return '';
+  const later = D.sales.filter(x => x.fid === r.fid && x.date && x.date > r.date && x.kind === 'sale' && x.buyer && x.buyer !== r.buyer).sort((a, b) => a.date < b.date ? -1 : 1);
+  const next = later.find(x => x.outcome !== 'Pending'), pend = later.find(x => x.outcome === 'Pending');
+  const start = r.mgmt_start && r.mgmt_start < r.date ? r.mgmt_start : r.date;
+  if (next) return 'Held ' + yrsText(yrsBetween(start, next.mgmt_start && next.mgmt_start < next.date ? next.mgmt_start : next.date)) + ', then sold to ' + next.buyer + (next.date > D.meta.latest ? ' (approved ' + fmtMon(next.date) + ', not yet closed)' : ' in ' + next.date.slice(0, 4));
+  if (notClosed(r)) return '';   // the date cell already says "Approved, not yet closed"
+  const so = 'Running it ' + yrsText(yrsBetween(start, D.meta.latest)) + ' so far';
+  return pend ? so + '; a sale to ' + pend.buyer + ' is pending with the state' : so;
+}
 function drawSales() {
   const q = $('#sale-q').value.trim().toLowerCase(), incP = $('#sale-parent').checked, onlyC = $('#sale-cms').checked;
   let rows = D.sales.filter(r => (incP || r.kind !== 'parent') && (!onlyC || r.has_cms) && (!q || [r.name, r.town, r.buyer, r.who].join(' ').toLowerCase().includes(q)));
@@ -2299,7 +2349,8 @@ function drawSales() {
   rows.sort((a, b) => { const A = sortVal(a), B = sortVal(b); return (A < B ? -1 : A > B ? 1 : 0) * sortDir; });
   const tb = $('#sales-tbl tbody'); tb.replaceChildren();
   rows.forEach(r => { const m = r.m;
-    const newOwner = el('td', {}, r.buyer ? el('b', { text: r.buyer }) : null, r.buyer ? el('br') : null, el('span', { class: 'small', text: r.who }));
+    const held = heldText(r);
+    const newOwner = el('td', {}, r.buyer ? el('b', { text: r.buyer }) : null, r.buyer ? el('br') : null, el('span', { class: 'small', text: r.who }), held ? el('div', { class: 'small held', text: held }) : null);
     const inCms = (D.facilities.find(f => f.id === r.fid) || {}).has_cms;
     const noData = (r.has_cms || inCms) && r.date && r.date < D.dates[0] ? 'before CMS files start (' + fmtMon(D.dates[0]) + ')' : (r.has_cms ? 'no rating before sale' : 'no CMS data');
     const stars = el('td', { class: 'num' }, r.has_cms && m.overall.before != null ? [chip(m.overall.before), el('span', { class: 'arrow', text: '\u2192' }), chip(m.overall.y1), el('span', { class: 'arrow', text: '\u2192' }), chip(m.overall.y2),
@@ -2309,10 +2360,33 @@ function drawSales() {
       ...(r.hj ? [['before', 'Before'], ['y1', '1 yr']].filter(([k]) => r.hj[k]).map(([k, w]) => el('div', { class: 'small', text: w + ' figure: big change in one CMS update (' + f2(r.hj[k].prev) + ' to ' + f2(r.hj[k].now) + '). May be a payroll reporting problem.' })) : [])] : '\u2013');
     const ser = el('td', { class: 'num' }, r.ser.before != null ? [String(r.ser.before), el('span', { class: 'arrow', text: '\u2192' }), r.ser.y1 == null ? '\u2013' : String(r.ser.y1)] : '\u2013');
     const fin = el('td', { class: 'num' }, r.fines.before != null ? [money(r.fines.before), el('span', { class: 'arrow', text: '\u2192' }), r.fines.y1 == null ? '\u2013' : money(r.fines.y1)] : '\u2013');
-    tb.append(el('tr', {}, el('td', { class: 'num', title: r.date_note }, r.outcome === 'Pending' ? 'Pending, application submitted ' + fmtDay(r.date) : [fmtDay(r.date), dateMark(r.date_note)], r.date_note === 'Approximate date' ? el('div', { class: 'small', text: 'Approximate. The state record does not give an exact date.' }) : null, r.mgmt_start ? el('div', { class: 'small', text: 'Buyer managing from ' + fmtMon(r.mgmt_start) }) : null, r.cms_op ? el('div', { class: 'small', text: 'CMS records updated ' + fmtMon(r.cms_op) }) : null), el('td', {}, D.facilities.some(f => f.id === r.fid) ? el('button', { class: 'linkbtn', text: r.name, onclick: () => showFacility(r.fid, true) }) : r.name, r.town ? el('div', { class: 'small', text: r.town }) : null), el('td', {}, r.label, r.outcome === 'Pending' ? el('div', { class: 'small', text: 'Pending' }) : null), newOwner, stars, hrs, ser, fin)); const cd = cecDetail(r.cec, 'Conditions and documents for this sale'); if (cd) tb.append(el('tr', { class: 'cecrow' }, el('td', { colspan: 8 }, cd))); });
+    tb.append(el('tr', {}, el('td', { class: 'num', title: r.date_note }, r.outcome === 'Pending' ? 'Pending, application submitted ' + fmtDay(r.date) : [fmtDay(r.date), dateMark(r.date_note)], notClosed(r) ? el('div', { class: 'small', text: 'Approved, not yet closed' }) : null, r.date_note === 'Approximate date' ? el('div', { class: 'small', text: 'Approximate. The state record does not give an exact date.' }) : null, r.mgmt_start ? el('div', { class: 'small', text: 'Buyer managing from ' + fmtMon(r.mgmt_start) }) : null, r.cms_op ? el('div', { class: 'small', text: 'CMS records updated ' + fmtMon(r.cms_op) }) : null), el('td', {}, D.facilities.some(f => f.id === r.fid) ? el('button', { class: 'linkbtn', text: r.name, onclick: () => showFacility(r.fid, true) }) : r.name, r.town ? el('div', { class: 'small', text: r.town }) : null), el('td', {}, r.label, r.outcome === 'Pending' ? el('div', { class: 'small', text: 'Pending' }) : null), newOwner, stars, hrs, ser, fin)); const cd = cecDetail(r.cec, 'Conditions and documents for this sale'); if (cd) tb.append(el('tr', { class: 'cecrow' }, el('td', { colspan: 8 }, cd))); });
   if (!rows.length) tb.append(el('tr', {}, el('td', { colspan: 8, text: 'No sales match.' })));
 }
 $('#date-legend').textContent = dateLegend();
+/* What the dates show: buyers running homes before the state decides, how long homes are held, and how late CMS's files catch up. */
+(function () {
+  const box = $('#timing-note'); if (!box) return;
+  const done = D.sales.filter(r => r.kind === 'sale' && r.outcome !== 'Pending' && r.date && r.date >= D.dates[0]);
+  const mg = done.filter(r => r.mgmt_start && r.mgmt_start < r.date).map(r => ({ name: r.name, buyer: r.buyer, months: Math.round(yrsBetween(r.mgmt_start, r.date) * 12) }));
+  const months = a => { const x = a.slice().sort((p, q) => p - q); return x.length ? [x[0], x[x.length - 1]] : null; };
+  const paras = [];
+  if (mg.length) { const [lo, hi] = months(mg.map(x => x.months)), buyers = [...new Set(mg.map(x => x.buyer))];
+    paras.push(el('p', {}, el('b', { text: 'Buyers were already running homes before the state decided. ' }), `For ${mg.length} of the ${done.length} sales approved since ${fmtMon(D.dates[0])}, a management agreement is on the record: the buyer (${buyers.join(', ')}) ran the home for ${lo === hi ? lo + ' months' : lo + ' to ' + hi + ' months'} before the decision. These agreements are not published, so this is a floor, not a count: most sales are probably preceded by one, and the only public traces are mentions in applications and Council presentations.`)); }
+  const lags = done.filter(r => r.cms_op && r.date_note !== 'CMS takeover date').map(r => Math.round(yrsBetween(r.date, r.cms_op) * 12)).sort((a, b) => a - b);
+  if (lags.length >= 3) { const mid = lags.length % 2 ? lags[(lags.length - 1) / 2] : (lags[lags.length / 2 - 1] + lags[lags.length / 2]) / 2;
+    paras.push(el('p', {}, el('b', { text: 'CMS\u2019s public files run months behind. ' }), `Where a decided sale has a CMS operator change on record and no CMS takeover date, CMS\u2019s files first showed the new operator a median of ${Math.round(mid)} months after the state\u2019s decision (${lags[0]} to ${lags[lags.length - 1]} months, ${lags.length} sales). Until then the home\u2019s ratings, citations, and fines are published under the old operator\u2019s name.`)); }
+  const held = []; done.forEach(r => { if (!r.buyer) return; const later = D.sales.filter(x => x.fid === r.fid && x.date > r.date && x.kind === 'sale' && x.buyer && x.buyer !== r.buyer && x.outcome !== 'Pending'); if (later.length) held.push({ name: r.name, buyer: r.buyer, yrs: yrsBetween(r.mgmt_start && r.mgmt_start < r.date ? r.mgmt_start : r.date, later.sort((a, b) => a.date < b.date ? -1 : 1)[0].date) }); });
+  const pend = done.filter(r => r.buyer && D.sales.some(x => x.fid === r.fid && x.outcome === 'Pending' && x.buyer && x.buyer !== r.buyer)).map(r => ({ name: r.name, buyer: r.buyer, yrs: yrsBetween(r.mgmt_start && r.mgmt_start < r.date ? r.mgmt_start : r.date, D.meta.latest) }));
+  const quick = held.filter(h => h.yrs < 4).concat(pend.filter(h => h.yrs < 4));
+  if (held.length || pend.length) {
+    const bits = [];
+    if (held.length) bits.push(`${held.length} of these homes ${held.length === 1 ? 'has' : 'have'} already been sold again (${held.map(h => h.name + ', ' + yrsText(h.yrs) + ' under ' + h.buyer).join('; ')})`);
+    if (pend.length) bits.push(`${pend.length} ${pend.length === 1 ? 'is' : 'are'} up for sale again with an application pending (${pend.map(h => h.name + ', ' + yrsText(h.yrs) + ' under ' + h.buyer).join('; ')})`);
+    paras.push(el('p', {}, el('b', { text: 'Some homes are sold again within a few years. ' }), bits.join('. ') + '.' + (quick.length ? ' The "New owner" column shows how long each buyer kept the home.' : '')));
+  }
+  if (paras.length) box.replaceChildren(el('p', { class: 'small', style: 'margin-top:0', text: 'What the dates in this table show:' }), ...paras); else box.classList.add('hidden');
+})();
 ['#sale-q', '#sale-parent', '#sale-cms'].forEach(s => $(s).addEventListener('input', drawSales)); drawSales();
 
 /* ---------- related-party money: panel on each home, and the statewide table ---------- */
@@ -2444,7 +2518,9 @@ function eraPanel(f) {
       const mets = el('div', { class: 'mets' });
       const s0 = st0(r.i0), s1 = st0(r.i1);
       if (s0 != null && s1 != null) {
-        const d = s1 - s0, word = (s0 === 0 || s1 === 0) ? 'CMS did not rate the home at one end (special focus facility), so no change is shown' : d === 0 ? 'No change' : (d > 0 ? 'Up ' : 'Down ') + Math.abs(d) + (Math.abs(d) === 1 ? ' star' : ' stars');
+        // A special focus facility (not rated by CMS) counts as 0 stars here, as it does everywhere else on this page.
+        const d = s1 - s0, sff = (s0 === 0 || s1 === 0) ? ' (0 means CMS did not rate the home: special focus facility)' : '';
+        const word = (d === 0 ? 'No change' : (d > 0 ? 'Up ' : 'Down ') + Math.abs(d) + (Math.abs(d) === 1 ? ' star' : ' stars')) + sff;
         mets.append(el('div', { class: 'met' }, el('b', { class: 'lbl', text: 'Overall stars (5 is best)' }), chip(s0), el('span', { class: 'arrow', text: '→' }), chip(s1), el('span', { class: 'chg', text: word })));
       }
       const h0 = val(f.s.hours, r.i0), h1 = val(f.s.hours, r.i1);
@@ -2502,17 +2578,64 @@ function showFacility(id, scroll) {
 }
 
 /* ---------- owner groups ---------- */
-{ const tb = $('#groups-tbl tbody'); const cell = (p, label) => el('td', { class: 'num' }, p ? [chipAvg(p.before), el('span', { class: 'arrow', text: '\u2192' }), chipAvg(p.after), el('div', { class: 'small', text: p.n + (p.n === 1 ? ' home' : ' homes') })] : el('span', { class: 'small', text: 'not yet' }));
+{ const tb = $('#groups-tbl tbody');
+  // An average of 1 or 2 homes is shown in gray, since it is really one or two homes' own ratings, not a group pattern.
+  const few = n => n < 3 ? ' few' : '';
+  const cell = (p, label) => el('td', { class: 'num' + (p ? few(p.n) : '') }, p ? [chipAvg(p.before), el('span', { class: 'arrow', text: '\u2192' }), chipAvg(p.after), el('div', { class: 'small', text: p.n + (p.n === 1 ? ' home' : ' homes') + (p.n < 3 ? ', too few to average' : '') })] : el('span', { class: 'small', text: 'not yet' }));
   function chipAvg(v) { return el('b', { text: v.toFixed(1) }); }
   D.groups.forEach(g => { const ten = (D.tenures || []).filter(x => x.group === g.group), tr_ = (D.track || {})[g.group];
     const tOf = name => ten.find(x => x.name === name);
     const detail = el('tr', { class: 'hidden' }, el('td', { colspan: 8 }, el('table', {}, el('thead', {}, el('tr', {}, ['Home', 'Sale date', 'When it took over', 'After 1 year', 'After 2 years', 'Latest (years since)', 'Ran it from', 'Immediate jeopardy', 'Harm citations', 'Fines'].map(x => el('th', { text: x })))),
-      el('tbody', {}, g.homes.map(h2 => { const t2 = tOf(h2.name); return el('tr', {}, el('td', { text: h2.name }), el('td', {}, fmtDay(h2.date), h2.managed_from ? el('div', { class: 'small', text: 'Managing from ' + fmtMon(h2.managed_from) }) : null), el('td', {}, chip(h2.before)), el('td', {}, chip(h2.y1)), el('td', {}, chip(h2.y2)), el('td', {}, chip(h2.latest), h2.yrs != null ? el('span', { class: 'small', text: '  (' + h2.yrs + ' yrs)' }) : null),
+      el('tbody', {}, g.homes.map(h2 => { const t2 = tOf(h2.name); return el('tr', {}, el('td', { text: h2.name }), el('td', {}, fmtDay(h2.date), h2.managed_from ? el('div', { class: 'small', text: 'Managing from ' + fmtMon(h2.managed_from) }) : null), el('td', {}, chip(h2.before)), el('td', {}, chip(h2.y1)), el('td', {}, chip(h2.y2)), el('td', {}, chip(h2.latest), h2.yrs != null ? el('span', { class: 'small', text: '  (' + h2.yrs + ' yrs' + (t2 && t2.end ? ', until it sold in ' + fmtMon(t2.end) : '') + ')' }) : null),
         el('td', { text: t2 ? ranIt(t2) : '\u2013' }), el('td', { class: 'num', text: t2 ? String(t2.ij) : '\u2013' }), el('td', { class: 'num', text: t2 ? String(t2.harm) : '\u2013' }), el('td', { class: 'num', text: t2 ? money0(t2.fines) : '\u2013' })); })))));
     const btn = el('button', { class: 'linkbtn', text: g.group, 'aria-expanded': 'false', onclick: () => { detail.classList.toggle('hidden'); btn.setAttribute('aria-expanded', String(!detail.classList.contains('hidden'))); } });
-    tb.append(el('tr', {}, el('td', {}, btn, el('div', { class: 'small', text: 'click to see each home' })), el('td', { class: 'num', text: String(g.n) }), cell(g.y1), cell(g.y2), el('td', { class: 'num' }, g.latest ? [chipAvg(g.latest.before), el('span', { class: 'arrow', text: '\u2192' }), chipAvg(g.latest.after), el('div', { class: 'small', text: g.latest.n + (g.latest.n === 1 ? ' home' : ' homes') + (g.yrs != null ? ', typically ' + g.yrs + (g.yrs === 1 ? ' yr' : ' yrs') + ' later' : '') })] : '\u2013'),
+    const ended = g.homes.map(h2 => tOf(h2.name)).filter(t2 => t2 && t2.end), allLeft = g.homes.length > 0 && ended.length === g.homes.length, someLeft = ended.length > 0 && !allLeft;
+    tb.append(el('tr', {}, el('td', {}, btn, el('div', { class: 'small', text: 'click to see each home' })), el('td', { class: 'num', text: String(g.n) }), cell(g.y1), cell(g.y2), el('td', { class: 'num' + (g.latest ? few(g.latest.n) : '') }, g.latest ? [chipAvg(g.latest.before), el('span', { class: 'arrow', text: '\u2192' }), chipAvg(g.latest.after), el('div', { class: 'small', text: g.latest.n + (g.latest.n === 1 ? ' home' : ' homes') + (g.latest.n < 3 ? ' (too few to average)' : '') + (g.yrs != null ? ', typically ' + g.yrs + (g.yrs === 1 ? ' yr' : ' yrs') + (allLeft ? ' later, when it sold' : someLeft ? ' later (some since sold)' : ' later') : '') })] : '\u2013'),
       el('td', { class: 'num' }, tr_ ? [el('b', { text: String(tr_.ij) }), el('div', { class: 'small', text: 'over ' + tr_.years + ' home-years' })] : '\u2013'),
       el('td', { class: 'num', text: tr_ ? String(tr_.harm) : '\u2013' }), el('td', { class: 'num', text: tr_ ? money0(tr_.fines) : '\u2013' })), detail); }); }
+
+/* every group with time in charge, sellers included */
+(function () {
+  const tb = $('#allgroups-tbl tbody'); if (!tb) return;
+  const rows = Object.values(D.track || {}).filter(t => t.homes && t.years);
+  if (!rows.length) { $('#allgroups').classList.add('hidden'); return; }
+  rows.sort((a, b) => (b.ij / b.years) - (a.ij / a.years) || b.ij - a.ij);
+  const avg = v => el('b', { text: v == null ? '\u2013' : v.toFixed(1) });
+  const per = (n, y, k) => y ? (n / y * k) : null, f1 = v => v == null ? '\u2013' : v.toFixed(1);
+  rows.forEach(t => tb.append(el('tr', {}, el('td', { text: t.group }), el('td', { class: 'num', text: t.homes + ' (' + (t.homes_now || 0) + ')' }), el('td', { class: 'num', text: String(t.years) }),
+    el('td', { class: 'num' + (t.n_stars && t.n_stars < 3 ? ' few' : '') }, t.n_stars ? [avg(t.stars_start), el('span', { class: 'arrow', text: '\u2192' }), avg(t.stars_end), el('div', { class: 'small', text: t.n_stars + (t.n_stars === 1 ? ' home' : ' homes') + (t.n_stars < 3 ? ', too few to average' : '') })] : el('span', { class: 'small', text: 'before CMS files' })),
+    el('td', { class: 'num', text: String(t.ij) }), el('td', { class: 'num', text: f1(per(t.ij, t.years, 10)) }), el('td', { class: 'num', text: String(t.harm) }), el('td', { class: 'num', text: f1(per(t.harm, t.years, 10)) }), el('td', { class: 'num', text: money0(t.fines) }), el('td', { class: 'num', text: t.years ? money0(t.fines / t.years) : '\u2013' }))));
+})();
+
+/* Examples: picked from the data each build (worst fall, most immediate jeopardy, biggest rise in related-party money, the rent line), so they stay current. */
+(function () {
+  const box = $('#examples'), ul = $('#examples-list'); if (!box || !ul) return;
+  const items = [], tens = (D.tenures || []).filter(t => t.start && t.years >= 0.5), fac = id => D.facilities.find(f => f.id === id);
+  const link = (fid, name) => fac(fid) ? el('button', { class: 'linkbtn', text: name, onclick: () => showFacility(fid, true) }) : name;
+  const yrs = y => y < 1 ? Math.max(1, Math.round(y * 12)) + ' months' : (Math.round(y * 10) / 10) + ' years';
+  // 1. the biggest fall in stars under one owner
+  const falls = tens.filter(t => t.stars_start != null && t.stars_end != null).map(t => ({ ...t, d: t.stars_end - t.stars_start })).sort((a, b) => a.d - b.d || b.ij - a.ij);
+  if (falls.length && falls[0].d <= -2) { const t = falls[0];
+    items.push(el('li', {}, el('b', {}, link(t.fid, t.name), ': '), `${t.stars_start} stars when ${t.group} took over in ${fmtMon(t.start)}, ${t.stars_end === 0 ? '0 now (a Special Focus Facility, which CMS does not rate)' : t.stars_end + (t.current ? ' now' : ' when it left')}. ` + (t.ij ? `${plural(t.ij, 'immediate jeopardy citation')} and ${money0(t.fines)} in fines in ${yrs(t.years)}.` : `${money0(t.fines)} in fines in ${yrs(t.years)}.`))); }
+  // 2. the most immediate jeopardy citations under one owner, if a different home
+  const ijs = tens.filter(t => t.ij && (!falls.length || t.fid !== falls[0].fid || t.group !== falls[0].group)).sort((a, b) => b.ij - a.ij || b.fines - a.fines);
+  if (ijs.length && ijs[0].ij >= 3) { const t = ijs[0];
+    items.push(el('li', {}, el('b', {}, link(t.fid, t.name), ': '), `${plural(t.ij, 'immediate jeopardy citation')} and ${money0(t.fines)} in fines in the ${yrs(t.years)} ` + (t.current ? `since ${t.group} took over` : `that ${t.group} ran it, until it sold in ${fmtMon(t.end)}`) + (t.stars_start != null && t.stars_end != null ? ` (${t.stars_start} stars when it took over, ${t.stars_end} ${t.current ? 'now' : 'when it left'}).` : '.'))); }
+  // 3. the biggest rise in related-party money after a sale
+  const FS = (D.money && D.money.first_sale) || {}, RP = (D.money && D.money.by_facility) || {}, rises = [];
+  Object.keys(RP).forEach(id => { const b = RP[id], fs = FS[id]; if (!fs) return; const k0 = b.years.indexOf(fs.year - 1); let i = b.years.length - 1; while (i >= 0 && (b.rev[i] == null || (b.partial && b.partial[i]))) i--;
+    if (k0 >= 0 && i > k0 && b.rp_sh[k0] != null && b.rp_sh[i] != null) rises.push({ id, name: (fac(id) || {}).name || id, y0: b.years[k0], y1: b.years[i], s0: b.rp_sh[k0], s1: b.rp_sh[i], rent: b.rent[i], rentsh: b.rent_sh[i], usd: b.rp[i], d: b.rp_sh[i] - b.rp_sh[k0] }); });
+  rises.sort((a, b) => b.d - a.d);
+  if (rises.length && rises[0].d >= 0.05) { const r = rises[0], pc = v => Math.round(v * 100) + '%';
+    items.push(el('li', {}, el('b', {}, link(r.id, r.name), ': '), `money paid to the owners' own companies went from ${pc(r.s0)} of revenue in ${r.y0}, the year before it was sold, to ${pc(r.s1)} in ${r.y1} (${money0(r.usd)}` + (r.rent ? `, of it ${money0(r.rent)} in rent to a landlord the owners control` : '') + ').')); }
+  // 4. the rent line
+  const t = D.money && D.money.trend;
+  if (t && t.rent_usd && t.rent_usd.sold) { const n = t.years.length - 1, mil = v => '$' + (v / 1e6).toFixed(1) + ' million';
+    items.push(el('li', {}, el('b', { text: 'Rent to owners\u2019 own landlords: ' }), `at the ${t.n_sold} homes that changed hands between ${t.years[0]} and ${t.years[n]}, it went from ${mil(t.rent_usd.sold[0])} a year to ${mil(t.rent_usd.sold[n])}, ${t.rent.sold[0].toFixed(1)}% of patient revenue to ${t.rent.sold[n].toFixed(1)}%. Nurse hours at sold homes barely moved.`)); }
+  if (!items.length) { box.classList.add('hidden'); return; }
+  $('#examples-lede').textContent = 'Picked from the data on this page each time it is rebuilt: the steepest fall in stars under one owner, the most immediate jeopardy citations under one owner, the biggest rise in money paid to related companies after a sale, and the rent line. Click a home for its full record.';
+  items.forEach(li => ul.append(li));
+})();
 
 /* ---------- about + downloads ---------- */
 const ab = $('#about-body');
