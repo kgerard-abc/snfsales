@@ -820,6 +820,11 @@ def cost_panel(cec, S):
     c = c.copy()
     if 'partial' not in c.columns: c['partial'] = False
     for k in ('rp', 'rent', 'mgmt'): c[k + '_sh'] = c[k] / c['rev']
+    # For the before-and-after rows: a home that reports related-party costs but no rent line paid no rent to a related
+    # landlord, so count it as 0 rather than leave the home out (leaving it out dropped homes that went from no related
+    # rent to paying it). "Other" is every related-party payment except rent, so the two rows add up and never overlap.
+    c['rent0'] = c['rent'].where(c['rent'].notna() | c['rp'].isna(), 0.0)
+    c['rent0_sh'] = c['rent0'] / c['rev']; c['other_sh'] = (c['rp'] - c['rent0']) / c['rev']
     c['margin_sh'] = c['margin']
     by_all = {ccn: g.set_index('year') for ccn, g in c.groupby('ccn')}   # every report, for the home pages and the table (partial years flagged)
     c = c[~c.partial.astype(bool)]                                           # the statewide comparisons use whole years only
@@ -845,7 +850,7 @@ def cost_panel(cec, S):
                                            rp_sh=[_r(v, 4) for v in g['rp_sh']], rent_sh=[_r(v, 4) for v in g['rent_sh']], mgmt_sh=[_r(v, 4) for v in g['mgmt_sh']], margin=[_r(v, 4) for v in g['margin']],
                                            parties=[(None if nz(v) is None else str(v)[:600]) for v in g['parties']], from_summary=True)
     # same-home before/after (year before the sale vs 1, 2, 3 years after)
-    for k in ('rp_sh', 'rent_sh', 'mgmt_sh', 'margin'):
+    for k in ('rp_sh', 'rent0_sh', 'other_sh', 'mgmt_sh', 'margin'):
         res = {}
         for after in (1, 2, 3):
             pairs = []
@@ -857,7 +862,7 @@ def cost_panel(cec, S):
                     pairs.append((float(g.loc[a, k]), float(g.loc[b, k]), r.ccn))
             if len(pairs) >= 5:
                 res[str(after)] = dict(n=len(pairs), before=round(float(np.mean([x[0] for x in pairs])), 4), after=round(float(np.mean([x[1] for x in pairs])), 4), up=int(sum(1 for x in pairs if x[1] > x[0])))
-        out['compare'][k] = res
+        out['compare']['rent_sh' if k == 'rent0_sh' else k] = res
     # homes never sold, same calendar years, as a comparison
     ctrl = {}
     for k in ('rp_sh', 'rent_sh', 'mgmt_sh', 'margin'):
@@ -1125,6 +1130,23 @@ def build_public_data(M, S, val, cec, mp, ccn_of, fn, cfg):
             if len(pr) >= 5: out[lbl] = dict(n=len(pr), before=round(float(np.mean([x[0] for x in pr])), 3), after=round(float(np.mean([x[1] for x in pr])), 3), worse=int(sum(1 for x in pr if x[1] < x[0])))
         return out
     lev = {m: levels(m, None) for m in ('overall', 'staffing', 'hours', 'rn', 'turnover')}
+    # Why staffing stars can fall while reported hours do not: CMS's staffing rating uses case-mix adjusted hours (and, since
+    # July 2022, weekend hours and turnover), and the staffing row can cover fewer homes than the hours row. Figures for the
+    # homes in the staffing row only, so the page can say this with numbers.
+    base_ = S[S.counts & S.type.isin(('Ownership/operator change',)) & S.before.notna() & ~S.pre_method]
+    sp = [r for r in base_.itertuples() if nz(r.staffing_before) is not None and nz(r.staffing_y2) is not None]
+    if len(sp) >= 5:
+        def mean_(rows, col):
+            v = [float(getattr(r, col)) for r in rows if nz(getattr(r, col)) is not None]
+            return (round(float(np.mean(v)), 3), len(v)) if v else (None, 0)
+        lost = [r for r in sp if r.staffing_y2 < r.staffing_before]; gained = [r for r in sp if r.staffing_y2 > r.staffing_before]
+        both = lambda rows, a, b: [r for r in rows if nz(getattr(r, a)) is not None and nz(getattr(r, b)) is not None]
+        d = dict(n=len(sp), lost=len(lost), gained=len(gained), same=len(sp) - len(lost) - len(gained))
+        for key, rows in (('all', sp), ('lost', lost), ('gained', gained)):
+            for m in ('hours', 'adj'):
+                rr = both(rows, m + '_before', m + '_y2')
+                if rr: d[f'{key}_{m}'] = dict(n=len(rr), before=mean_(rr, m + '_before')[0], after=mean_(rr, m + '_y2')[0])
+        lev['staffing_detail'] = d
     # event studies
     study = {}
     for setname, types in (('sold', ('Ownership/operator change',)), ('all', tuple(cfg['public_include_types']))):
@@ -1983,7 +2005,8 @@ footer a{color:var(--fg)}
 <div class="grid-rent"><div class="panel" id="money-panel"><h3 style="margin-top:0;font-size:1rem">Rent paid to a landlord the owners also control</h3><div class="chartbox" id="money-chart"></div><div class="legend" id="money-legend"></div><p class="small" id="money-note"></p></div>
 <div class="panel"><h3 style="margin-top:0;font-size:1rem">Changes of control approved, by year</h3><div class="chartbox" id="peryear-chart" style="max-width:420px"></div><p class="small" id="peryear-note"></p></div></div>
 <div class="panel" id="ba-panel"><h3 style="margin-top:0">The same homes, before and after</h3>
-<p class="lede" id="ba-lede"></p><div class="chartbox" id="ba-chart"></div><p class="small" id="ba-count"></p><p class="small" id="ba-note"></p></div>
+<p class="lede" id="ba-lede"></p><div class="chartbox" id="ba-chart"></div><p class="small" id="ba-count"></p><p class="small" id="ba-staffing"></p>
+<p class="small" id="ba-note"></p></div>
 
 <h3>Change by measure: sold homes compared with similar homes</h3>
 <div class="panel">
@@ -2117,33 +2140,43 @@ function drawChart(box, o) {
   svg.addEventListener('mousemove', move); svg.addEventListener('touchstart', move, { passive: true }); svg.addEventListener('touchmove', move, { passive: true }); svg.addEventListener('mouseleave', leave); svg.addEventListener('touchend', leave);
 }
 function dumbbells(box, rows, aria) {
+  // Each row is drawn on its own scale (r.lo to r.hi, labeled at the ends), so the line between the dots is as long as
+  // the change. Gray dot: before the sale. Colored dot: two years after.
   box.replaceChildren();
   const W = Math.max(320, Math.min(760, box.clientWidth || 760)), narrow = W < 520;
-  const rowH = narrow ? 86 : 64, padT = 40, padB = 12, L = narrow ? 8 : 250, R = narrow ? 8 : 150;
-  const x0 = L + (narrow ? 86 : 40), x1 = W - R - (narrow ? 86 : 70), H = padT + rows.length * rowH + padB;
+  const rowH = narrow ? 112 : 66, padT = 34, padB = 10, L = narrow ? 0 : 250, R = narrow ? 0 : 130;
+  const x0 = L + 44, x1 = W - R - 44, H = padT + rows.length * rowH + padB;
   const svg = sv('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': aria });
-  svg.append(sv('text', { x: x0, y: 18, 'text-anchor': 'middle', 'font-size': 12, 'font-weight': 700, fill: css('--muted') }, 'Before the sale'),
-             sv('text', { x: x1, y: 18, 'text-anchor': 'middle', 'font-size': 12, 'font-weight': 700, fill: css('--muted') }, 'Two years after'));
+  svg.append(sv('circle', { cx: x0 + 6, cy: 14, r: 6, fill: css('--ctrl') }), sv('text', { x: x0 + 18, y: 18, 'font-size': 12, 'font-weight': 700, fill: css('--muted') }, 'Before the sale'),
+             sv('circle', { cx: x0 + 136, cy: 14, r: 6, fill: css('--sold') }), sv('text', { x: x0 + 148, y: 18, 'font-size': 12, 'font-weight': 700, fill: css('--muted') }, 'Two years after'));
   rows.forEach((r, i) => {
-    const top = padT + i * rowH, y = top + (narrow ? 52 : 26);
+    const top = padT + i * rowH, y = top + (narrow ? 76 : 28);
     const diff = r.after - r.before, eps = r.eps == null ? 0 : r.eps;
     const dir = Math.abs(diff) <= eps ? 'flat' : (r.neutral ? 'neutral' : ((r.higherBad ? diff > 0 : diff < 0) ? 'bad' : 'good'));
     const col = dir === 'bad' ? css('--sold') : dir === 'good' ? css('--s4') : css('--ctrl');
-    svg.append(sv('text', { x: narrow ? 0 : 0, y: narrow ? top + 14 : y - 4, 'font-size': 13, 'font-weight': 600, fill: css('--fg') }, r.label),
+    const lo = r.lo != null ? r.lo : Math.min(0, r.before, r.after), hi = r.hi != null ? r.hi : Math.max(r.before, r.after) * 1.2;
+    const X = v => x0 + (Math.max(lo, Math.min(hi, v)) - lo) / (hi - lo) * (x1 - x0);
+    const xb = X(r.before), xa = X(r.after);
+    svg.append(sv('text', { x: 0, y: narrow ? top + 14 : y - 4, 'font-size': 13, 'font-weight': 600, fill: css('--fg') }, r.label),
                sv('text', { x: 0, y: narrow ? top + 30 : y + 13, 'font-size': 11, fill: css('--muted') }, r.sub));
-    svg.append(sv('line', { x1: x0, x2: x1, y1: y, y2: y, stroke: col, 'stroke-width': 5, opacity: .3, 'stroke-linecap': 'round' }));
-    const mid = (x0 + x1) / 2;
-    svg.append(sv('path', { d: `M${mid - 7} ${y - 6}L${mid + 7} ${y}L${mid - 7} ${y + 6}Z`, fill: col }));
-    svg.append(sv('circle', { cx: x0, cy: y, r: 7, fill: css('--ctrl') }, sv('title', {}, 'Before the sale: ' + r.fmt(r.before))),
-               sv('circle', { cx: x1, cy: y, r: 8, fill: col }, sv('title', {}, 'Two years after: ' + r.fmt(r.after))));
-    svg.append(sv('text', { x: x0 - 12, y: y + 5, 'text-anchor': 'end', 'font-size': 13.5, fill: css('--muted') }, r.fmt(r.before)),
-               sv('text', { x: x1 + 12, y: y + 5, 'font-size': 14, 'font-weight': 700, fill: col }, r.fmt(r.after)));
-    // The change, in words, at the right: the rows are drawn to the same width, so without it 7% to 15% looks like 0.73 to 0.73.
+    // the scale: a thin track with its two ends labeled
+    svg.append(sv('line', { x1: x0, x2: x1, y1: y, y2: y, stroke: css('--grid'), 'stroke-width': 2 }));
+    if (r.ends) svg.append(sv('text', { x: x0, y: y + 22, 'text-anchor': 'start', 'font-size': 10, fill: css('--muted') }, r.ends[0]),
+                          sv('text', { x: x1, y: y + 22, 'text-anchor': 'end', 'font-size': 10, fill: css('--muted') }, r.ends[1]));
+    // the change: a thick line from the before dot to the after dot, with an arrow when there is room
+    svg.append(sv('line', { x1: xb, x2: xa, y1: y, y2: y, stroke: col, 'stroke-width': 6, opacity: dir === 'flat' ? .35 : .45, 'stroke-linecap': 'round' }));
+    if (Math.abs(xa - xb) > 30) { const m = (xb + xa) / 2, s_ = xa > xb ? 1 : -1;
+      svg.append(sv('path', { d: `M${m - 6 * s_} ${y - 6}L${m + 6 * s_} ${y}L${m - 6 * s_} ${y + 6}Z`, fill: col })); }
+    svg.append(sv('circle', { cx: xb, cy: y, r: 6.5, fill: css('--ctrl') }, sv('title', {}, 'Before the sale: ' + r.fmt(r.before))),
+               sv('circle', { cx: xa, cy: y, r: 7.5, fill: col }, sv('title', {}, 'Two years after: ' + r.fmt(r.after))));
+    // values sit outside the pair: the lower value to the left, the higher to the right
+    const leftIsBefore = xb <= xa, xl = Math.min(xb, xa), xr = Math.max(xb, xa);
+    svg.append(sv('text', { x: xl - 11, y: y + 5, 'text-anchor': 'end', 'font-size': leftIsBefore ? 13 : 14, 'font-weight': leftIsBefore ? 400 : 700, fill: leftIsBefore ? css('--muted') : col }, r.fmt(leftIsBefore ? r.before : r.after)),
+               sv('text', { x: xr + 11, y: y + 5, 'font-size': leftIsBefore ? 14 : 13, 'font-weight': leftIsBefore ? 700 : 400, fill: leftIsBefore ? col : css('--muted') }, r.fmt(leftIsBefore ? r.after : r.before)));
     const chg = r.change ? r.change(r.before, r.after, dir) : '';
     if (!narrow) svg.append(sv('text', { x: W, y: y - 3, 'text-anchor': 'end', 'font-size': 12.5, 'font-weight': 700, fill: dir === 'flat' ? css('--muted') : col }, chg),
                             sv('text', { x: W, y: y + 13, 'text-anchor': 'end', 'font-size': 11, fill: css('--muted') }, r.n + ' homes'));
-    else svg.append(sv('text', { x: W, y: top + 14, 'text-anchor': 'end', 'font-size': 12, 'font-weight': 700, fill: dir === 'flat' ? css('--muted') : col }, chg),
-                    sv('text', { x: W, y: top + 30, 'text-anchor': 'end', 'font-size': 11, fill: css('--muted') }, r.n + ' homes'));
+    else svg.append(sv('text', { x: 0, y: top + 47, 'font-size': 12, fill: css('--muted') }, sv('tspan', { 'font-weight': 700, fill: dir === 'flat' ? css('--muted') : col }, chg), ' \u00b7 ' + r.n + ' homes'));
   });
   box.append(svg);
 }
@@ -2272,30 +2305,30 @@ drawMoney();
   const sgn1 = v => (v > 0 ? '+' : v < 0 ? '\u2212' : '') + Math.abs(v).toFixed(1), sgn2 = v => (v > 0 ? '+' : v < 0 ? '\u2212' : '') + Math.abs(v).toFixed(2);
   const chStars = (b, a, dir) => dir === 'flat' ? 'no change' : sgn2(a - b) + ' stars';
   const chHours = (b, a, dir) => dir === 'flat' ? 'no change' : sgn2(a - b) + ' hours';
-  const chShare = (b, a, dir) => { if (dir === 'flat') return 'no change'; const k = b > 0 ? a / b : null; if (k != null && k >= 2.9) return (Math.round(k * 10) / 10) + ' times as much'; if (k != null && k >= 1.9) return 'more than doubled'; return (a > b ? '+' : '\u2212') + Math.round(Math.abs(a - b) * 100) + ' points'; };
+  const chShare = (b, a, dir) => { if (dir === 'flat') return 'no change'; const k = b > 0 ? a / b : null; if (k != null && k >= 2.5) return 'about ' + Math.round(k) + ' times as much'; if (k != null && k >= 2) return 'more than doubled'; if (k != null && k >= 1.8) return 'nearly doubled'; return (a > b ? '+' : '\u2212') + Math.round(Math.abs(a - b) * 100) + ' points'; };
   const chMargin = (b, a, dir) => dir === 'flat' ? 'no change' : (a > b ? 'up ' : 'down ') + (Math.abs(a - b) * 100).toFixed(1) + ' points';
   const add = (o) => { if (o) rows.push(o); };
-  if (lv.overall && lv.overall['2']) add({ label: 'Overall star rating', sub: 'CMS rating, 5 is best', before: lv.overall['2'].before, after: lv.overall['2'].after, n: lv.overall['2'].n, fmt: st1, higherBad: false, eps: 0.1, change: chStars });
-  if (lv.staffing && lv.staffing['2']) add({ label: 'Staffing star rating', sub: 'CMS rating, 5 is best', before: lv.staffing['2'].before, after: lv.staffing['2'].after, n: lv.staffing['2'].n, fmt: st1, higherBad: false, eps: 0.1, change: chStars });
-  if (lv.hours && lv.hours['2']) add({ label: 'Nurse hours per resident per day', sub: 'reported hours, all nursing staff', before: lv.hours['2'].before, after: lv.hours['2'].after, n: lv.hours['2'].n, fmt: hr, higherBad: false, eps: 0.1, change: chHours });
-  if (lv.rn && lv.rn['2']) add({ label: 'RN hours per resident per day', sub: 'registered nurses only', before: lv.rn['2'].before, after: lv.rn['2'].after, n: lv.rn['2'].n, fmt: hr, higherBad: false, eps: 0.05, change: chHours });
+  if (lv.overall && lv.overall['2']) add({ label: 'Overall star rating', sub: 'CMS rating, 5 is best', before: lv.overall['2'].before, after: lv.overall['2'].after, n: lv.overall['2'].n, fmt: st1, lo: 0, hi: 5, ends: ['0', '5 stars'], higherBad: false, eps: 0.1, change: chStars });
+  if (lv.staffing && lv.staffing['2']) add({ label: 'Staffing star rating', sub: 'CMS rating, 5 is best', before: lv.staffing['2'].before, after: lv.staffing['2'].after, n: lv.staffing['2'].n, fmt: st1, lo: 0, hi: 5, ends: ['0', '5 stars'], higherBad: false, eps: 0.1, change: chStars });
+  if (lv.hours && lv.hours['2']) add({ label: 'Nurse hours per resident per day', sub: 'reported hours, all nursing staff', before: lv.hours['2'].before, after: lv.hours['2'].after, n: lv.hours['2'].n, fmt: hr, lo: 0, hi: 5, ends: ['0', '5 hours'], higherBad: false, eps: 0.1, change: chHours });
+  if (lv.rn && lv.rn['2']) add({ label: 'RN hours per resident per day', sub: 'registered nurses only', before: lv.rn['2'].before, after: lv.rn['2'].after, n: lv.rn['2'].n, fmt: hr, lo: 0, hi: 5, ends: ['0', '5 hours'], higherBad: false, eps: 0.05, change: chHours });
   if (mn && mn.compare) {
     const c = mn.compare;
-    if (c.rp_sh && c.rp_sh['2']) add({ label: 'Money paid to related parties', sub: 'share of the home\u2019s patient revenue', before: c.rp_sh['2'].before, after: c.rp_sh['2'].after, n: c.rp_sh['2'].n, fmt: pct, higherBad: true, eps: 0.01, change: chShare });
-    if (c.rent_sh && c.rent_sh['2']) add({ label: 'Rent paid to a related party', sub: 'share of patient revenue', before: c.rent_sh['2'].before, after: c.rent_sh['2'].after, n: c.rent_sh['2'].n, fmt: pct, higherBad: true, eps: 0.01, change: chShare });
+    if (c.rent_sh && c.rent_sh['2']) add({ label: 'Rent paid to the owners\u2019 own landlord', sub: 'share of patient revenue', before: c.rent_sh['2'].before, after: c.rent_sh['2'].after, n: c.rent_sh['2'].n, fmt: pct, lo: 0, hi: 0.25, ends: ['0%', '25%'], higherBad: true, eps: 0.01, change: chShare });
+    if (c.other_sh && c.other_sh['2']) add({ label: 'Other payments to the owners\u2019 companies', sub: 'management fees and services, not rent', before: c.other_sh['2'].before, after: c.other_sh['2'].after, n: c.other_sh['2'].n, fmt: pct, lo: 0, hi: 0.25, ends: ['0%', '25%'], higherBad: true, eps: 0.01, change: chShare });
     // Operating margin, as the home reported it. Shown so nobody has to ask why it is missing: the money above leaves
     // the home as a cost before the margin is struck, so a rising margin and rising related-party payments can go together.
-    if (c.margin && c.margin['2']) add({ label: 'Operating margin the home reported', sub: 'after rent and fees to related parties are paid', before: c.margin['2'].before, after: c.margin['2'].after, n: c.margin['2'].n, fmt: v => (v * 100).toFixed(1) + '%', higherBad: false, eps: 0.01, neutral: true, change: chMargin });
+    if (c.margin && c.margin['2']) add({ label: 'Operating margin the home reported', sub: 'after rent and fees to related parties are paid', before: c.margin['2'].before, after: c.margin['2'].after, n: c.margin['2'].n, fmt: v => (v * 100).toFixed(1) + '%', lo: -0.25, hi: 0.25, ends: ['\u221225%', '+25%'], higherBad: false, eps: 0.01, neutral: true, change: chMargin });
   }
   if (!rows.length) { $('#ba-panel').classList.add('hidden'); return; }
-  $('#ba-lede').textContent = 'Each row follows the same homes from before the sale (left) to two years after (right). For ratings and staffing, "before" is the last CMS figure before the sale; for the money rows it is the cost-report year before the sale. Orange means the measure moved the wrong way for residents; gray means it barely moved. Chain reorganizations are not included.';
+  $('#ba-lede').textContent = 'Each row follows the same homes from before the sale (gray dot) to two years after (colored dot), and the length of the line between them is the size of the change. Each row has its own scale, shown at its ends: 0 to 5 for stars and hours, 0% to 25% for shares of revenue, and \u221225% to +25% for the margin. For ratings and staffing, "before" is the last CMS figure before the sale; for the money rows it is the cost-report year before the sale. Orange means the measure moved the wrong way for residents; gray means it barely moved. Chain reorganizations are not included.';
   const ov = lv.overall && lv.overall['2'];
   if (ov) $('#ba-lede').textContent += ' These are the same sales as the "Homes sold to a new operator" view below, so the top row matches its "First two years after" bar.';
   $('#ba-count').textContent = 'A row counts only homes with a usable figure at both ends, so the counts differ: a home sold too recently has no "two years after" yet, CMS leaves staffing blank when payroll data is missing, and the money rows come from annual Medicare cost reports, which cover ' + ((D.money && D.money.n_facilities) || 0) + ' of these homes and run through fiscal year ' + ((D.money && D.money.last_year) || '') + '.';
   dumbbells($('#ba-chart'), rows, 'Care and money measures for the same homes, year before the sale compared with two years after');
   const c = (D.money && D.money.compare) || {}, bits = [];
-  if (c.rp_sh && c.rp_sh['2']) bits.push(`Related-party payments rose for ${c.rp_sh['2'].up} of the ${c.rp_sh['2'].n} homes with cost reports for both years.`);
-  if (c.rent_sh && c.rent_sh['2']) bits.push(`Rent paid to a related party rose for ${c.rent_sh['2'].up} of ${c.rent_sh['2'].n}.`);
+  if (c.rent_sh && c.rent_sh['2']) bits.push(`Rent paid to the owners' own landlord rose at ${c.rent_sh['2'].up} of the ${c.rent_sh['2'].n} homes with cost reports for both years. A home that reported no related rent counts as 0.`);
+  if (c.other_sh && c.other_sh['2']) bits.push(`Other payments to the owners' companies (management fees, therapy, supplies, and the like) are everything else on the same cost report line, not counting rent, so the two rows never count the same dollar twice. They went from ${pct(c.other_sh['2'].before)} to ${pct(c.other_sh['2'].after)} of revenue: nearly all of the rise in money to the owners' companies was rent.`);
   // The comparison group is the same one as the rent chart above (the homes that did not change hands in the years it
   // covers), so the page uses one "not sold" group throughout. Many of those homes were bought by chains before the
   // window, so they already paid rent and fees to their owners' companies; the text says so.
@@ -2304,6 +2337,15 @@ drawMoney();
     bits.push(`At the ${tr.n_other} homes that did not change hands between ${tr.years[0]} and ${tr.years[k]} (the comparison group in the rent chart above), related-party payments were ${o0.toFixed(1)}% of revenue in ${tr.years[0]} and ${o1.toFixed(1)}% in ${tr.years[k]}` + (peak > o1 + 1 ? `, after rising to ${peak.toFixed(1)}% in ${tr.years[tr.rp.other.indexOf(peak)]}` : '') + `. Many of those homes were bought by chains before ${tr.years[0]} and already paid rent and management fees to their owners' companies.`); }
   if (c.margin && c.margin['2']) { const m = c.margin['2'], tr2 = D.money && D.money.trend, pm = v => (v * 100).toFixed(1) + '%';
     bits.push(`The margins these homes reported went from ${pm(m.before)} the year before the sale to ${pm(m.after)} two years after (${m.up} of ${m.n} improved). That is not the whole picture: rent and fees paid to the owners' own companies come out before the margin is struck, so a home can pay its owners more and still report a better margin. Revenue also rose at most homes in those years as Medicaid rates went up` + (D.money.never_sold && D.money.never_sold.margin ? ', and margins improved at homes that were not sold too' : '') + '.'); }
+  const sd = lv.staffing_detail, sw = $('#ba-staffing');
+  if (sw && sd && sd.all_adj) { const h2 = v => v.toFixed(2), lostA = sd.lost_adj, gainA = sd.gained_adj, nh = lv.hours && lv.hours['2'] ? lv.hours['2'].n : null;
+    sw.replaceChildren(el('b', { text: 'Why staffing stars fell while nurse hours did not: ' }),
+      `CMS's staffing rating is not the reported hours in the row below. It uses hours adjusted for how much care each home's residents need, and since July 2022 it also counts weekend hours and how many nurses, RNs, and administrators leave each year (turnover). ` +
+      (nh && nh !== sd.n ? `The hours rows also cover ${nh - sd.n === 1 ? 'a home' : (nh - sd.n) + ' homes'} with no staffing rating before the sale, so they are not quite the same homes. ` : '') +
+      `At the ${sd.n} homes in the staffing row, adjusted nurse hours went from ${h2(sd.all_adj.before)} to ${h2(sd.all_adj.after)}.` +
+      (lostA ? ` The ${sd.lost} that lost staffing stars had adjusted hours fall from ${h2(lostA.before)} to ${h2(lostA.after)}` + (gainA ? `, and the ${sd.gained} that gained stars had them rise from ${h2(gainA.before)} to ${h2(gainA.after)}` : '') + '. An average can stay flat while some homes cut staff and others add it.' : ''),
+      ' ', el('a', { href: 'https://www.cms.gov/newsroom/fact-sheets/updates-care-compare-website-july-2022', text: 'CMS on the July 2022 change' }), '.'); }
+  else if (sw) sw.classList.add('hidden');
   $('#ba-note').textContent = bits.join(' ') + ' Nurse hours barely moved, so the extra money did not go into more nursing time at the bedside. Related-party figures come from the homes\u2019 own Medicare cost reports: payments to companies the owners also control, such as a landlord or a management company. Money moved this way leaves the home\u2019s books as a cost, so a home can look unprofitable while its owners are paid.';
 })();
 
@@ -2738,10 +2780,10 @@ function showFacility(id, scroll) {
   const flat = (a, b) => Math.abs(b - a) < 1;                      // percentage points
   // The sentence: say only what the numbers in the tiles show.
   const starsFell = two && two.sold <= -0.1, starsCtrlFlat = two && Math.abs(two.ctrl) < 0.1;
-  const rpUp = t && t.rp && t.rp.sold[n] - t.rp.sold[0] >= 2, rpCtrlFlat = t && t.rp && flat(t.rp.other[0], t.rp.other[n]);
+  const rpUp = t && t.rent && t.rent.sold[n] - t.rent.sold[0] >= 2, rpCtrlFlat = t && t.rent && flat(t.rent.other[0], t.rent.other[n]);
   const said = [];
   if (starsFell) said.push('star ratings fell');
-  if (rpUp) said.push('the share of revenue paid to the owners’ own companies rose');
+  if (rpUp) said.push('the rent they paid to their owners’ own landlords rose');
   if (said.length) fnd.textContent = 'After nursing homes were sold, ' + said.join(' and ') + '.' + ((!starsFell || starsCtrlFlat) && (!rpUp || rpCtrlFlat) ? ' Homes that were not sold stayed about the same.' : '');
   else fnd.classList.add('hidden');
   if (intro && nSales) intro.textContent = `The state approved ${nSales} sales of nursing homes to new operators from ${fmtMon(D.dates[0])} to ${fmtMon(D.dates[D.dates.length - 1])}. Each sold home is compared with itself before the sale and with homes that were not sold. The figures come from CMS's public files and the homes' own Medicare cost reports.`;
@@ -2750,7 +2792,7 @@ function showFacility(id, scroll) {
   if (two) tile(sgn(two.sold) + ' stars', `Average change in the CMS overall rating two years after a sale, at the ${two.n} sold homes that have reached two years` + (two.worse != null ? ` (${two.worse} fell, ${two.same} stayed the same, ${two.better} rose)` : '') + `. Similar homes not sold: ${Math.abs(two.ctrl) < 0.05 ? 'no change' : sgn(two.ctrl) + ' stars'}.`, 'CMS star ratings.', '#ba-panel');
   if (t && t.rent_usd && t.rent_usd.sold) { const u = t.rent_usd;
     tile(m(u.sold[0]) + ' → ' + m(u.sold[n]), `Rent paid each year to landlords the owners control, at the ${t.n_sold} homes sold from ${t.years[0]} to ${t.years[n]}. The ${t.n_other} homes not sold: ${m(u.other[0])}\u00a0→\u00a0${m(u.other[n])}.`, `Medicare cost reports. ${t.years[n]} is the newest year most homes have filed.`, '#money-panel', true); }
-  if (t && t.rp && t.rp.sold) tile(pc(t.rp.sold[0]) + ' → ' + pc(t.rp.sold[n]), `Share of revenue paid to all companies the owners control (rent, management fees, and other services), the same ${t.n_sold} homes, ${t.years[0]} to ${t.years[n]}. The ${t.n_other} homes not sold: ${pc(t.rp.other[0])}\u00a0→\u00a0${pc(t.rp.other[n])}.`, 'Medicare cost reports, Worksheet A-8-1.', '#money-panel', true);
+  if (t && t.rent && t.rent.sold) tile(pc(t.rent.sold[0]) + ' → ' + pc(t.rent.sold[n]), `Share of revenue the same ${t.n_sold} homes paid in rent to the owners' own landlords, ${t.years[0]} to ${t.years[n]}. The ${t.n_other} homes not sold: ${pc(t.rent.other[0])}\u00a0→\u00a0${pc(t.rent.other[n])}.`, 'Medicare cost reports, Worksheet A-8-1.', '#money-panel', true);
   const why = $('#tiles-why');
   if (why && two && t) why.textContent = `Why the number of homes differs: a star rating change needs a CMS rating before the sale and two full years after, and the CMS files on this page start in ${fmtMon(D.dates[0])}, so ${two.n} of the ${nSales} sales count so far. The money figures use the ${t.n_sold} homes sold from ${t.years[0]} to ${t.years[n]} that filed a Medicare cost report every one of those years, so the same homes are compared every year.`;
   else if (why) why.classList.add('hidden');
