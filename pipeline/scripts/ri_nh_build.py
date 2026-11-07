@@ -1885,11 +1885,11 @@ details.cecdetail{margin-top:6px;font-size:.86rem;max-width:62ch}details.cecdeta
 @media (max-width:860px){.grid-rent{grid-template-columns:1fr}}
 .finding{color:var(--fg);font-size:1.15rem;line-height:1.45;max-width:820px}
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:14px 0 6px}
-.tile{display:block;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;color:inherit;text-decoration:none}
-.tile:hover,.tile:focus{outline:2px solid var(--accent);outline-offset:2px}
+.tile{display:block;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;color:inherit}
+.tile .src a{white-space:nowrap}
 .tile .big{display:block;font-size:1.9rem;font-weight:800;line-height:1.1;letter-spacing:-.01em;color:var(--sold)}
 .tile .big.neutral{color:var(--fg)}
-.tile .big.fit{font-size:1.5rem;white-space:nowrap}
+.tile .big.fit{white-space:nowrap}
 .tile .what{display:block;margin-top:6px;font-size:.92rem;line-height:1.35}
 .tile .src{display:block;margin-top:6px;font-size:.78rem;color:var(--muted)}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin:0}
@@ -1899,7 +1899,7 @@ details.cecdetail{margin-top:6px;font-size:.86rem;max-width:62ch}details.cecdeta
 .card p{margin:0;font-size:.92rem;line-height:1.4}
 .chg{font-weight:700}
 .gap{font-size:1.08rem;margin:8px 0}
-@media (max-width:640px){.tile .big{font-size:1.6rem}.tile .big.fit{font-size:1.4rem}.card .big{font-size:1.35rem}}
+@media (max-width:640px){.tile .big{font-size:1.6rem}.card .big{font-size:1.35rem}}
 .small{font-size:.86rem;color:var(--muted)}
 .track{border-top:1px solid var(--grid);margin-top:10px;padding-top:8px}.track h5{margin:0 0 4px;font-size:.95rem}.track details summary{cursor:pointer;color:var(--accent);font-size:.86rem}
 sup.datemark{font-size:.75em;margin-left:2px}
@@ -1974,8 +1974,9 @@ footer a{color:var(--fg)}
 <main class="wrap">
 <section id="sold"><h2>What happened when homes were sold</h2>
 <p class="lede finding" id="finding"></p>
-<p class="small lede" style="margin-top:-6px">Rhode Island's Health Department reviews each change in a nursing home's effective control. This page compares each home's ratings, staffing, inspections, and money paid to its owners' own companies before and after such a change, using the last CMS rating before the sale as the starting point, and compares the sold homes with similar homes that were not sold over the same periods. Every figure comes from CMS's public files and the homes' own Medicare cost reports.</p>
+<p class="small lede" id="finding-intro" style="margin-top:-6px"></p>
 <div class="tiles" id="tiles" aria-label="Key numbers"></div>
+<p class="small" id="tiles-why" style="margin-top:0"></p>
 <div class="panel" id="examples"><h3 style="margin-top:0;font-size:1rem">Examples from this page</h3><p class="small" id="examples-lede" style="margin-top:0"></p><div class="cards" id="examples-list"></div></div>
 <div class="grid-rent"><div class="panel" id="money-panel"><h3 style="margin-top:0;font-size:1rem">Rent paid to a landlord the owners also control</h3><div class="chartbox" id="money-chart"></div><div class="legend" id="money-legend"></div><p class="small" id="money-note"></p></div>
 <div class="panel"><h3 style="margin-top:0;font-size:1rem">Changes of control approved, by year</h3><div class="chartbox" id="peryear-chart" style="max-width:420px"></div><p class="small" id="peryear-note"></p></div></div>
@@ -2717,25 +2718,33 @@ function showFacility(id, scroll) {
   items.forEach(li => ul.append(li));
 })();
 
-/* The finding sentence and the key-number tiles: every figure is read from the same data as the charts below. */
+/* The finding sentence and the key-number tiles. The sentence says what happened in words; the numbers are only in the
+   tiles, so nothing is said twice. Every figure is read from the same data as the charts below. */
 (function () {
-  const fnd = $('#finding'), tiles = $('#tiles'); if (!fnd || !tiles) return;
-  const st_ = D.study && D.study.sold, ov = st_ && st_.metrics.overall && st_.metrics.overall.summary, two = ov && ov['24'], one = ov && ov['12'];
-  const c = D.money && D.money.compare, rp2 = c && c.rp_sh && c.rp_sh['2'], t = D.money && D.money.trend;
+  const fnd = $('#finding'), intro = $('#finding-intro'), tiles = $('#tiles'); if (!fnd || !tiles) return;
+  const st_ = D.study && D.study.sold, ov = st_ && st_.metrics.overall && st_.metrics.overall.summary, two = ov && ov['24'];
+  const t = D.money && D.money.trend, n = t ? t.years.length - 1 : 0;
   const nSales = D.sales.filter(r => r.kind === 'sale' && r.outcome !== 'Pending' && r.date && r.date >= D.dates[0]).length;
-  const sgn = v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(2), pc = v => Math.round(v * 100) + '%', mil = v => '$' + (v / 1e6).toFixed(1) + ' million';
-  const bits = [];
-  if (nSales) bits.push(`Since ${fmtMon(D.dates[0])} the state has approved ${nSales} nursing home sales to a new operator.`);
-  if (two) bits.push(`Two years after a sale, sold homes (${two.n} so far) averaged ${Math.abs(two.sold).toFixed(2)} ${two.sold < 0 ? 'fewer' : 'more'} stars than before the sale, while similar homes that were not sold ${Math.abs(two.ctrl) < 0.05 ? 'did not change' : 'changed by ' + sgn(two.ctrl)}.`);
-  if (rp2) bits.push(`The money the sold homes paid to their owners' own companies went from ${pc(rp2.before)} of revenue to ${pc(rp2.after)}` + (rp2.after / rp2.before >= 2 ? ', more than doubling.' : rp2.after / rp2.before >= 1.8 ? ', nearly doubling.' : '.'));
-  fnd.textContent = bits.join(' ');
-  const tile = (big, what, src, href, neutral, fit) => tiles.append(el('a', { class: 'tile', href }, el('span', { class: 'big' + (neutral ? ' neutral' : '') + (fit ? ' fit' : ''), text: big }), el('span', { class: 'what', text: what }), el('span', { class: 'src', text: src })));
-  if (t && t.rent_usd && t.rent_usd.sold) { const n = t.years.length - 1, m = v => '$' + (v / 1e6).toFixed(1) + 'm', u = t.rent_usd, o = u.other;
-    tile(m(u.sold[0]) + ' → ' + m(u.sold[n]), 'total yearly rent paid to the owners’ own real estate companies by the ' + t.n_sold + ' homes sold from ' + t.years[0] + ' to ' + t.years[n] + (u.sold[0] > 0 ? ', ' + (u.sold[n] / u.sold[0] >= 1.95 ? 'about ' + Math.round(u.sold[n] / u.sold[0]) + ' times as much' : 'up ' + Math.round((u.sold[n] / u.sold[0] - 1) * 100) + '%') : '') + (o ? '. The ' + t.n_other + ' homes not sold: ' + m(o[0]) + ' → ' + m(o[n]) : ''), 'Medicare cost reports, the same homes every year. ' + t.years[n] + ' is the newest year most homes have filed.', '#money-panel', false, 'fit'); }
-  if (two) tile(sgn(two.sold) + ' stars', 'two years after a sale, average of ' + two.n + ' sold homes. Similar homes not sold: ' + sgn(two.ctrl), 'CMS overall star ratings', '#ba-panel');
-  if (rp2) tile(pc(rp2.before) + ' → ' + pc(rp2.after), 'of revenue paid to companies the owners also control, the same ' + rp2.n + ' homes, the year before the sale and two years after', 'Medicare cost reports, worksheet A-8-1', '#ba-panel');
-  const tens = (D.tenures || []).filter(x => x.start && x.years >= 0.5 && x.ij).sort((a, b) => b.ij - a.ij || b.ij / b.years - a.ij / a.years);
-  if (tens.length) { const x = tens[0]; tile(String(x.ij), 'immediate jeopardy citations at ' + x.name + ' in the ' + (x.years < 1 ? Math.max(1, Math.round(x.years * 12)) + ' months' : (Math.round(x.years * 10) / 10) + ' years') + (x.current ? ' since ' + x.group + ' ' + tookOver(x) : ' ' + x.group + ' ran it, after it ' + tookOver(x) + ' in ' + fmtMon(x.start)), 'CMS health inspection records', '#examples'); }
+  const sgn = v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(2), pc = v => Math.round(v) + '%', m = v => '$' + (v / 1e6).toFixed(1) + 'm';
+  const flat = (a, b) => Math.abs(b - a) < 1;                      // percentage points
+  // The sentence: say only what the numbers in the tiles show.
+  const starsFell = two && two.sold <= -0.1, starsCtrlFlat = two && Math.abs(two.ctrl) < 0.1;
+  const rpUp = t && t.rp && t.rp.sold[n] - t.rp.sold[0] >= 2, rpCtrlFlat = t && t.rp && flat(t.rp.other[0], t.rp.other[n]);
+  const said = [];
+  if (starsFell) said.push('star ratings fell');
+  if (rpUp) said.push('the share of revenue paid to the owners’ own companies rose');
+  if (said.length) fnd.textContent = 'After nursing homes were sold, ' + said.join(' and ') + '.' + ((!starsFell || starsCtrlFlat) && (!rpUp || rpCtrlFlat) ? ' Homes that were not sold stayed about the same.' : '');
+  else fnd.classList.add('hidden');
+  if (intro && nSales) intro.textContent = `The state approved ${nSales} sales of nursing homes to new operators from ${fmtMon(D.dates[0])} to ${fmtMon(D.dates[D.dates.length - 1])}. Each sold home is compared with itself before the sale and with homes that were not sold. The figures come from CMS's public files and the homes' own Medicare cost reports.`;
+  // Tiles are plain boxes with a link inside, not links themselves, so their text can be selected and copied.
+  const tile = (big, what, src, href, fit) => tiles.append(el('div', { class: 'tile' }, el('span', { class: 'big' + (fit ? ' fit' : ''), text: big }), el('span', { class: 'what', text: what }), el('span', { class: 'src' }, src + ' ', el('a', { href, text: 'See the chart' }))));
+  if (two) tile(sgn(two.sold) + ' stars', `Average change in the CMS overall rating two years after a sale, at the ${two.n} sold homes that have reached two years` + (two.worse != null ? ` (${two.worse} fell, ${two.same} stayed the same, ${two.better} rose)` : '') + `. Similar homes not sold: ${Math.abs(two.ctrl) < 0.05 ? 'no change' : sgn(two.ctrl) + ' stars'}.`, 'CMS star ratings.', '#ba-panel');
+  if (t && t.rent_usd && t.rent_usd.sold) { const u = t.rent_usd;
+    tile(m(u.sold[0]) + ' → ' + m(u.sold[n]), `Rent paid each year to landlords the owners control, at the ${t.n_sold} homes sold from ${t.years[0]} to ${t.years[n]}. The ${t.n_other} homes not sold: ${m(u.other[0])}\u00a0→\u00a0${m(u.other[n])}.`, `Medicare cost reports. ${t.years[n]} is the newest year most homes have filed.`, '#money-panel', true); }
+  if (t && t.rp && t.rp.sold) tile(pc(t.rp.sold[0]) + ' → ' + pc(t.rp.sold[n]), `Share of revenue paid to all companies the owners control (rent, management fees, and other services), the same ${t.n_sold} homes, ${t.years[0]} to ${t.years[n]}. The ${t.n_other} homes not sold: ${pc(t.rp.other[0])}\u00a0→\u00a0${pc(t.rp.other[n])}.`, 'Medicare cost reports, Worksheet A-8-1.', '#money-panel', true);
+  const why = $('#tiles-why');
+  if (why && two && t) why.textContent = `Why the number of homes differs: a star rating change needs a CMS rating before the sale and two full years after, and the CMS files on this page start in ${fmtMon(D.dates[0])}, so ${two.n} of the ${nSales} sales count so far. The money figures use the ${t.n_sold} homes sold from ${t.years[0]} to ${t.years[n]} that filed a Medicare cost report every one of those years, so the same homes are compared every year.`;
+  else if (why) why.classList.add('hidden');
   if (!tiles.children.length) tiles.classList.add('hidden');
 })();
 
