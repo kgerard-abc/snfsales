@@ -10,9 +10,6 @@ on:
         description: 'CMS file names, separated by spaces (SNF24FY2025 is the new 2540-24 form, SNF10FY2025 the old one)'
         required: true
         default: 'SNF24FY2025 SNF10FY2025 SNF10FY2024'
-  push:
-    branches: [hcris-ri]
-    paths: [.github/scripts/hcris_ri.py, .github/workflows/hcris-ri.yml]
 
 permissions:
   contents: write
@@ -28,7 +25,7 @@ jobs:
           python-version: '3.12'
       - name: Download and keep Rhode Island
         env:
-          FILES: ${{ inputs.files || 'SNF24FY2025 SNF10FY2025 SNF10FY2024 SNF10FY2023' }}
+          FILES: ${{ inputs.files }}
         run: python3 .github/scripts/hcris_ri.py $FILES
       - name: Save
         run: |
