@@ -471,7 +471,7 @@ drawMoney();
 
 /* before/after, same homes */
 (function () {
-  const lv = D.levels, mn = D.money, rows = [], pct = v => Math.round(v * 100) + '%', st1 = v => v.toFixed(1), hr = v => v.toFixed(2);
+  const lv = D.levels, mn = D.money, rows = [], pct = v => Math.round(v * 100) + '%', pct1 = v => (v * 100).toFixed(1) + '%', st1 = v => v.toFixed(1), hr = v => v.toFixed(2);
   const sgn1 = v => (v > 0 ? '+' : v < 0 ? '\u2212' : '') + Math.abs(v).toFixed(1), sgn2 = v => (v > 0 ? '+' : v < 0 ? '\u2212' : '') + Math.abs(v).toFixed(2);
   const chStars = (b, a, dir) => dir === 'flat' ? 'no change' : sgn2(a - b) + ' stars';
   const chHours = (b, a, dir) => dir === 'flat' ? 'no change' : sgn2(a - b) + ' hours';
@@ -484,8 +484,8 @@ drawMoney();
   if (lv.rn && lv.rn['2']) add({ label: 'RN hours per resident per day', sub: 'registered nurses only', before: lv.rn['2'].before, after: lv.rn['2'].after, n: lv.rn['2'].n, fmt: hr, lo: 0, hi: 5, ends: ['0', '5 hours'], higherBad: false, eps: 0.05, change: chHours });
   if (mn && mn.compare) {
     const c = mn.compare;
-    if (c.rent_sh && c.rent_sh['2']) add({ label: 'Rent paid to the owners\u2019 own landlord', sub: 'share of patient revenue', before: c.rent_sh['2'].before, after: c.rent_sh['2'].after, n: c.rent_sh['2'].n, fmt: pct, lo: 0, hi: 0.25, ends: ['0%', '25%'], higherBad: true, eps: 0.01, change: chShare });
-    if (c.other_sh && c.other_sh['2']) add({ label: 'Other payments to the owners\u2019 companies', sub: 'management fees and services, not rent', before: c.other_sh['2'].before, after: c.other_sh['2'].after, n: c.other_sh['2'].n, fmt: pct, lo: 0, hi: 0.25, ends: ['0%', '25%'], higherBad: true, eps: 0.01, change: chShare });
+    if (c.rent_sh && c.rent_sh['2']) add({ label: 'Rent paid to the owners\u2019 own landlord', sub: 'share of patient revenue', before: c.rent_sh['2'].before, after: c.rent_sh['2'].after, n: c.rent_sh['2'].n, fmt: pct1, lo: 0, hi: 0.25, ends: ['0%', '25%'], higherBad: true, eps: 0.01, change: chShare });
+    if (c.other_sh && c.other_sh['2']) add({ label: 'Other payments to the owners\u2019 companies', sub: 'management fees and services, not rent', before: c.other_sh['2'].before, after: c.other_sh['2'].after, n: c.other_sh['2'].n, fmt: pct1, lo: 0, hi: 0.25, ends: ['0%', '25%'], higherBad: true, eps: 0.01, change: chShare });
     // Operating margin, as the home reported it. Shown so nobody has to ask why it is missing: the money above leaves
     // the home as a cost before the margin is struck, so a rising margin and rising related-party payments can go together.
     if (c.margin && c.margin['2']) add({ label: 'Operating margin the home reported', sub: 'after rent and fees to related parties are paid', before: c.margin['2'].before, after: c.margin['2'].after, n: c.margin['2'].n, fmt: v => (v * 100).toFixed(1) + '%', lo: -0.25, hi: 0.25, ends: ['\u221225%', '+25%'], higherBad: false, eps: 0.01, neutral: true, change: chMargin });
@@ -498,7 +498,7 @@ drawMoney();
   dumbbells($('#ba-chart'), rows, 'Care and money measures for the same homes, year before the sale compared with two years after');
   const c = (D.money && D.money.compare) || {}, bits = [];
   if (c.rent_sh && c.rent_sh['2']) bits.push(`Rent paid to the owners' own landlord rose at ${c.rent_sh['2'].up} of the ${c.rent_sh['2'].n} homes with cost reports for both years. A home that reported no related rent counts as 0.`);
-  if (c.other_sh && c.other_sh['2']) bits.push(`Other payments to the owners' companies (management fees, therapy, supplies, and the like) are everything else on the same cost report line, not counting rent, so the two rows never count the same dollar twice. They went from ${pct(c.other_sh['2'].before)} to ${pct(c.other_sh['2'].after)} of revenue: nearly all of the rise in money to the owners' companies was rent.`);
+  if (c.other_sh && c.other_sh['2']) bits.push(`Other payments to the owners' companies (management fees, therapy, supplies, and the like) are everything else on the same cost report line, not counting rent, so the two rows never count the same dollar twice. They went from ${pct1(c.other_sh['2'].before)} to ${pct1(c.other_sh['2'].after)} of revenue: nearly all of the rise in money to the owners' companies was rent.`);
   // The comparison group is the same one as the rent chart above (the homes that did not change hands in the years it
   // covers), so the page uses one "not sold" group throughout. Many of those homes were bought by chains before the
   // window, so they already paid rent and fees to their owners' companies; the text says so.
