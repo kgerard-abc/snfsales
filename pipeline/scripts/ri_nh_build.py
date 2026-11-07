@@ -1094,6 +1094,14 @@ def build_public_data(M, S, val, cec, mp, ccn_of, fn, cfg):
             if lv_ and k_ in money['by_facility']:
                 ans_ = str(lv_).split(' - ')[0].strip()[:40]; old_ = money['by_facility'][k_].get('landlord')
                 if not old_ or rank_.get(ans_.lower(), 1) > rank_.get(old_.lower(), 1): money['by_facility'][k_]['landlord'] = ans_
+    # Homes with no answer in the CEC Log (mostly never sold) get one from their own cost reports: rent to a related
+    # landlord on Worksheet A-8-1 means the landlord is the same people. No related rent means the home either owns its
+    # building or rents from an unrelated landlord; the cost report alone cannot tell those apart.
+    for ccn_, b_ in money['by_facility'].items():
+        if b_.get('landlord'): continue
+        rents_ = [v for v, pt in zip(b_.get('rent', []), b_.get('partial', [False] * len(b_.get('rent', [])))) if v is not None and not pt]
+        if any((v or 0) > 0 for v in rents_[-3:]): b_['landlord'] = 'Yes'
+        elif rents_: b_['landlord'] = 'No related rent'
     MG = cec.get('mgmt', {})
     for cid, m in MG.items():
         if not T(m.get('start')): continue
@@ -2006,9 +2014,19 @@ footer a{color:var(--fg)}
 </section>
 
 <section id="related"><h2>Related-party money, home by home</h2>
-<p class="lede">Money a home paid to companies its owners also control, such as a landlord, a management company, or a therapy or staffing company, as the home reported it in its Medicare cost report. Shares are of the home's net patient revenue.</p>
+<p class="lede">Every nursing home that takes Medicare files a yearly cost report with the federal government. One part of it, Worksheet A-8-1, lists what the home paid to "related parties": companies the home's own owners also control, such as the landlord it pays rent to, a management company, or a therapy or staffing company. This table shows those payments for each Rhode Island home, from its newest cost report on file. The reports come from CMS's <a href="https://www.cms.gov/data-research/statistics-trends-and-reports/cost-reports" target="_blank" rel="noopener">Healthcare Cost Report Information System (HCRIS)</a>, form CMS-2540-10; the public files run about two years behind.</p>
+<details class="small" style="margin:0 0 10px"><summary>How to read this table</summary>
+<ul style="margin:6px 0 0">
+<li><b>One row per home, its newest report.</b> Click the home's name to see every year it has filed, the related companies named in the reports, and its ratings and inspections.</li>
+<li><b>Dollars and shares.</b> Each dollar figure is what the home paid that year; the small percentage under it is that amount as a share of the home's net patient revenue. "All related-party" is the total; "Rent" and "Mgmt fees" (management fees) are the two biggest parts of it.</li>
+<li><b>Operator that year</b> is who ran the home in the year of that report: the buyer in the newest sale on this page approved by the end of that year, or the chain or owner CMS lists if the home never changed hands. If the home was sold after that report, the sale is noted under the name, so money paid before a sale is not shown under the buyer's name.</li>
+<li><b>Part of a year</b> means the report covers less than 11 months, usually because the home changed hands mid-year; its margin and shares are not comparable with a full year.</li>
+<li><b>Sold</b> is the year of the home's first sale on this page. <b>Before sale → newest</b> compares all related-party payments as a share of revenue in the year before that sale with the newest report.</li>
+<li><b>Landlord = operator?</b> asks whether the people who own the home's operator also own its building. <b>Yes</b>: the cost report itself shows rent to a related landlord. <b>Likely</b>: the state application was filed as a pair of companies, one to run the home and one to buy the building, by the same applicant, but the newest cost report predates the sale, so it does not show the rent yet. <b>No related rent</b>: no related-party rent in the cost report, so the home either owns its building or rents from an unrelated landlord; the report alone cannot tell which. <b>Partly</b>, <b>No</b>, and <b>Unknown</b> come from the state application.</li>
+<li><b>Why it matters.</b> Rent and fees paid to the owners' own companies are costs to the home, so a home can report a loss while its owners are paid through the landlord or management company. A share that rises after a sale means more of the home's revenue is leaving it this way.</li>
+</ul></details>
 <div class="row"><input type="search" id="rp-q" placeholder="Search by home, town, or owner" aria-label="Search related-party table"><label class="chk"><input type="checkbox" id="rp-sold"> Only homes that were sold</label><button class="btn" id="dl-rp">Download this table (CSV)</button></div>
-<div class="tblwrap"><table id="rp-tbl"><caption>Each home's newest cost report on file. Dollars are what the home paid; the percentage is its share of net patient revenue. Click a home for every year. Operator that year = who ran the home in the year of that report: the buyer group in the newest sale on this page approved by the end of that year, or the chain or owner name CMS lists if it never changed hands. A later sale is noted under it. Part of a year = the report covers less than 11 months, so its figures are not comparable with a full year. Sold = year of its first sale on this page. Mgmt = management fees. Before sale → newest = all related-party costs as a share of revenue, the year before that sale and in the newest report.</caption><thead></thead><tbody></tbody></table></div>
+<div class="tblwrap"><table id="rp-tbl"><caption>Each home's newest Medicare cost report on file. Dollars are what the home paid; the percentage under each is its share of net patient revenue. Click a home for every year it has filed. "How to read this table," above, explains each column.</caption><thead></thead><tbody></tbody></table></div>
 <p class="small" id="rp-note"></p>
 </section>
 
@@ -2151,7 +2169,7 @@ function barChart(box, labels, values, color, fmt, aria, integer, opts) {
 }
 
 /* ---------- header + cards ---------- */
-$('#ttl').textContent = D.meta.title; document.title = D.meta.title; $('#asof').textContent = 'CMS data through ' + D.meta.updated;
+$('#ttl').textContent = D.meta.title; document.title = D.meta.title; $('#asof').textContent = 'CMS data through ' + D.meta.updated + ' \u00b7 RIDOH records updated as they are posted';
 { const bh = D.meta.behind || {}, ks = Object.keys(bh);
   if (ks.length) { const p = el('p', { class: 'small', style: 'margin:10px 0 0;opacity:.9;color:inherit' }, 'Not every CMS file is updated in the same month. Latest here: ' + ks.map(k => k.toLowerCase() + ' ' + bh[k]).join(', ') + '.'); $('#asof').parentNode.append(p); } }
 const X = D.dates.map(MS), st = D.state;
@@ -2429,7 +2447,14 @@ $('#date-legend').textContent = dateLegend();
 /* ---------- related-party money: panel on each home, and the statewide table ---------- */
 const pc1 = v => v == null ? '–' : (v * 100).toFixed(1) + '%';
 const usdCell = (d, sh) => el('td', { class: 'num' }, d == null ? '\u2013' : money(d), d != null && sh != null ? el('div', { class: 'small', text: pc1(sh) }) : null);
-const LANDLORD_TXT = { yes: 'Yes. The home reports its landlord as a related party in its cost report.', likely: 'Likely. The same applicant acquired the operation and the real estate.', no: 'No landlord relationship found.' };
+const LANDLORD_TXT = {
+  yes: 'Yes. The home reports rent to a related landlord on Worksheet A-8-1 of its Medicare cost report, which means the people who own the operator also own the company it pays rent to.',
+  likely: 'Likely. The state application was filed as a pair, one company to run the home and one to buy the building, by the same applicant. The newest cost report on file does not yet show rent to a related landlord, usually because it predates the sale; the answer becomes "Yes" when a cost report does.',
+  partly: 'Partly. The application shows the same people in both the operating and the real estate company, but not the same ownership shares.',
+  no: 'No. The real estate was bought by, or stays with, people other than the operator\u2019s owners.',
+  'no related rent': 'No related-party rent reported. The home either owns its own building or rents from an unrelated landlord; the cost report alone cannot tell those apart.',
+  unknown: 'Unknown. The application does not say who bought the building and the cost report shows no related-party rent.' };
+const LANDLORD_SHORT = { yes: 'Yes', likely: 'Likely', partly: 'Partly', no: 'No', 'no related rent': 'No related rent', unknown: 'Unknown' };
 const RPB = (D.money && D.money.by_facility) || {};
 function rpLatest(b) { let i = -1; b.years.forEach((y, k) => { if (b.rev[k] != null) i = k; }); return i; }
 function rpPanel(f) {
@@ -2441,7 +2466,7 @@ function rpPanel(f) {
     const oth = b.rp[k] == null ? null : Math.max(0, b.rp[k] - (b.rent[k] || 0) - (b.mgmt[k] || 0)), othSh = oth == null || !b.rev[k] ? null : oth / b.rev[k];
     body.append(el('tr', {}, el('td', { text: String(y) + (saleYrs.has(y) ? ' (sold this year)' : '') + (b.partial && b.partial[k] ? ' (part of a year)' : '') }), el('td', { class: 'num', text: money(b.rev[k]) }), usdCell(b.rp[k], b.rp_sh[k]), usdCell(b.rent[k], b.rent_sh[k]), usdCell(b.mgmt[k], b.mgmt_sh[k]), usdCell(oth, othSh), el('td', { class: 'num', text: pc1(b.margin[k]) }))); });
   const wrap = el('div', { class: 'panel' }, el('h3', { style: 'margin-top:0', text: 'Money paid to related companies' }),
-    el('p', { class: 'small', text: 'From the home’s Medicare cost reports. "Related" means a company the home’s owners also control. Rent is paid to a related landlord and management fees to a related management company; small figures under each dollar amount are its share of net patient revenue. A year marked "sold" is a year the state approved a sale of this home.' }),
+    el('p', { class: 'small' }, 'From the home’s Medicare cost reports (CMS form 2540-10, Worksheet A-8-1, from ', el('a', { href: 'https://www.cms.gov/data-research/statistics-trends-and-reports/cost-reports', target: '_blank', rel: 'noopener', text: 'CMS’s HCRIS files' }), '). "Related" means a company the home’s owners also control. Rent is paid to a related landlord and management fees to a related management company; small figures under each dollar amount are its share of net patient revenue. A year marked "sold" is a year the state approved a sale of this home.'),
     el('div', { class: 'tblwrap' }, el('table', {}, el('thead', {}, el('tr', {}, ['Year', 'Revenue', 'All related-party', 'Rent', 'Management fees', 'Other (therapy, supplies, services)', 'Margin'].map((t, i) => el('th', { scope: 'col', class: i ? 'num' : '', text: t })))), body)));
   if (b.from_summary) wrap.append(el('p', { class: 'small', text: 'Reports for this home start in FY2021. The dollar categories come from different lines of the cost report, so rent and management fees may not add up to the all related-party total.' }));
   if (b.landlord) wrap.append(el('p', {}, el('b', { text: 'Is the landlord the same people as the operator? ' }), LANDLORD_TXT[b.landlord.toLowerCase()] || b.landlord));
@@ -2475,7 +2500,7 @@ function rpPanel(f) {
     rows.sort((a, b) => { const A = a[rk] == null ? (rd < 0 ? -Infinity : Infinity) : a[rk], B = b[rk] == null ? (rd < 0 ? -Infinity : Infinity) : b[rk]; return (A < B ? -1 : A > B ? 1 : 0) * rd; });
     const tb = $('#rp-tbl tbody'); tb.replaceChildren();
     rows.forEach(r => tb.append(el('tr', {}, el('td', { style: 'min-width:13rem' }, D.facilities.some(f => f.id === r.id) ? el('button', { class: 'linkbtn', text: r.name, onclick: () => showFacility(r.id, true) }) : r.name, r.town ? el('div', { class: 'small', text: r.town }) : null), el('td', { class: 'small', style: 'min-width:9rem' }, r.owner || '', r.later ? el('div', { class: 'small', text: 'Sold to ' + r.later.buyer + ' in ' + r.later.year }) : null), el('td', { class: 'num' }, String(r.year), r.partial ? el('div', { class: 'small', text: 'Part of a year' }) : null), el('td', { class: 'num', text: money(r.rev) }), usdCell(r.rp, r.rpsh), usdCell(r.rent, r.rentsh), usdCell(r.mgmt, r.mgmtsh), el('td', { class: 'num', text: pc1(r.margin) }),
-      el('td', { class: 'num', text: r.sold ? String(r.sold) : '' }), el('td', { text: r.before != null && r.after != null ? pc1(r.before) + ' → ' + pc1(r.after) : '–' }), el('td', { class: 'small', text: r.landlord ? (r.landlord.toLowerCase() === 'yes' ? 'Yes' : r.landlord.toLowerCase() === 'likely' ? 'Likely' : r.landlord) : '' }))));
+      el('td', { class: 'num', text: r.sold ? String(r.sold) : '' }), el('td', { text: r.before != null && r.after != null ? pc1(r.before) + ' → ' + pc1(r.after) : '–' }), el('td', { class: 'small', text: r.landlord ? (LANDLORD_SHORT[r.landlord.toLowerCase()] || r.landlord) : '' }))));
     nones.forEach(r => tb.append(el('tr', {}, el('td', { style: 'min-width:13rem' }, D.facilities.some(f => f.id === r.id) ? el('button', { class: 'linkbtn', text: r.name, onclick: () => showFacility(r.id, true) }) : r.name, r.town ? el('div', { class: 'small', text: r.town }) : null), el('td', { class: 'small', style: 'min-width:9rem', text: r.owner || '' }), el('td', { class: 'small', colspan: RC.length - 2, text: NONE_TXT }))));
     if (!all.length) tb.append(el('tr', {}, el('td', { colspan: RC.length, text: 'No homes match.' })));
   }
