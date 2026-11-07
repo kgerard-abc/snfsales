@@ -1136,15 +1136,15 @@ def build_public_data(M, S, val, cec, mp, ccn_of, fn, cfg):
     base_ = S[S.counts & S.type.isin(('Ownership/operator change',)) & S.before.notna() & ~S.pre_method]
     sp = [r for r in base_.itertuples() if nz(r.staffing_before) is not None and nz(r.staffing_y2) is not None]
     if len(sp) >= 5:
-        def mean_(rows, col):
-            v = [float(getattr(r, col)) for r in rows if nz(getattr(r, col)) is not None]
+        def mean_(rs, col):
+            v = [float(getattr(r, col)) for r in rs if nz(getattr(r, col)) is not None]
             return (round(float(np.mean(v)), 3), len(v)) if v else (None, 0)
         lost = [r for r in sp if r.staffing_y2 < r.staffing_before]; gained = [r for r in sp if r.staffing_y2 > r.staffing_before]
-        both = lambda rows, a, b: [r for r in rows if nz(getattr(r, a)) is not None and nz(getattr(r, b)) is not None]
+        both = lambda rs, a, b: [r for r in rs if nz(getattr(r, a)) is not None and nz(getattr(r, b)) is not None]
         d = dict(n=len(sp), lost=len(lost), gained=len(gained), same=len(sp) - len(lost) - len(gained))
-        for key, rows in (('all', sp), ('lost', lost), ('gained', gained)):
+        for key, grp_ in (('all', sp), ('lost', lost), ('gained', gained)):
             for m in ('hours', 'adj'):
-                rr = both(rows, m + '_before', m + '_y2')
+                rr = both(grp_, m + '_before', m + '_y2')
                 if rr: d[f'{key}_{m}'] = dict(n=len(rr), before=mean_(rr, m + '_before')[0], after=mean_(rr, m + '_y2')[0])
         lev['staffing_detail'] = d
     # event studies
