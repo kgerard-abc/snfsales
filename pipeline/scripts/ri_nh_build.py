@@ -1895,6 +1895,8 @@ details.cecdetail{margin-top:6px;font-size:.86rem;max-width:62ch}details.cecdeta
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin:0}
 .card{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
 .card .big{display:block;font-size:1.55rem;font-weight:800;line-height:1.15;color:var(--sold);margin-bottom:6px}
+#examples .card .big{font-size:1.25rem}
+#examples .card .home{font-size:.95rem}
 .card .home{display:block;font-weight:700;margin-bottom:4px}
 .card p{margin:0;font-size:.92rem;line-height:1.4}
 .chg{font-weight:700}
@@ -1948,7 +1950,7 @@ ol.timeline .kind.sale{background:#fde6d7;color:#7a2a06;border-color:#e9b492}.ki
 footer{margin:44px 0 30px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:.9rem}
 details{margin:8px 0}summary{cursor:pointer;font-weight:600}
 .hidden{display:none!important}
-@media (max-width:640px){ol.timeline li{grid-template-columns:1fr}.card .big{font-size:1.7rem}}
+@media (max-width:640px){ol.timeline li{grid-template-columns:1fr}.card .big{font-size:1.7rem}#examples .card .big{font-size:1.2rem}}
 /* ABC-RI house style: small square corners, thin rules, no soft shadows */
 .card,.panel,.tblwrap,.note,.callout,.badge,.tip,ul.results,input[type=search],input[type=text],select,button.tab,.btn,.chip,ol.timeline .kind,.sq{border-radius:3px}
 .tip,.sugg{box-shadow:0 3px 10px rgba(30,42,50,.18)}
@@ -2321,6 +2323,9 @@ const money0 = v => '$' + Math.round(v || 0).toLocaleString('en-US');
 const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
 // Always say which it took over: management (an agreement before the sale) or ownership (the sale).
 const tookOver = x => x.via === 'management' ? 'took over management' : 'took over ownership';
+// How an owner's time in charge ended: the next group took over management or ownership, or the home closed.
+const endedHow = x => x.end_via === 'closed' ? 'when the home closed in ' + fmtMon(x.end) : x.end_by ? 'when ' + x.end_by + ' took over ' + (x.end_via === 'management' ? 'management' : 'ownership') + ' in ' + fmtMon(x.end) : 'when it left in ' + fmtMon(x.end);
+const endedClause = x => x.end_via === 'closed' ? 'ran it until the home closed in ' + fmtMon(x.end) : x.end_by ? (x.end_via === 'management' ? 'ran it until ' + x.end_by + ' took over management in ' + fmtMon(x.end) : 'sold it to ' + x.end_by + ' in ' + fmtMon(x.end)) : 'ran it until ' + fmtMon(x.end);
 const ranIt = x => (!x.start ? 'Before the records' : x.via === 'management' ? 'Management from ' + fmtMon(x.start) + (x.pending ? ' (purchase pending)' : x.owner_from ? ', ownership from ' + fmtMon(x.owner_from) + ',' : '') : 'Ownership from ' + fmtMon(x.start)) + (x.end ? ' to ' + fmtMon(x.end) : ' to now');
 function nationalLine(c, riHomes) {
   if (!c) return null;
@@ -2696,11 +2701,15 @@ function showFacility(id, scroll) {
   // 1. the biggest fall in stars under one owner
   const falls = tens.filter(t => t.stars_start != null && t.stars_end != null).map(t => ({ ...t, d: t.stars_end - t.stars_start })).sort((a, b) => a.d - b.d || b.ij - a.ij);
   if (falls.length && falls[0].d <= -2) { const t = falls[0];
-    items.push(card(t.stars_start + ' → ' + t.stars_end + ' stars', t.fid, t.name, `${t.stars_start} stars when ${t.group} ${tookOver(t)} in ${fmtMon(t.start)}, ${t.stars_end === 0 ? '0 ' + (t.current ? 'now' : 'when it left in ' + fmtMon(t.end)) + ': a Special Focus Facility, which CMS does not rate' : t.stars_end + (t.current ? ' now' : ' when it left')}. ` + (t.ij ? `${plural(t.ij, 'immediate jeopardy citation')} and ${money0(t.fines)} in fines in ${yrs(t.years)}.` : `${money0(t.fines)} in fines in ${yrs(t.years)}.`))); }
+    const sff = v => v === 0 ? '0' + (' (a CMS Special Focus Facility)') : String(v);
+    const nowStars = ((fac(t.fid) || {}).now || {}).overall;
+    const endTxt = t.current ? sff(t.stars_end) + ' now' : (t.stars_end === 0 ? '0' : String(t.stars_end)) + ' ' + endedHow(t) + (nowStars === t.stars_end ? ', and still ' + sff(nowStars) + ' now' : (t.stars_end === 0 ? ' (a CMS Special Focus Facility)' : ''));
+    items.push(card(t.stars_start + ' → ' + t.stars_end + ' stars', t.fid, t.name, `${t.stars_start} stars when ${t.group} ${tookOver(t)} in ${fmtMon(t.start)}, ${endTxt}. ` + (t.ij ? `${plural(t.ij, 'immediate jeopardy citation')} and ${money0(t.fines)} in fines in the ${yrs(t.years)} ${t.group} ran it.` : `${money0(t.fines)} in fines in the ${yrs(t.years)} ${t.group} ran it.`))); }
   // 2. the most immediate jeopardy citations under one owner, if a different home
   const ijs = tens.filter(t => t.ij && (!falls.length || t.fid !== falls[0].fid || t.group !== falls[0].group)).sort((a, b) => b.ij - a.ij || b.fines - a.fines);
   if (ijs.length && ijs[0].ij >= 3) { const t = ijs[0];
-    items.push(card(t.ij + ' immediate jeopardy citations', t.fid, t.name, `${money0(t.fines)} in fines in the ${yrs(t.years)} ` + (t.current ? `since ${t.group} ${tookOver(t)}` : `that ${t.group} ran it, until it sold in ${fmtMon(t.end)}`) + (t.stars_start != null && t.stars_end != null ? ` (${t.stars_start} stars when it ${tookOver(t)}, ${t.stars_end} ${t.current ? 'now' : 'when it left'}).` : '.'))); }
+    const early = t.start && t.counted_from && t.start < t.counted_from;   // ran it before CMS's records on this page begin
+    items.push(card(t.ij + ' immediate jeopardy citations', t.fid, t.name, `${t.ij} immediate jeopardy citations from ${fmtMon(t.counted_from)} to ${t.current ? 'now' : fmtMon(t.end)} under ${t.group}, which ${tookOver(t)} in ${fmtMon(t.start)}` + (t.current ? '' : ' and ' + endedClause(t)) + '.' + (early ? ` (CMS\u2019s inspection records reach back to ${fmtMon(t.counted_from)}.)` : ''))); }
   // 3. the biggest rise in related-party money after a sale. "Before" is the median of the up-to-three whole years before
   //    the sale year, not one year, so a single odd year (the pandemic, a stub report) cannot set the starting point.
   const FS = (D.money && D.money.first_sale) || {}, RP = (D.money && D.money.by_facility) || {}, rises = [];
@@ -2714,7 +2723,7 @@ function showFacility(id, scroll) {
   if (rises.length && rises[0].d >= 0.05) { const r = rises[0], pc = v => Math.round(v * 100) + '%';
     items.push(card(pc(r.s0) + ' → ' + pc(r.s1) + ' of revenue', r.id, r.name, `Money paid to the owners' own companies: ${pc(r.s0)} of revenue in ${r.y0}${r.n0 > 1 ? ', the years' : ', the year'} before it was sold, ${pc(r.s1)} in ${r.y1} (${money0(r.usd)}` + (r.rent ? `, of it ${money0(r.rent)} in rent to a landlord the owners control` : '') + ').')); }
   if (!items.length) { box.classList.add('hidden'); return; }
-  $('#examples-lede').textContent = 'Picked from the data on this page each time it is rebuilt: the steepest fall in stars under one owner, the most immediate jeopardy citations under one owner, and the biggest rise in money paid to related companies after a sale. Click a home for its full record.';
+  $('#examples-lede').textContent = 'The steepest fall in stars under one owner, the most immediate jeopardy citations under one owner at another home, and the biggest rise in money paid to the owners\u2019 own companies after a sale. Stars and citations count only the time that owner ran the home, back to ' + fmtMon(D.dates[0].slice(0, 4) - 3 + D.dates[0].slice(4)) + ', as far as CMS\u2019s inspection records reach. Click a home for its full record. (Chosen automatically from the data each time the page is updated.)';
   items.forEach(li => ul.append(li));
 })();
 
