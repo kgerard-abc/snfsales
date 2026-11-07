@@ -752,7 +752,7 @@ def event_study(M, S, val, metric, sale_rows, qrange=range(-4, 9), tol=45):
     for r in M['ev_own'][M['ev_own'].category.isin(['Operator change', 'Change of ownership (CMS flag)'])].itertuples(): evd_by.setdefault(r.ccn, []).append(pd.Timestamp(r.snap))
     def near(t):
         i = (snaps - t).abs().idxmin(); return snaps[i].strftime('%Y-%m-%d') if abs((snaps[i] - t).days) <= tol else None
-    sold = {q: [] for q in qrange}; ctrl = {q: [] for q in qrange}; per_event = []
+    sold = {q: [] for q in qrange}; ctrl = {q: [] for q in qrange}; lev = {q: [] for q in qrange}; per_event = []
     for r in sale_rows.itertuples():
         ccn, b = r.ccn, T(r.before)
         if b is None or b < pd.Timestamp(M['cfg']['series_start']): continue
@@ -772,20 +772,24 @@ def event_study(M, S, val, metric, sale_rows, qrange=range(-4, 9), tol=45):
             cd = [val[c][metric].get(s) - val[c][metric].get(b.strftime('%Y-%m-%d')) for c in controls
                   if nz(val[c][metric].get(s)) is not None and nz(val[c][metric].get(b.strftime('%Y-%m-%d'))) is not None]
             if len(cd) < MATCH_MIN: continue
-            sold[q].append(v - v0); ctrl[q].append(float(np.mean(cd)))
+            sold[q].append(v - v0); ctrl[q].append(float(np.mean(cd))); lev[q].append((ccn, float(v0), float(v)))
     res = []
     for q in qrange:
         res.append(dict(q=q, months=3 * q, sold=(round(float(np.mean(sold[q])), 3) if sold[q] else None), ctrl=(round(float(np.mean(ctrl[q])), 3) if ctrl[q] else None), n=len(sold[q]),
                         worse=None, same=None, better=None))
-    return res, sold, ctrl
+    return res, sold, ctrl, lev
 
-def cohort_summary(sold, ctrl, metric, higher_better=True):
+def cohort_summary(sold, ctrl, metric, higher_better=True, lev=None):
     out = {}
     for q, label in ((4, '12'), (8, '24')):
         d = sold.get(q, []); c = ctrl.get(q, [])
         if not d: out[label] = None; continue
         sgn = 1 if higher_better else -1
-        out[label] = dict(n=len(d), sold=round(float(np.mean(d)), 2), ctrl=round(float(np.mean(c)), 2), worse=int(sum(1 for x in d if sgn * x < -1e-9)), same=int(sum(1 for x in d if abs(x) <= 1e-9)), better=int(sum(1 for x in d if sgn * x > 1e-9)))
+        sgn_ = lambda w: (w[2] - w[1]) * sgn
+        L = (lev or {}).get(q) or []
+        out[label] = dict(n=len(d), before=(round(float(np.mean([x[1] for x in L])), 3) if L else None), after=(round(float(np.mean([x[2] for x in L])), 3) if L else None),
+                          biggest_fall=(lambda w: dict(ccn=w[0], before=round(w[1], 2), after=round(w[2], 2)) if w and sgn_(w) < 0 else None)(min(L, key=lambda x: (x[2] - x[1]) * (1 if higher_better else -1)) if L else None),
+                          sold=round(float(np.mean(d)), 2), ctrl=round(float(np.mean(c)), 2), worse=int(sum(1 for x in d if sgn * x < -1e-9)), same=int(sum(1 for x in d if abs(x) <= 1e-9)), better=int(sum(1 for x in d if sgn * x > 1e-9)))
     return out
 
 
@@ -861,7 +865,15 @@ def cost_panel(cec, S):
                 if a in g.index and b in g.index and nz(g.loc[a, k]) is not None and nz(g.loc[b, k]) is not None and not (pd.isna(g.loc[a, k]) or pd.isna(g.loc[b, k])):
                     pairs.append((float(g.loc[a, k]), float(g.loc[b, k]), r.ccn))
             if len(pairs) >= 5:
-                res[str(after)] = dict(n=len(pairs), before=round(float(np.mean([x[0] for x in pairs])), 4), after=round(float(np.mean([x[1] for x in pairs])), 4), up=int(sum(1 for x in pairs if x[1] > x[0])))
+                # Homes not sold over the same two years as each sale: every home that never changed control and filed a whole-year
+                # report in both years. The figure is their average change, averaged over the sales, so the years match.
+                cch = []
+                for (x0, x1, cc_), r_ in zip(pairs, [r for r in first.itertuples() if by.get(r.ccn) is not None and (T(r.evd).year - 1) in by[r.ccn].index and (T(r.evd).year + after) in by[r.ccn].index and nz(by[r.ccn].loc[T(r.evd).year - 1, k]) is not None and nz(by[r.ccn].loc[T(r.evd).year + after, k]) is not None and not (pd.isna(by[r.ccn].loc[T(r.evd).year - 1, k]) or pd.isna(by[r.ccn].loc[T(r.evd).year + after, k]))]):
+                    ya, yb = T(r_.evd).year - 1, T(r_.evd).year + after
+                    dd = [float(g.loc[yb, k]) - float(g.loc[ya, k]) for cc2, g in by.items() if cc2 not in sold_ccns and ya in g.index and yb in g.index and not (pd.isna(g.loc[ya, k]) or pd.isna(g.loc[yb, k]))]
+                    if len(dd) >= 5: cch.append(float(np.mean(dd)))
+                res[str(after)] = dict(n=len(pairs), before=round(float(np.mean([x[0] for x in pairs])), 4), after=round(float(np.mean([x[1] for x in pairs])), 4), up=int(sum(1 for x in pairs if x[1] > x[0])),
+                                       ctrl=(round(float(np.mean(cch)), 4) if len(cch) == len(pairs) else None))
         out['compare']['rent_sh' if k == 'rent0_sh' else k] = res
     # homes never sold, same calendar years, as a comparison
     ctrl = {}
@@ -1151,8 +1163,8 @@ def build_public_data(M, S, val, cec, mp, ccn_of, fn, cfg):
     study = {}
     for setname, types in (('sold', ('Ownership/operator change',)), ('all', tuple(cfg['public_include_types']))):
         sales = S[S.counts & S.type.isin(types) & S.before.notna() & ~S.pre_method]; study[setname] = dict(n_events=int(len(sales)), n_homes=int(sales.ccn.nunique()), metrics={})
-        for m, hb in (('overall', True), ('staffing', True), ('hours', True), ('turnover', False)):
-            res, sold, ctrl = event_study(M, S, val, m, sales); study[setname]['metrics'][m] = dict(points=res, summary=cohort_summary(sold, ctrl, m, hb))
+        for m, hb in (('overall', True), ('staffing', True), ('hours', True), ('rn', True), ('turnover', False)):
+            res, sold, ctrl, lev_ = event_study(M, S, val, m, sales); study[setname]['metrics'][m] = dict(points=res, summary=cohort_summary(sold, ctrl, m, hb, lev_))
     # owner groups: stars at acquisition vs 1 year, 2 years and latest (each comparison uses only homes with data at that point)
     grp = {}
     for r in S[S.counts & S.type.isin(cfg['public_include_types']) & S.before.notna()].itertuples():
@@ -1921,6 +1933,7 @@ details.cecdetail{margin-top:6px;font-size:.86rem;max-width:62ch}details.cecdeta
 #examples .card .home{font-size:.95rem}
 .card .home{display:block;font-weight:700;margin-bottom:4px}
 .card p{margin:0;font-size:.92rem;line-height:1.4}
+.batbl{width:100%;border-collapse:collapse;font-size:.92rem}.batbl th,.batbl td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}.batbl thead th{font-size:.8rem;color:var(--muted);font-weight:700;text-align:left}.batbl thead th.num{text-align:right}.batbl tbody th{text-align:left;font-weight:600}.batbl .m{display:block}.batbl .sub{display:block;font-weight:400;font-size:.8rem;color:var(--muted)}.batbl td.num{text-align:right;white-space:nowrap}.batbl td.bad{color:var(--sold);font-weight:700}
 .chg{font-weight:700}
 .gap{font-size:1.08rem;margin:8px 0}
 @media (max-width:640px){.tile .big{font-size:1.6rem}.card .big{font-size:1.35rem}}
@@ -2005,7 +2018,7 @@ footer a{color:var(--fg)}
 <div class="grid-rent"><div class="panel" id="money-panel"><h3 style="margin-top:0;font-size:1rem">Rent paid to a landlord the owners also control</h3><div class="chartbox" id="money-chart"></div><div class="legend" id="money-legend"></div><p class="small" id="money-note"></p></div>
 <div class="panel"><h3 style="margin-top:0;font-size:1rem">Changes of control approved, by year</h3><div class="chartbox" id="peryear-chart" style="max-width:420px"></div><p class="small" id="peryear-note"></p></div></div>
 <div class="panel" id="ba-panel"><h3 style="margin-top:0">The same homes, before and after</h3>
-<p class="lede" id="ba-lede"></p><div class="chartbox" id="ba-chart"></div><p class="small" id="ba-count"></p><p class="small" id="ba-staffing"></p>
+<p class="lede" id="ba-lede"></p><div class="chartbox" id="ba-chart"></div><p class="small" id="ba-count"></p><p class="small" id="ba-rn"></p><p class="small" id="ba-staffing"></p>
 <p class="small" id="ba-note"></p></div>
 
 <h3>Change by measure: sold homes compared with similar homes</h3>
@@ -2237,8 +2250,8 @@ function drawStudy() {
   // The gap between the two bars, stated, so nobody has to subtract. "Worse off" follows the measure's direction.
   if (two && two.ctrl != null) { const gap = (two.sold - two.ctrl) * m.scale, worse = m.hb ? gap < 0 : gap > 0, big = Math.abs(gap) >= (m.scale === 100 ? 2 : 0.1);
     if (big) t.append(el('p', { class: 'gap' }, el('b', { text: `Two years after a sale, sold homes were ${Math.abs(gap).toFixed(m.scale === 100 ? 0 : dd)} ${m.unit} ${worse ? 'worse off' : 'better off'} than similar homes that were not sold.` }))); }
-  const lvl = setKey === 'sold' && D.levels[metKey === 'hours' ? 'hours' : metKey] && D.levels[metKey === 'hours' ? 'hours' : metKey]['2'];
-  if (two && lvl && lvl.n === two.n && metKey !== 'turnover') t.append(el('p', { class: 'small', text: `In levels: those homes averaged ${lvl.before.toFixed(metKey === 'hours' ? 2 : 1)} ${m.unit} at their last rating before the sale and ${lvl.after.toFixed(metKey === 'hours' ? 2 : 1)} two years after (the top rows of "The same homes, before and after"). The "year before" bar is a separate period: the change in the 12 months leading up to the sale.` }));
+  const lvl = setKey === 'sold' && two && two.before != null ? two : null;   // the same calculation as the table, so the two always agree
+  if (two && lvl && metKey !== 'turnover') t.append(el('p', { class: 'small', text: `In levels: those homes averaged ${lvl.before.toFixed(metKey === 'hours' ? 2 : 1)} ${m.unit} at their last rating before the sale and ${lvl.after.toFixed(metKey === 'hours' ? 2 : 1)} two years after (the same rows of the table "The same homes, before and after"). The "year before" bar is a separate period: the change in the 12 months leading up to the sale.` }));
   if (pre.sold != null && Math.abs(pre.sold * m.scale) >= (m.scale === 100 ? 2 : 0.15) && (m.hb ? pre.sold > 0 : pre.sold < 0)) t.append(el('p', {}, el('b', { text: 'Many were already slipping before the sale: ' }), `in the year leading up to the sale these homes lost ${Math.abs(pre.sold * m.scale).toFixed(m.scale === 100 ? 0 : dd)} ${m.unit} on average` + (pre.ctrl != null ? `, and similar homes that were not sold changed by ${fmt(-pre.ctrl)} ${m.unit} over the same months.` + (Math.abs((pre.sold - pre.ctrl) * m.scale) < (m.scale === 100 ? 2 : 0.1) ? ' The two groups moved alike before the sale; the difference shows up after it.' : '') : '.')));
   if (!one) t.append(el('p', { text: 'Not enough homes with data for this measure yet.' }));
   // Every home behind the bars, so the averages can be checked and nobody has to guess how much one home moves them.
@@ -2299,33 +2312,40 @@ function drawMoney() {
 }
 drawMoney();
 
-/* before/after, same homes */
+/* before/after, same homes: a table. Every row's before, after, change, and comparison come from one calculation:
+   the ratings and staffing rows from the similar-homes study (the same numbers as the bars below), the money rows from
+   the cost reports, with every home that never changed hands as the comparison over the same years. */
 (function () {
-  const lv = D.levels, mn = D.money, rows = [], pct = v => Math.round(v * 100) + '%', pct1 = v => (v * 100).toFixed(1) + '%', st1 = v => v.toFixed(1), hr = v => v.toFixed(2);
-  const sgn1 = v => (v > 0 ? '+' : v < 0 ? '\u2212' : '') + Math.abs(v).toFixed(1), sgn2 = v => (v > 0 ? '+' : v < 0 ? '\u2212' : '') + Math.abs(v).toFixed(2);
-  const chStars = (b, a, dir) => dir === 'flat' ? 'no change' : sgn2(a - b) + ' stars';
-  const chHours = (b, a, dir) => dir === 'flat' ? 'no change' : sgn2(a - b) + ' hours';
-  const chShare = (b, a, dir) => { if (dir === 'flat') return 'no change'; const k = b > 0 ? a / b : null; if (k != null && k >= 2.5) return 'about ' + Math.round(k) + ' times as much'; if (k != null && k >= 2) return 'more than doubled'; if (k != null && k >= 1.8) return 'nearly doubled'; return (a > b ? '+' : '\u2212') + Math.round(Math.abs(a - b) * 100) + ' points'; };
-  const chMargin = (b, a, dir) => dir === 'flat' ? 'no change' : (a > b ? 'up ' : 'down ') + (Math.abs(a - b) * 100).toFixed(1) + ' points';
-  const add = (o) => { if (o) rows.push(o); };
-  if (lv.overall && lv.overall['2']) add({ label: 'Overall star rating', sub: 'CMS rating, 5 is best', before: lv.overall['2'].before, after: lv.overall['2'].after, n: lv.overall['2'].n, fmt: st1, lo: 0, hi: 5, ends: ['0', '5 stars'], higherBad: false, eps: 0.1, change: chStars });
-  if (lv.staffing && lv.staffing['2']) add({ label: 'Staffing star rating', sub: 'CMS rating, 5 is best', before: lv.staffing['2'].before, after: lv.staffing['2'].after, n: lv.staffing['2'].n, fmt: st1, lo: 0, hi: 5, ends: ['0', '5 stars'], higherBad: false, eps: 0.1, change: chStars });
-  if (lv.hours && lv.hours['2']) add({ label: 'Nurse hours per resident per day', sub: 'reported hours, all nursing staff', before: lv.hours['2'].before, after: lv.hours['2'].after, n: lv.hours['2'].n, fmt: hr, lo: 0, hi: 5, ends: ['0', '5 hours'], higherBad: false, eps: 0.1, change: chHours });
-  if (lv.rn && lv.rn['2']) add({ label: 'RN hours per resident per day', sub: 'registered nurses only', before: lv.rn['2'].before, after: lv.rn['2'].after, n: lv.rn['2'].n, fmt: hr, lo: 0, hi: 5, ends: ['0', '5 hours'], higherBad: false, eps: 0.05, change: chHours });
-  if (mn && mn.compare) {
-    const c = mn.compare;
-    if (c.rent_sh && c.rent_sh['2']) add({ label: 'Rent paid to the owners\u2019 own landlord', sub: 'share of patient revenue', before: c.rent_sh['2'].before, after: c.rent_sh['2'].after, n: c.rent_sh['2'].n, fmt: pct1, lo: 0, hi: 0.25, ends: ['0%', '25%'], higherBad: true, eps: 0.01, change: chShare });
-    if (c.other_sh && c.other_sh['2']) add({ label: 'Other payments to the owners\u2019 companies', sub: 'management fees and services, not rent', before: c.other_sh['2'].before, after: c.other_sh['2'].after, n: c.other_sh['2'].n, fmt: pct1, lo: 0, hi: 0.25, ends: ['0%', '25%'], higherBad: true, eps: 0.01, change: chShare });
-    // Operating margin, as the home reported it. Shown so nobody has to ask why it is missing: the money above leaves
-    // the home as a cost before the margin is struck, so a rising margin and rising related-party payments can go together.
-    if (c.margin && c.margin['2']) add({ label: 'Operating margin the home reported', sub: 'after rent and fees to related parties are paid', before: c.margin['2'].before, after: c.margin['2'].after, n: c.margin['2'].n, fmt: v => (v * 100).toFixed(1) + '%', lo: -0.25, hi: 0.25, ends: ['\u221225%', '+25%'], higherBad: false, eps: 0.01, neutral: true, change: chMargin });
-  }
+  const lv = D.levels, mn = D.money, rows = [], pct1 = v => (v * 100).toFixed(1) + '%', st1 = v => v.toFixed(1), hr = v => v.toFixed(2);
+  const pm = (v, d) => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(d);
+  const SM = k => D.study && D.study.sold && D.study.sold.metrics[k] && D.study.sold.metrics[k].summary && D.study.sold.metrics[k].summary['24'];
+  const care = (k, label, sub, fmt, unit, d, eps) => { const x = SM(k); if (!x || x.before == null) return;
+    rows.push({ label, sub, before: fmt(x.before), after: fmt(x.after), d: x.sold, ch: Math.abs(x.sold) < eps ? 'no change' : pm(x.sold, d) + ' ' + unit, bad: x.sold < -eps,
+      worse: x.worse + ' of ' + x.n, ctrl: x.ctrl == null ? '–' : Math.abs(x.ctrl) < eps ? 'no change' : pm(x.ctrl, d) + ' ' + unit, n: x.n, raw: x }); };
+  care('overall', 'Overall star rating', 'CMS rating, 5 is best', st1, 'stars', 2, 0.05);
+  care('staffing', 'Staffing star rating', 'CMS rating, 5 is best', st1, 'stars', 2, 0.05);
+  care('hours', 'Nurse hours per resident per day', 'all nursing staff', hr, 'hours', 2, 0.05);
+  care('rn', 'RN hours per resident per day', 'registered nurses, including the director of nursing', hr, 'hours', 2, 0.02);
+  const c = (mn && mn.compare) || {};
+  const money = (k, label, sub, higherBad) => { const x = c[k] && c[k]['2']; if (!x) return; const dv = x.after - x.before, k_ = x.before > 0 ? x.after / x.before : null;
+    const ptsTxt = v => Math.abs(v) < 0.005 ? 'no change' : pm(v * 100, 1) + ' points';
+    rows.push({ label, sub, before: pct1(x.before), after: pct1(x.after), ch: ptsTxt(dv) + (k_ && k_ >= 2 && Math.abs(dv) >= 0.005 ? (k_ >= 2.5 ? ', about ' + Math.round(k_) + ' times as much' : ', more than double') : ''), bad: higherBad ? dv >= 0.005 : dv <= -0.005,
+      worse: (higherBad ? x.up : x.n - x.up) + ' of ' + x.n, ctrl: x.ctrl == null ? '–' : ptsTxt(x.ctrl), n: x.n }); };
+  money('rent_sh', 'Rent paid to the owners’ own landlord', 'share of patient revenue', true);
+  money('other_sh', 'Other payments to the owners’ companies', 'management fees and services, not rent', true);
+  money('margin', 'Operating margin the home reported', 'after rent and fees to the owners’ companies', false);
   if (!rows.length) { $('#ba-panel').classList.add('hidden'); return; }
-  $('#ba-lede').textContent = 'Each row follows the same homes from before the sale (gray dot) to two years after (colored dot), and the length of the line between them is the size of the change. Each row has its own scale, shown at its ends: 0 to 5 for stars and hours, 0% to 25% for shares of revenue, and \u221225% to +25% for the margin. For ratings and staffing, "before" is the last CMS figure before the sale; for the money rows it is the cost-report year before the sale. Orange means the measure moved the wrong way for residents; gray means it barely moved. Chain reorganizations are not included.';
-  const ov = lv.overall && lv.overall['2'];
-  if (ov) $('#ba-lede').textContent += ' These are the same sales as the "Homes sold to a new operator" view below, so the top row matches its "First two years after" bar.';
-  $('#ba-count').textContent = 'A row counts only homes with a usable figure at both ends, so the counts differ: a home sold too recently has no "two years after" yet, CMS leaves staffing blank when payroll data is missing, and the money rows come from annual Medicare cost reports, which cover ' + ((D.money && D.money.n_facilities) || 0) + ' of these homes and run through fiscal year ' + ((D.money && D.money.last_year) || '') + '.';
-  dumbbells($('#ba-chart'), rows, 'Care and money measures for the same homes, year before the sale compared with two years after');
+  $('#ba-lede').textContent = 'Each row follows the same sold homes from the last figure before the sale to two years after, and compares the change with homes that were not sold over the same years. For ratings and staffing, "before" is the last CMS figure before the sale and the comparison is similar homes: homes not sold that started at the same rating (or, for hours, the closest figure). For the money rows, "before" is the cost-report year before the sale and the comparison is every home that never changed hands and filed reports for the same two years. Chain reorganizations are not included.';
+  $('#ba-count').textContent = 'A row counts only homes with a figure at both ends, so the counts differ: a home sold too recently has no "two years after" yet, CMS leaves staffing blank when payroll data is missing, and the money rows come from annual Medicare cost reports, which run through fiscal year ' + ((D.money && D.money.last_year) || '') + '.';
+  const tb = el('tbody');
+  rows.forEach(r => tb.append(el('tr', {}, el('th', { scope: 'row' }, el('span', { class: 'm', text: r.label }), el('span', { class: 'sub', text: r.sub })),
+    el('td', { class: 'num', text: r.before }), el('td', { class: 'num', text: r.after }), el('td', { class: 'num' + (r.bad ? ' bad' : ''), text: r.ch }),
+    el('td', { class: 'num', text: r.worse }), el('td', { class: 'num', text: r.ctrl }))));
+  $('#ba-chart').replaceChildren(el('div', { class: 'tblwrap' }, el('table', { class: 'batbl' }, el('thead', {}, el('tr', {}, ['Measure', 'Before the sale', 'Two years after', 'Change', 'Got worse at', 'Homes not sold, same years: change'].map((x, i) => el('th', { scope: 'col', class: i ? 'num' : '', text: x })))), tb)));
+  const rnx = SM('rn'), rnn = $('#ba-rn');
+  if (rnn && rnx) { const bf = rnx.biggest_fall, fh = bf && D.facilities.find(f => f.id === bf.ccn);
+    rnn.replaceChildren(el('b', { text: 'Why RN hours look flat: ' }), `RN hours fell at ${rnx.worse} of the ${rnx.n} homes` + (fh ? `, some sharply (${fh.name}: ${bf.before.toFixed(2)} to ${bf.after.toFixed(2)} hours a day)` : '') + `, and rose at others, so the average barely moved. CMS's RN hours also count the director of nursing and RNs with administrative duties, jobs a home usually keeps, so cuts to RNs working with residents can be hidden in this number. Each figure is one month of CMS data, so a single month can be high or low.`); }
+  else if (rnn) rnn.classList.add('hidden');
   const c = (D.money && D.money.compare) || {}, bits = [];
   if (c.rent_sh && c.rent_sh['2']) bits.push(`Rent paid to the owners' own landlord rose at ${c.rent_sh['2'].up} of the ${c.rent_sh['2'].n} homes with cost reports for both years. A home that reported no related rent counts as 0.`);
   if (c.other_sh && c.other_sh['2']) bits.push(`Other payments to the owners' companies (management fees, therapy, supplies, and the like) are everything else on the same cost report line, not counting rent, so the two rows never count the same dollar twice. They went from ${pct1(c.other_sh['2'].before)} to ${pct1(c.other_sh['2'].after)} of revenue: nearly all of the rise in money to the owners' companies was rent.`);
