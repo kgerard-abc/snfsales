@@ -6,7 +6,7 @@ Each application's Appendix A has Table 2 (staff and payroll by job) and Table 3
 
 A **Check** note means a table did not add up or was not laid out as expected. Look at the page before using those numbers. Homes are matched to the CEC Log by name; "sale never closed" in cec_outcome means the sale did not go through (for example Kadima, 2022), so leave those out of any before-and-after comparison.
 
-Applications read: 71. With tables: 49. Without tables: 21. No copy to read: 1. Homes with numbers: 64. Numbers saved: 16917.
+Applications read: 71. With tables: 49. Without tables: 21. No copy to read: 1. Homes with numbers: 64. Numbers saved: 17049.
 
 ### 2014: Genesis HealthCare Trust Change in Effective Control:
 
@@ -21,7 +21,7 @@ Applications read: 71. With tables: 49. Without tables: 21. No copy to read: 1. 
 ### 2016: Elmhurst Operator LLC
 
 [RIDOH link](https://drive.google.com/file/d/0B9lx-sHDAL9qV1hCNGZ3d2lyd0U)
-- Scanned PDF (225 pages). Read with OCR (first 60 pages searched). Check these numbers against the page before relying on them.
+- Scanned PDF (225 pages). Read with OCR (all pages searched). Check these numbers against the page before relying on them.
 - No Appendix A tables found in 225 pages.
 
 ### 2016: NSL Oak Hill
@@ -32,7 +32,9 @@ Applications read: 71. With tables: 49. Without tables: 21. No copy to read: 1. 
 ### 2017: 239 Legris Avenue Operations
 
 [RIDOH link](https://drive.google.com/file/d/1Zt8_6LofK4GpCK8bWGGicauTAsD9g4UL)
-- Scanned PDF (350 pages). Read with OCR (first 60 pages searched). Check these numbers against the page before relying on them.
+- Scanned PDF (350 pages). Read with OCR (first 48 pages searched). Check these numbers against the page before relying on them.
+- Table 3 question found on page 14, but the table could not be lined up. Look at the page.
+- Table 2 question found on page 12, but the table could not be lined up. Look at the page.
 
 ### 2017: Bannister Operations Associates d/b/a Bannister Center for Rehabilitation and Health Care
 
@@ -49,12 +51,14 @@ Applications read: 71. With tables: 49. Without tables: 21. No copy to read: 1. 
 
 [RIDOH link](https://drive.google.com/file/d/19wVgOLpPj7omElulC4CFj5qE6CrJTAsl)
 - Table 3, page 16: **CL Operating LLC d/b/a Crystal Lake Rehabilitation and Care Center** (CEC-070, Crystal Lake Rehabilitation and Care Center, Approved), years 2015-2021, 16 lines. **Check:** 2017: expense lines add to 2,536,194 but Total Expenses says 5,806,196
-- Table 2, page 14: **CL Operating LLC d/b/a Crystal Lake Rehabilitation and Care Center** (CEC-070, Crystal Lake Rehabilitation and Care Center, Approved), 65 numbers. **Check:** 2016: payroll lines add to 3,485,964 but Totals says 3,741,570; 2017: payroll lines add to 3,273,275 but Totals says 3,273; 2019: payroll lines add to 0 but Totals says 52; 2020: payroll lines add to 0 but Totals says 3,112,198; 2021: payroll lines add to 0 but Totals says 3,249,579
+- Table 2, page 14: **CL Operating LLC d/b/a Crystal Lake Rehabilitation and Care Center** (CEC-070, Crystal Lake Rehabilitation and Care Center, Approved), 119 numbers. **Check:** 2016: payroll lines add to 3,485,964 but Totals says 3,741,570; 2017: payroll lines add to 3,273,275 but Totals says 3,273
 
 ### 2019: Cortland Place Rehab Center LLC
 
 [RIDOH link](https://drive.google.com/file/d/1oN1XRhkFNbQmK3UegAOE07vfo_O509eW) | [our copy](https://archive.org/details/ri-cec-2019-cortland-place-rehab-center-llc)
-- Scanned PDF (291 pages). Read with OCR (first 60 pages searched). Check these numbers against the page before relying on them.
+- Scanned PDF (291 pages). Read with OCR (first 48 pages searched). Check these numbers against the page before relying on them.
+- Table 3 question found on page 14, but the table could not be lined up. Look at the page.
+- Table 2 question found on page 12, but the table could not be lined up. Look at the page.
 
 ### 2020: Crestwood Healthcare
 
@@ -70,7 +74,7 @@ Applications read: 71. With tables: 49. Without tables: 21. No copy to read: 1. 
 ### 2020: Tavares Pediatric Center
 
 [RIDOH link](https://drive.google.com/file/d/1Q3W3y5D014gp4e_eTetfKvMNMjLUPQrK)
-- Scanned PDF (205 pages). Read with OCR (first 60 pages searched). Check these numbers against the page before relying on them.
+- Scanned PDF (205 pages). Read with OCR (all pages searched). Check these numbers against the page before relying on them.
 - No Appendix A tables found in 205 pages.
 
 ### 2021: Ballou Nursing & Rehab LLC [Menachem Yifat]
@@ -100,7 +104,8 @@ Applications read: 71. With tables: 49. Without tables: 21. No copy to read: 1. 
 ### 2021: Con V Care d/b/a Woonsocket Health and Rehabilitation Centre
 
 [RIDOH link](https://drive.google.com/file/d/15dPbUOWzrtBhvwDMeokwGUgnaJ3WA0Fd)
-- Scanned PDF (176 pages). Read with OCR (first 60 pages searched). Check these numbers against the page before relying on them.
+- Scanned PDF (176 pages). Read with OCR (all pages searched). Check these numbers against the page before relying on them.
+- Table 3 question found on page 16, but the table could not be lined up. Look at the page.
 
 ### 2021: Greentree Nursing and Rehab, LLC
 
@@ -113,7 +118,7 @@ Applications read: 71. With tables: 49. Without tables: 21. No copy to read: 1. 
 [RIDOH link](https://drive.google.com/drive/folders/1xaoFXnqDxMXrlCHN5hGlHXtwR0XfIv6D) | [our copy](https://archive.org/details/ri-cec-2021-health-at-home-bhs-llc)
 - Table 3, page 12: **Health at Home-BHS, LLC** (no CEC Log match, check by hand), years 2018-2024, 17 lines.
 - Table 2, page 10: **Health at Home-BHS, LLC** (no CEC Log match, check by hand), 77 numbers.
-- Scanned PDF (2 pages). Read with OCR (first 2 pages searched). Check these numbers against the page before relying on them.
+- Scanned PDF (2 pages). Read with OCR (all pages searched). Check these numbers against the page before relying on them.
 - No Appendix A tables found in 2 pages.
 - Table 3, page 12: **Health at Home-BHS, LLC** (no CEC Log match, check by hand), years 2018-2024, 16 lines.
 - Table 2, page 10: **Health at Home-BHS, LLC** (no CEC Log match, check by hand), 73 numbers.
@@ -166,7 +171,9 @@ Applications read: 71. With tables: 49. Without tables: 21. No copy to read: 1. 
 ### 2021: Pezzelli Nursing Home, Inc. d/b/a Golden Crest Nursing Centre
 
 [RIDOH link](https://drive.google.com/file/d/1z5IKE6e1fP3DuaxFbCk8L8b_amBAJTbV)
-- Scanned PDF (154 pages). Read with OCR (first 60 pages searched). Check these numbers against the page before relying on them.
+- Scanned PDF (154 pages). Read with OCR (first 48 pages searched). Check these numbers against the page before relying on them.
+- Table 3 question found on page 15, but the table could not be lined up. Look at the page.
+- Table 2 question found on page 13, but the table could not be lined up. Look at the page.
 
 ### 2021: Silver Creek Manor SNF, LLC
 
@@ -207,7 +214,7 @@ Applications read: 71. With tables: 49. Without tables: 21. No copy to read: 1. 
 ### 2022: Island Health and Rehab CEC application
 
 [RIDOH link](https://drive.google.com/file/d/1icPzpHl3SPflZdiKozfDitWJqkwqoevR) | [our copy](https://archive.org/details/ri-cec-2021-island-health-and-rehab-cec-application)
-- Scanned PDF (183 pages). Read with OCR (first 60 pages searched). Check these numbers against the page before relying on them.
+- Scanned PDF (183 pages). Read with OCR (all pages searched). Check these numbers against the page before relying on them.
 - No Appendix A tables found in 183 pages.
 
 ### 2022: Kadima - Bayberry Rehabilitation & Nursing LLC
@@ -235,7 +242,7 @@ Applications read: 71. With tables: 49. Without tables: 21. No copy to read: 1. 
 ### 2022: Middletown OPCO LLC
 
 [RIDOH link](https://drive.google.com/file/d/1TX2mHLJsF6bQfPW-ia4EZ6HUA7yUgt76) | [our copy](https://archive.org/details/ri-cec-2022-middletown-opco-llc)
-- Scanned PDF (114 pages). Read with OCR (first 60 pages searched). Check these numbers against the page before relying on them.
+- Scanned PDF (114 pages). Read with OCR (all pages searched). Check these numbers against the page before relying on them.
 - Table 2, page 11: **Middletown OPCO LLC** (no CEC Log match, check by hand), 98 numbers. **Check:** found 1 year blocks, expected 2 (past and projected)
 
 ### 2022: South County Nursing & Rehabilitation CEC application & Exhibits
@@ -265,7 +272,7 @@ Applications read: 71. With tables: 49. Without tables: 21. No copy to read: 1. 
 ### 2022: Westerly OPCO LLC
 
 [RIDOH link](https://drive.google.com/file/d/1yBBcZgqOiQttF2MWsPyEbl-zNKNUZL4s) | [our copy](https://archive.org/details/ri-cec-2022-westerly-opco-llc)
-- Scanned PDF (113 pages). Read with OCR (first 60 pages searched). Check these numbers against the page before relying on them.
+- Scanned PDF (113 pages). Read with OCR (all pages searched). Check these numbers against the page before relying on them.
 - No Appendix A tables found in 113 pages.
 
 ### 2023: AdviniaCare Kingston Rehab Center, LLC (Kingston Center for Rehabilitation and Health Care)
@@ -284,7 +291,7 @@ Applications read: 71. With tables: 49. Without tables: 21. No copy to read: 1. 
 - Table 3, page 12: **Respiratory and Rehabilitation Center of RI** (CEC-114, Respiratory and Rehabilitation Center of Rhode Island, Decision letter issued), years 2020-2026, 15 lines.
 - Table 3, page 37: **Greenville Skilled Nursing and Rehabilitation** (CEC-105, Greenville Skilled Nursing and Rehabilitation, Decision letter issued), years 2020-2026, 15 lines. **Check:** 2023: expense lines add to 8,416,296 but Total Expenses says 12,512,028; 2026: expense lines add to 14,956,226 but Total Expenses says 13,123,504
 - Table 3, page 62: **Warren Skilled Nursing and Rehabilitation** (CEC-117, Warren Center (Warren Skilled Nursing and Rehabilitation), Decision letter issued), years 2020-2026, 15 lines.
-- Table 2, page 10: **Respiratory and Rehabilitation Center of RI** (CEC-114, Respiratory and Rehabilitation Center of Rhode Island, Decision letter issued), 58 numbers. **Check:** 2023: payroll lines add to 7,863,049 but Totals says 11,094,571
+- Table 2, page 10: **Respiratory and Rehabilitation Center of RI** (CEC-114, Respiratory and Rehabilitation Center of Rhode Island, Decision letter issued), 54 numbers.
 - Table 2, page 35: **Greenville Skilled Nursing and Rehabilitation** (CEC-105, Greenville Skilled Nursing and Rehabilitation, Decision letter issued), 55 numbers.
 - Table 2, page 60: **Warren Skilled Nursing and Rehabilitation** (CEC-117, Warren Center (Warren Skilled Nursing and Rehabilitation), Decision letter issued), 55 numbers.
 
@@ -312,7 +319,7 @@ Applications read: 71. With tables: 49. Without tables: 21. No copy to read: 1. 
 - Table 3, page 14: **Pawtucket Falls Healthcare Center** (CEC-095, Pawtucket Falls Healthcare Center, Decision letter issued), years 2020-2026, 16 lines.
 - Table 2, page 12: **Pawtucket Falls Healthcare Center** (CEC-095, Pawtucket Falls Healthcare Center, Decision letter issued), 64 numbers. **Check:** 2023: payroll lines add to 530,543 but Totals says 5,130,034
 - No Appendix A tables found in 20 pages.
-- Scanned PDF (17 pages). Read with OCR (first 17 pages searched). Check these numbers against the page before relying on them.
+- Scanned PDF (17 pages). Read with OCR (all pages searched). Check these numbers against the page before relying on them.
 - No Appendix A tables found in 17 pages.
 
 ### 2023: Westerly OPCO LLC
@@ -324,13 +331,13 @@ Applications read: 71. With tables: 49. Without tables: 21. No copy to read: 1. 
 ### 2024: 198 Waterman Avenue, Inc.
 
 [RIDOH link](https://drive.google.com/file/d/1Mks7WEykAqxlMZQJuDvsEaFDRvO9rLZP) | [our copy](https://archive.org/details/ri-cec-2024-198-waterman-avenue-inc)
-- Scanned PDF (153 pages). Read with OCR (first 60 pages searched). Check these numbers against the page before relying on them.
+- Scanned PDF (153 pages). Read with OCR (all pages searched). Check these numbers against the page before relying on them.
 - No Appendix A tables found in 153 pages.
 
 ### 2024: Allen's Health Center, Inc.
 
 [RIDOH link](https://drive.google.com/file/d/1NgiBB5urVwgfZ0fB9uCrFivpmWYOFAPX) | [our copy](https://archive.org/details/ri-cec-2024-allen-s-health-center-inc)
-- Scanned PDF (267 pages). Read with OCR (first 60 pages searched). Check these numbers against the page before relying on them.
+- Scanned PDF (267 pages). Read with OCR (all pages searched). Check these numbers against the page before relying on them.
 - No Appendix A tables found in 267 pages.
 
 ### 2024: Berkshire RI Management LLC
@@ -346,7 +353,7 @@ Applications read: 71. With tables: 49. Without tables: 21. No copy to read: 1. 
 ### 2024: Burriville Health Center Associates Limited
 
 [RIDOH link](https://drive.google.com/file/d/124asbGvXpRbXtOwudbru4XvHlV4NwiDv) | [our copy](https://archive.org/details/ri-cec-2024-burriville-health-center-associates-limited)
-- Scanned PDF (331 pages). Read with OCR (first 60 pages searched). Check these numbers against the page before relying on them.
+- Scanned PDF (331 pages). Read with OCR (all pages searched). Check these numbers against the page before relying on them.
 - No Appendix A tables found in 331 pages.
 
 ### 2024: Cortland dba Stillwater
@@ -358,19 +365,19 @@ Applications read: 71. With tables: 49. Without tables: 21. No copy to read: 1. 
 ### 2024: Elmwood Health Center, Inc.
 
 [RIDOH link](https://drive.google.com/file/d/1pvdqG_pyR0yN3JtGJ0_VDR__hNnBX-iJ) | [our copy](https://archive.org/details/ri-cec-2024-elmwood-health-center-inc)
-- Scanned PDF (160 pages). Read with OCR (first 60 pages searched). Check these numbers against the page before relying on them.
+- Scanned PDF (160 pages). Read with OCR (all pages searched). Check these numbers against the page before relying on them.
 - No Appendix A tables found in 160 pages.
 
 ### 2024: Village House Convalescent Home, Inc.
 
 [RIDOH link](https://drive.google.com/file/d/1uRQ-4X_R-C_7mXY3CKPmyxV1TKLOp27j) | [our copy](https://archive.org/details/ri-cec-2024-village-house-convalescent-home-inc)
-- Scanned PDF (159 pages). Read with OCR (first 60 pages searched). Check these numbers against the page before relying on them.
+- Scanned PDF (159 pages). Read with OCR (all pages searched). Check these numbers against the page before relying on them.
 - No Appendix A tables found in 159 pages.
 
 ### 2024: Warwick Health Center, Inc.
 
 [RIDOH link](https://drive.google.com/file/d/1335oGOb1REEg7_Fbh42cgv_WZvq9wmrw) | [our copy](https://archive.org/details/ri-cec-2024-warwick-health-center-inc)
-- Scanned PDF (262 pages). Read with OCR (first 60 pages searched). Check these numbers against the page before relying on them.
+- Scanned PDF (262 pages). Read with OCR (all pages searched). Check these numbers against the page before relying on them.
 - No Appendix A tables found in 262 pages.
 
 ### 2025: AdviniaCare
@@ -420,7 +427,7 @@ Applications read: 71. With tables: 49. Without tables: 21. No copy to read: 1. 
 - Table 3, page 13: **Respiratory and Rehab Center of RI** (CEC-114, Respiratory and Rehabilitation Center of Rhode Island, Decision letter issued), years 2020-2026, 15 lines.
 - Table 3, page 39: **Greenville Skilled Nursing and Rehabilitation** (CEC-105, Greenville Skilled Nursing and Rehabilitation, Decision letter issued), years 2020-2026, 15 lines. **Check:** 2023: expense lines add to 8,416,296 but Total Expenses says 12,512,028; 2026: expense lines add to 14,956,226 but Total Expenses says 13,123,504
 - Table 3, page 65: **Warren Skilled Nursing and Rehabilitation** (CEC-117, Warren Center (Warren Skilled Nursing and Rehabilitation), Decision letter issued), years 2020-2026, 15 lines.
-- Table 2, page 11: **Respiratory and Rehab Center of RI** (CEC-114, Respiratory and Rehabilitation Center of Rhode Island, Decision letter issued), 58 numbers. **Check:** 2023: payroll lines add to 7,863,049 but Totals says 11,094,571
+- Table 2, page 11: **Respiratory and Rehab Center of RI** (CEC-114, Respiratory and Rehabilitation Center of Rhode Island, Decision letter issued), 54 numbers.
 - Table 2, page 37: **Greenville Skilled Nursing and Rehabilitation** (CEC-105, Greenville Skilled Nursing and Rehabilitation, Decision letter issued), 55 numbers.
 - Table 2, page 63: **Warren Skilled Nursing and Rehabilitation** (CEC-117, Warren Center (Warren Skilled Nursing and Rehabilitation), Decision letter issued), 55 numbers.
 
@@ -439,14 +446,14 @@ Applications read: 71. With tables: 49. Without tables: 21. No copy to read: 1. 
 ### 2025: Holiday Operator, LLC
 
 [RIDOH link](https://drive.google.com/file/d/1dhdKRTr-hljOdeW_9TTPuFH7SDOlidBU) | [our copy](https://archive.org/details/ri-cec-2025-holiday-operator-llc)
-- Scanned PDF (187 pages). Read with OCR (first 60 pages searched). Check these numbers against the page before relying on them.
-- Table 3, page 19: **Holiday Rehabilitation and Healthcare Center** (CEC-125, Holiday Rehabilitation and Healthcare Center, Decision letter issued), years 2028-2007, 17 lines. **Check:** two numbers fell under 2026 on line '[Suppies |S 1.383,428/ $1,311,867]'; two numbers fell under 2007 on line 'SetPay : 2,737,500'; found 3 year columns ([2028, 2026, 2007]), expected 7; column types left blank
+- Scanned PDF (187 pages). Read with OCR (first 48 pages searched). Check these numbers against the page before relying on them.
+- Table 3, page 19: **Holiday Rehabilitation and Healthcare Center** (CEC-125, Holiday Rehabilitation and Healthcare Center, Decision letter issued), years ?-?, 0 lines. **Check:** the table has no numbers (left blank, or not readable); found 0 year columns ([]), expected 7; column types left blank
 - Table 2, page 17: **Holiday Rehabilitation and Healthcare Center** (CEC-125, Holiday Rehabilitation and Healthcare Center, Decision letter issued), 41 numbers. **Check:** found 1 year blocks, expected 2 (past and projected)
 
 ### 2025: Pascoag Health Center Inc.
 
 [RIDOH link](https://drive.google.com/file/d/1deoMg-ziWeZKDQJY6T26tF41HV8BySep) | [our copy](https://archive.org/details/ri-cec-2025-pascoag-health-center-inc)
-- Scanned PDF (232 pages). Read with OCR (first 60 pages searched). Check these numbers against the page before relying on them.
+- Scanned PDF (232 pages). Read with OCR (all pages searched). Check these numbers against the page before relying on them.
 - No Appendix A tables found in 232 pages.
 
 ### 2025: Providence RI Property Holdings, LLC
@@ -498,19 +505,19 @@ Applications read: 71. With tables: 49. Without tables: 21. No copy to read: 1. 
 ### 2026: Middletown Nursing and Rehab LLC and 193 Forest Avenue LLC
 
 [RIDOH link](https://drive.google.com/file/d/1GvBj6qGGO69jyQF0pvVEbQ98Uodv9W4s) | [our copy](https://archive.org/details/ri-cec-2026-middletown-nursing-and-rehab-llc-and-193-forest-avenue-llc)
-- Table 3, page 15: **Royal Middletown Nursing Center** (CEC-128, Royal Middletown Nursing Center, Pending), years 2023-2029, 36 lines. **Check:** two numbers fell under 2029 on line ''; two numbers fell under 2029 on line ''; two numbers fell under 2029 on line ''; two numbers fell under 2029 on line ''; two numbers fell under 2029 on line ''; two numbers fell under 2029 on line ''; two numbers fell under 2029 on line ''; two numbers fell under 2029 on line ''; two numbers fell under 2029 on line ''; two numbers fell under 2029 on line ''; two numbers fell under 2029 on line ''; two numbers fell under 2029 on line ''; two numbers fell under 2029 on line ''; two numbers fell under 2029 on line ''
-- Table 3, page 47: **Royal of Westerly Nursing Center** (CEC-129, Royal Westerly Nursing Center, Pending), years 2023-2029, 36 lines. **Check:** two numbers fell under 2029 on line ''; two numbers fell under 2029 on line ''; two numbers fell under 2029 on line ''; two numbers fell under 2029 on line ''; two numbers fell under 2029 on line ''; two numbers fell under 2029 on line ''; two numbers fell under 2029 on line ''; two numbers fell under 2029 on line ''; two numbers fell under 2029 on line ''; two numbers fell under 2029 on line ''; two numbers fell under 2029 on line ''; two numbers fell under 2029 on line ''; two numbers fell under 2029 on line ''; two numbers fell under 2029 on line ''
-- Table 2, page 11: **Royal Middletown Nursing Center** (CEC-128, Royal Middletown Nursing Center, Pending), 0 numbers. **Check:** the table has no numbers (left blank, or not readable)
-- Table 2, page 43: **Royal of Westerly Nursing Center** (CEC-129, Royal Westerly Nursing Center, Pending), 87 numbers.
+- Table 3, page 15: **Royal Middletown Nursing Center** (CEC-128, Royal Middletown Nursing Center, Pending), years 2023-2029, 17 lines.
+- Table 3, page 47: **Royal of Westerly Nursing Center** (CEC-129, Royal Westerly Nursing Center, Pending), years 2023-2029, 17 lines.
+- Table 2, page 11: **Royal Middletown Nursing Center** (CEC-128, Royal Middletown Nursing Center, Pending), 140 numbers.
+- Table 2, page 43: **Royal of Westerly Nursing Center** (CEC-129, Royal Westerly Nursing Center, Pending), 151 numbers.
 
 ### 2026: Pascoag Health Center Inc.
 
 [RIDOH link](https://drive.google.com/drive/folders/1vhjfxQZKwEJYCbxin5OCBi64sM4RnnbH) | [our copy](https://archive.org/details/ri-cec-2025-pascoag-health-center-inc)
-- Scanned PDF (232 pages). Read with OCR (first 60 pages searched). Check these numbers against the page before relying on them.
+- Scanned PDF (232 pages). Read with OCR (all pages searched). Check these numbers against the page before relying on them.
 - No Appendix A tables found in 232 pages.
-- Scanned PDF (232 pages). Read with OCR (first 60 pages searched). Check these numbers against the page before relying on them.
+- Scanned PDF (232 pages). Read with OCR (all pages searched). Check these numbers against the page before relying on them.
 - No Appendix A tables found in 232 pages.
-- Scanned PDF (13 pages). Read with OCR (first 13 pages searched). Check these numbers against the page before relying on them.
+- Scanned PDF (13 pages). Read with OCR (all pages searched). Check these numbers against the page before relying on them.
 - No Appendix A tables found in 13 pages.
 
 ### 2026: South County Opco LLC and South County Propco LLC
