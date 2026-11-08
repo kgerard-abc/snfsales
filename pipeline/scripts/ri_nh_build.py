@@ -2021,6 +2021,11 @@ th{position:sticky;top:0;z-index:3;background:var(--card);font-weight:600;white-
 th button{all:unset;cursor:pointer;font-weight:600}
 th button:focus-visible{outline:2px solid var(--gold)}
 td.num,th.num{text-align:center;white-space:nowrap}
+/* Column headings wrap (to about two lines; see twoLineHeads) so a long heading does not make its column wide. */
+thead th,thead th.num{white-space:normal;text-wrap:balance;vertical-align:bottom;line-height:1.25}
+/* Notes under a number (Approximate..., Adjusted:..., Before figure:...) wrap too, instead of widening the column to one long line. */
+td.num .small{white-space:normal}
+#sales-tbl td.sd{white-space:normal;min-width:7.5rem}
 td.few{opacity:.55}
 .tblwrap{overflow-x:auto;max-height:640px;border:1px solid var(--line);border-radius:10px;background:var(--card)}
 .chip{display:inline-block;min-width:1.6em;padding:1px 6px;border-radius:6px;text-align:center;font-weight:700;color:var(--chip-fg)}
@@ -2166,6 +2171,12 @@ document.querySelectorAll('nav.jump a').forEach(a => { const h = a.getAttribute(
   if (h === '#groups') { a.setAttribute('href', 'owners.html'); if (PAGE === 'owners') { a.classList.add('on'); a.setAttribute('aria-current', 'page'); } }
   else if (PAGE === 'owners' && h && h.startsWith('#') && h !== '#about') a.setAttribute('href', 'index.html' + h); });
 const el = (tag, attrs, ...kids) => { const n = document.createElement(tag); for (const k in (attrs || {})) { if (k === 'class') n.className = attrs[k]; else if (k === 'text') n.textContent = attrs[k]; else if (k.startsWith('on')) n.addEventListener(k.slice(2), attrs[k]); else if (attrs[k] !== null && attrs[k] !== undefined) n.setAttribute(k, attrs[k]); } for (const c of kids.flat()) { if (c === null || c === undefined || c === false) continue; n.append(c.nodeType ? c : document.createTextNode(String(c))); } return n; };
+// Long column headings: set a minimum width that fits the heading on two lines (split after the colon when it has one, otherwise about 60% of its length), so it breaks onto two lines instead of three or four.
+const headProbe = el('span', { 'aria-hidden': 'true', style: 'position:absolute;left:-9999px;top:0;white-space:nowrap;visibility:hidden' });
+const twoLineHeads = () => document.querySelectorAll('thead th:not([data-tw])').forEach(th => { th.dataset.tw = '1'; if (th.closest('.ogtbl,.batbl') || (th.style.width && !th.style.minWidth)) return; const t = th.textContent.trim(); if (t.length <= 10) { th.style.whiteSpace = 'nowrap'; return; } if (t.length <= 16) return; const cs = getComputedStyle(th); headProbe.style.font = cs.font || (cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily); if (!headProbe.isConnected) document.body.append(headProbe); const m = x => { headProbe.textContent = x; return headProbe.getBoundingClientRect().width; }, k = t.indexOf(': '); th.style.minWidth = Math.ceil((k > 0 ? Math.max(m(t.slice(0, k + 1)), m(t.slice(k + 2))) : m(t) * 0.55) + (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0) + 4) + 'px'; });
+// Measure again once the web font has loaded, since it is wider or narrower than the fallback font.
+if (document.fonts) document.fonts.ready.then(() => { document.querySelectorAll('thead th[data-tw]').forEach(th => th.removeAttribute('data-tw')); twoLineHeads(); });
+new MutationObserver(twoLineHeads).observe(document.documentElement, { childList: true, subtree: true });
 const NS = 'http://www.w3.org/2000/svg';
 const sv = (tag, attrs, ...kids) => { const n = document.createElementNS(NS, tag); for (const k in (attrs || {})) n.setAttribute(k, attrs[k]); for (const c of kids.flat()) { if (c) n.append(c.nodeType ? c : document.createTextNode(String(c))); } return n; };
 const MS = d => Date.parse(d + 'T00:00:00Z');
@@ -2528,7 +2539,7 @@ function jumpAt(arr, i) {
   return null;
 }
 const JUMP_WHY = 'A change that big in one update is rare. It can be real hiring or cuts, or a change or mistake in the payroll records the home sends CMS.';
-const cols = [['date', 'Date'], ['name', 'Home'], ['label', 'Type'], ['buyer', 'New owner'], ['overall', 'Overall stars: before \u2192 1 yr \u2192 2 yrs'], ['hours', 'Nurse hours: before \u2192 1 yr (case-mix adjusted below)'], ['ser', 'Serious citations: year before \u2192 year after'], ['fines', 'Fines: year before \u2192 year after']];
+const cols = [['date', 'Date'], ['name', 'Home'], ['label', 'Type'], ['buyer', 'New owner'], ['overall', 'Overall stars: before \u2192 1 yr \u2192 2 yrs'], ['hours', 'Nurse hours: before \u2192 1 yr'], ['ser', 'Serious citations: year before \u2192 after'], ['fines', 'Fines: year before \u2192 year after']];
 $('#sales-tbl thead').append(el('tr', {}, cols.map(c => el('th', { scope: 'col', class: ['overall', 'hours', 'ser', 'fines'].includes(c[0]) ? 'num' : '' }, ['date', 'name', 'label', 'buyer'].includes(c[0]) ? el('button', { text: c[1], onclick: () => { sortDir = sortKey === c[0] ? -sortDir : 1; sortKey = c[0]; drawSales(); }, 'aria-label': 'Sort by ' + c[1] }) : c[1]))));
 function trio(a, b, c, fmt, cell) { const parts = [a, b, c].filter((v, i) => i === 0 || v != null || (i === 1)); return parts; }
 /* How long a buyer kept the home: years from this sale to the next sale to a different group, or to today (with any pending application noted). */
