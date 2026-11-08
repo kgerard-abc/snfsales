@@ -1123,11 +1123,19 @@ def build_public_data(M, S, val, cec, mp, ccn_of, fn, cfg):
             if re.search(r'pending', oc_, re.I): return 'pending', w_
             if w_ and latest_ and w_ > latest_: return 'approved', w_
             return 'done', w_
-        newest_ = {}
+        # The newest change of operator at each home: a completed sale to a different buyer group than the one before it
+        # (a later filing by the same group, such as Eden's 2026 one at Stillwater, does not count).
+        done_ = {}
         for r_ in log.itertuples():
             k_ = cec_ccn.get(r_.facility); st_, w_ = _happened(r_)
             if k_ is None or st_ != 'done' or not w_ or re.search(r'restructur|reorgani', str(nz(getattr(r_, 'type', None)) or ''), re.I): continue
-            if w_ > newest_.get(k_, ''): newest_[k_] = w_
+            done_.setdefault(k_, []).append((w_, str(nz(getattr(r_, 'buyer', None)) or '').strip().lower()))
+        newest_ = {}
+        for k_, lst_ in done_.items():
+            lst_.sort(); prev_ = None
+            for w_, by_ in lst_:
+                if not by_ or by_ != prev_: newest_[k_] = w_
+                prev_ = by_
         cur_ = {}
         for r_ in log.itertuples():
             lv_ = nz(getattr(r_, 'landlord', None)); k_ = cec_ccn.get(r_.facility)
