@@ -1111,20 +1111,48 @@ def build_public_data(M, S, val, cec, mp, ccn_of, fn, cfg):
         for ccn_, b_ in money['by_facility'].items():
             b_['cos'], b_['n_people_hidden'] = _rp_companies(b_.pop('parties', []), b_['years'])
         print(f"Cost reports by home: {len(money['by_facility'])} homes, {sum(1 for b_ in money['by_facility'].values() if b_.get('from_summary'))} of them from the cost summary tabs")
-        rank_ = {'yes': 3, 'likely': 2}
+        # The answer describes whoever runs the home now, so it comes from the newest sale that actually happened.
+        # A pending application describes the buyer's plan, not today's landlord: it is shown separately, labeled as
+        # pending, and never replaces the current answer (before November 2026 the strongest answer across every sale won,
+        # so AdviniaCare's pending "Likely" showed for Mayflower's homes, whose buildings are owned by an unrelated company).
+        # A sale that never closed is skipped. "Unknown" gives way to the cost reports below.
+        cur_ = {}
         for r_ in log.itertuples():
             lv_ = nz(getattr(r_, 'landlord', None)); k_ = cec_ccn.get(r_.facility)
-            if lv_ and k_ in money['by_facility']:
-                ans_ = str(lv_).split(' - ')[0].strip()[:40]; old_ = money['by_facility'][k_].get('landlord')
-                if not old_ or rank_.get(ans_.lower(), 1) > rank_.get(old_.lower(), 1): money['by_facility'][k_]['landlord'] = ans_
+            if not lv_ or k_ not in money['by_facility']: continue
+            ans_ = str(lv_).split(' - ')[0].strip()[:40]; oc_ = str(nz(getattr(r_, 'outcome', None)) or '')
+            if re.search(r'never closed|withdrawn|denied', oc_, re.I): continue
+            if re.search(r'pending', oc_, re.I):
+                money['by_facility'][k_]['landlord_pending'] = dict(answer=ans_, buyer=pubtxt(getattr(r_, 'buyer', None)) or '', detail=pubtxt(str(lv_).split(' - ', 1)[1]) if ' - ' in str(lv_) else None)
+                continue
+            when_ = _d(getattr(r_, 'decision', None)) or str(nz(getattr(r_, 'year', None)) or '')
+            if k_ not in cur_ or when_ > cur_[k_][0]: cur_[k_] = (when_, ans_)
+        # An answer from an older sale says nothing about a later owner: keep it only if no sale that happened came more than a year after it.
+        newest_ = {}
+        for r_ in log.itertuples():
+            k_ = cec_ccn.get(r_.facility); oc_ = str(nz(getattr(r_, 'outcome', None)) or '')
+            if k_ is None or re.search(r'pending|never closed|withdrawn|denied', oc_, re.I) or re.search(r'restructur|reorgani', str(nz(getattr(r_, 'type', None)) or ''), re.I): continue
+            w_ = _d(getattr(r_, 'decision', None))
+            if w_ and w_ > newest_.get(k_, ''): newest_[k_] = w_
+        for k_, (when_, ans_) in list(cur_.items()):
+            if k_ in newest_ and len(when_) == 10 and (pd.Timestamp(newest_[k_]) - pd.Timestamp(when_)).days > 365:
+                print('  Landlord answer for', k_, 'is from a sale before the newest one; left out'); del cur_[k_]
+        for k_, (when_, ans_) in cur_.items():
+            if ans_.lower() != 'unknown': money['by_facility'][k_]['landlord'] = ans_
+            else: money['by_facility'][k_]['landlord_unknown'] = True
     # Homes with no answer in the CEC Log (mostly never sold) get one from their own cost reports: rent to a related
     # landlord on Worksheet A-8-1 means the landlord is the same people. No related rent means the home either owns its
     # building or rents from an unrelated landlord; the cost report alone cannot tell those apart.
+    # Only recent whole years count (the newest 4 report years), so a home whose last rent figures are from a previous
+    # owner's years (Greenville's 2016 to 2020 Genesis reports, say) gets no answer rather than one about the old owner.
+    last_y_ = max((y for b_ in money['by_facility'].values() for y in b_.get('years', [])), default=0)
     for ccn_, b_ in money['by_facility'].items():
         if b_.get('landlord'): continue
-        rents_ = [v for v, pt in zip(b_.get('rent', []), b_.get('partial', [False] * len(b_.get('rent', [])))) if v is not None and not pt]
+        rents_ = [v for y, v, pt in zip(b_.get('years', []), b_.get('rent', []), b_.get('partial', [False] * len(b_.get('rent', [])))) if v is not None and not pt and y >= last_y_ - 3]
         if any((v or 0) > 0 for v in rents_[-3:]): b_['landlord'] = 'Yes'
         elif rents_: b_['landlord'] = 'No related rent'
+        elif b_.get('landlord_unknown'): b_['landlord'] = 'Unknown'
+        b_.pop('landlord_unknown', None)
     MG = cec.get('mgmt', {})
     for cid, m in MG.items():
         if not T(m.get('start')): continue
@@ -1937,6 +1965,29 @@ details.cecdetail{margin-top:6px;font-size:.86rem;max-width:62ch}details.cecdeta
 .card .home{display:block;font-weight:700;margin-bottom:4px}
 .card p{margin:0;font-size:.92rem;line-height:1.4}
 .batbl{width:100%;min-width:620px;table-layout:fixed;border-collapse:collapse;font-size:.92rem}.batbl th:first-child{width:30%}.batbl th,.batbl td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}.batbl thead th{font-size:.8rem;color:var(--muted);font-weight:700;text-align:left}.batbl thead th.num{text-align:right}.batbl tbody th{text-align:left;font-weight:600}.batbl .m{display:block}.batbl .sub{display:block;font-weight:400;font-size:.8rem;color:var(--muted)}.batbl td.num{text-align:right}.batbl td.bad{color:var(--sold);font-weight:700}
+tbody th{position:static;white-space:normal}
+.batbl th,.batbl th.num,.batbl td.num{white-space:normal}
+.phone-only{display:none}
+/* Phones: the before-and-after table and the sales table become one card per row, with each figure labeled, instead of a wide table to scroll sideways. */
+@media (max-width:640px){
+.phone-only{display:block}label.phone-only{display:flex;align-items:center;gap:6px;font-size:.9rem}#sales-more{margin:8px 0}
+.tblwrap.stack{max-height:none;overflow:visible;background:var(--card)}
+.tblwrap.stack table{min-width:0;table-layout:auto;font-size:.88rem}
+.tblwrap.stack thead{display:none}
+.tblwrap.stack table,.tblwrap.stack tbody{display:block}
+.tblwrap.stack caption{display:block;padding:10px 12px 4px;font-size:.8rem}
+.tblwrap.stack tbody tr{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;padding:12px;border-bottom:1px solid var(--line)}
+.tblwrap.stack tbody th,.tblwrap.stack tbody td{display:block;border:0;padding:0;text-align:left;white-space:normal;width:auto;min-width:0}
+.tblwrap.stack td[data-label]::before{content:attr(data-label);display:block;font-size:.74rem;line-height:1.3;color:var(--muted);font-weight:400;margin-bottom:2px}
+.tblwrap.stack td .small{font-size:.78rem}
+.batbl tbody th{grid-column:1/-1;font-size:.95rem}
+.batbl td.num{text-align:left;font-size:.95rem}
+.batbl td.b4{order:1}.batbl td.af{order:2}.batbl td.ch{order:3}.batbl td.ct{order:4}.batbl td.wo{order:5;grid-column:1/-1}
+#sales-tbl tr.srow{border-bottom:0;border-top:1px solid var(--line);padding-bottom:6px}#sales-tbl tbody tr:first-child{border-top:0}
+#sales-tbl td.sh{grid-column:1/-1;order:0}#sales-tbl td.sh .linkbtn{font-size:1rem;font-weight:700}
+#sales-tbl td.sd{order:1}#sales-tbl td.st{order:2}#sales-tbl td.so{order:3;grid-column:1/-1}#sales-tbl td.sm{order:4}
+#sales-tbl tr.cecrow{display:block;padding:0 12px 12px;border-bottom:0}#sales-tbl tr.cecrow td{display:block}#sales-tbl tr.cecrow details.cecdetail{position:static;width:auto;max-width:none}
+}
 .chg{font-weight:700}
 ul.notes{margin:8px 0 0;padding-left:18px}ul.notes li{margin:3px 0}
 .ogctl{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px}.ogctl .ogl{min-width:52px;font-weight:700}.ogctl .tabs{margin:4px 0}
@@ -2043,8 +2094,8 @@ footer a{color:var(--fg)}
 
 
 <h3>Every sale, one row each</h3>
-<div class="row"><input type="search" id="sale-q" placeholder="Search by home, town or owner" aria-label="Search sales"><label class="chk"><input type="checkbox" id="sale-parent" checked> Include chain reorganizations</label><label class="chk"><input type="checkbox" id="sale-cms"> Only homes with CMS data</label><button class="btn" id="dl-sales">Download this table (CSV)</button></div>
-<div class="tblwrap"><table id="sales-tbl"><caption>Dates are the CMS takeover date where CMS lists one, otherwise the state's decision date. Stars are CMS overall ratings (5 is best). Nurse hours are what homes report to CMS, per resident per day. The line under them is CMS's case-mix adjusted figure, which accounts for how much care the residents need. A note under the hours marks a figure that changed by more than 1 hour in one CMS update, which is rare and can mean a payroll reporting problem.</caption><thead></thead><tbody></tbody></table></div><p class="small" id="date-legend"></p>
+<div class="row"><input type="search" id="sale-q" placeholder="Search by home, town or owner" aria-label="Search sales"><label class="chk"><input type="checkbox" id="sale-parent" checked> Include chain reorganizations</label><label class="chk"><input type="checkbox" id="sale-cms"> Only homes with CMS data</label><label class="phone-only" for="sale-sort">Sort by <select id="sale-sort"><option value="date:-1">Newest first</option><option value="date:1">Oldest first</option><option value="name:1">Home, A to Z</option><option value="buyer:1">New owner, A to Z</option></select></label><button class="btn" id="dl-sales">Download this table (CSV)</button></div>
+<div class="tblwrap stack"><table id="sales-tbl"><caption>Dates are the CMS takeover date where CMS lists one, otherwise the state's decision date. Stars are CMS overall ratings (5 is best). Nurse hours are what homes report to CMS, per resident per day. The line under them is CMS's case-mix adjusted figure, which accounts for how much care the residents need. A note under the hours marks a figure that changed by more than 1 hour in one CMS update, which is rare and can mean a payroll reporting problem.</caption><thead></thead><tbody></tbody></table></div><div class="phone-only" id="sales-more"></div><p class="small" id="date-legend"></p>
 <p class="small">Blank cells mean CMS data is not available for that period: the sale was before CMS data starts in April 2019, is too recent for a year to have passed, or the home left the CMS files.</p>
 <div class="callout" id="timing-note"></div>
 
@@ -2077,7 +2128,7 @@ footer a{color:var(--fg)}
 <li><b>Operator that year</b> is who ran the home in the year of that report: the buyer in the newest sale on this page approved by the end of that year, or the chain or owner CMS lists if the home never changed hands. If the home was sold after that report, the sale is noted under the name, so money paid before a sale is not shown under the buyer's name.</li>
 <li><b>Part of a year</b> means the report covers less than 11 months, usually because the home changed hands mid-year; its margin and shares are not comparable with a full year.</li>
 <li><b>Sold</b> is the year of the home's first sale on this page. <b>Before sale → newest</b> compares all related-party payments as a share of revenue in the year before that sale with the newest report.</li>
-<li><b>Landlord = operator?</b> asks whether the people who own the home's operator also own its building. <b>Yes</b>: the cost report itself shows rent to a related landlord. <b>Likely</b>: the state application was filed as a pair of companies, one to run the home and one to buy the building, by the same applicant, but the newest cost report predates the sale, so it does not show the rent yet. <b>No related rent</b>: no related-party rent in the cost report, so the home either owns its building or rents from an unrelated landlord; the report alone cannot tell which. <b>Partly</b>, <b>No</b>, and <b>Unknown</b> come from the state application.</li>
+<li><b>Landlord = operator?</b> asks whether the people who own the home's operator also own its building. <b>Yes</b>: the cost report itself shows rent to a related landlord. <b>Likely</b>: the state application was filed as a pair of companies, one to run the home and one to buy the building, by the same applicant, but the newest cost report predates the sale, so it does not show the rent yet. <b>No related rent</b>: no related-party rent in the cost report, so the home either owns its building or rents from an unrelated landlord; the report alone cannot tell which. <b>Partly</b>, <b>No</b>, and <b>Unknown</b> come from the state application. The answer is about whoever runs the home now. When a sale is pending, the buyer's plan is shown under it as "Pending sale," since the application describes what would happen, not who owns the building today.</li>
 <li><b>Why it matters.</b> Rent and fees paid to companies the business owners also control are costs to the home, so a home can report a loss while its owners are paid through the landlord or management company. A share that rises after a sale means more of the home's revenue is leaving it this way.</li>
 </ul></details>
 <div class="row"><input type="search" id="rp-q" placeholder="Search by home, town, or owner" aria-label="Search related-party table"><label class="chk"><input type="checkbox" id="rp-sold"> Only homes that were sold</label><button class="btn" id="dl-rp">Download this table (CSV)</button></div>
@@ -2355,9 +2406,9 @@ drawMoney();
   $('#ba-count').textContent = 'A row counts only homes with a figure at both ends, so the counts differ: a home sold too recently has no "two years after" yet, CMS leaves staffing blank when payroll data is missing, and the money rows come from annual Medicare cost reports, which run through fiscal year ' + ((D.money && D.money.last_year) || '') + '.';
   const tb = el('tbody');
   rows.forEach(r => tb.append(el('tr', {}, el('th', { scope: 'row' }, el('span', { class: 'm', text: r.label }), el('span', { class: 'sub', text: r.sub })),
-    el('td', { class: 'num', text: r.before }), el('td', { class: 'num', text: r.after }), el('td', { class: 'num' + (r.bad ? ' bad' : ''), text: r.ch }),
-    el('td', { class: 'num', text: r.worse }), el('td', { class: 'num', text: r.ctrl }))));
-  $('#ba-chart').replaceChildren(el('div', { class: 'tblwrap' }, el('table', { class: 'batbl' }, el('thead', {}, el('tr', {}, ['Measure', 'Before the sale', 'Two years after', 'Change', 'Got worse at', 'Homes not sold, same years: change'].map((x, i) => el('th', { scope: 'col', class: i ? 'num' : '', text: x })))), tb)));
+    el('td', { class: 'num b4', 'data-label': 'Before the sale', text: r.before }), el('td', { class: 'num af', 'data-label': 'Two years after', text: r.after }), el('td', { class: 'num ch' + (r.bad ? ' bad' : ''), 'data-label': 'Change', text: r.ch }),
+    el('td', { class: 'num wo', 'data-label': 'Got worse at', text: r.worse + ' homes' }), el('td', { class: 'num ct', 'data-label': 'Homes not sold, same years', text: r.ctrl }))));
+  $('#ba-chart').replaceChildren(el('div', { class: 'tblwrap stack' }, el('table', { class: 'batbl' }, el('thead', {}, el('tr', {}, ['Measure', 'Before the sale', 'Two years after', 'Change', 'Got worse at', 'Homes not sold, same years: change'].map((x, i) => el('th', { scope: 'col', class: i ? 'num' : '', text: x })))), tb)));
   const rnx = SM('rn'), rnn = $('#ba-rn');
   if (rnn && rnx) { const bf = rnx.biggest_fall, fh = bf && D.facilities.find(f => f.id === bf.ccn);
     rnn.replaceChildren(el('b', { text: 'Why RN hours look flat. ' }), `They fell at ${rnx.worse} of the ${rnx.n} homes` + (fh ? ` (${fh.name}: ${bf.before.toFixed(2)} to ${bf.after.toFixed(2)} a day)` : '') + ` and rose at others. CMS's RN figure also includes the director of nursing and RNs with administrative duties, which can hide cuts to RNs working with residents.`); }
@@ -2452,7 +2503,8 @@ function trackRecord(g) {
   });
 })();
 /* sales table */
-let sortKey = 'date', sortDir = -1;
+let sortKey = 'date', sortDir = -1, salesShown = 20;
+const PHONE = window.matchMedia('(max-width:640px)');
 /* A change of more than 1 nurse hour per resident per day in one CMS staffing update is rare: it can be real hiring or cuts,
    or a change or mistake in the payroll records a home sends CMS. CMS updates staffing every 3 months, so a figure is compared
    with the last different figure before it. Implausibly low figures are already blank, so payroll gaps are never compared. */
@@ -2488,19 +2540,23 @@ function drawSales() {
   const sortVal = r => { const v = r[sortKey] == null ? '' : r[sortKey]; return sortKey === 'date' && r.outcome === 'Pending' ? '9999-' + v : v; };   // sales still under review sort as newer than every decided sale, newest filing first
   rows.sort((a, b) => { const A = sortVal(a), B = sortVal(b); return (A < B ? -1 : A > B ? 1 : 0) * sortDir; });
   const tb = $('#sales-tbl tbody'); tb.replaceChildren();
+  // On a phone the table becomes one card per sale, so show 20 at a time with a button for more, instead of a very long page.
+  const total = rows.length, more = $('#sales-more'); more.replaceChildren();
+  if (PHONE.matches && total > salesShown) { rows = rows.slice(0, salesShown);
+    more.append(el('button', { class: 'btn', text: 'Show ' + Math.min(20, total - salesShown) + ' more (' + (total - salesShown) + ' not shown)', onclick: () => { salesShown += 20; drawSales(); } })); }
   rows.forEach(r => { const m = r.m;
     const held = heldText(r);
-    const newOwner = el('td', {}, r.buyer ? el('b', { text: r.buyer }) : null, r.buyer ? el('br') : null, el('span', { class: 'small', text: r.who }), held ? el('div', { class: 'small held', text: held }) : null);
+    const newOwner = el('td', { class: 'so', 'data-label': 'New owner' }, r.buyer ? el('b', { text: r.buyer }) : null, r.buyer ? el('br') : null, el('span', { class: 'small', text: r.who }), held ? el('div', { class: 'small held', text: held }) : null);
     const inCms = (D.facilities.find(f => f.id === r.fid) || {}).has_cms;
     const noData = (r.has_cms || inCms) && r.date && r.date < D.dates[0] ? 'before CMS files start (' + fmtMon(D.dates[0]) + ')' : (r.has_cms ? 'no rating before sale' : 'no CMS data');
-    const stars = el('td', { class: 'num' }, r.has_cms && m.overall.before != null ? [chip(m.overall.before), el('span', { class: 'arrow', text: '\u2192' }), chip(m.overall.y1), el('span', { class: 'arrow', text: '\u2192' }), chip(m.overall.y2),
+    const stars = el('td', { class: 'num sm', 'data-label': 'Overall stars: before, 1 year, 2 years' }, r.has_cms && m.overall.before != null ? [chip(m.overall.before), el('span', { class: 'arrow', text: '\u2192' }), chip(m.overall.y1), el('span', { class: 'arrow', text: '\u2192' }), chip(m.overall.y2),
       r.outcome === 'Pending' && r.before_date ? el('div', { class: 'small', text: 'Now, from the ' + fmtMon(r.before_date) + ' CMS file' }) : null] : el('span', { class: 'small', text: noData }));
-    const hrs = el('td', { class: 'num' }, r.has_cms && m.hours.before != null ? [f2(m.hours.before), el('span', { class: 'arrow', text: '\u2192' }), f2(m.hours.y1),
+    const hrs = el('td', { class: 'num sm', 'data-label': 'Nurse hours per resident per day: before, 1 year' }, r.has_cms && m.hours.before != null ? [f2(m.hours.before), el('span', { class: 'arrow', text: '\u2192' }), f2(m.hours.y1),
       m.adj && m.adj.before != null ? el('div', { class: 'small', text: 'Adjusted: ' + f2(m.adj.before) + ' \u2192 ' + f2(m.adj.y1) }) : null,
       ...(r.hj ? [['before', 'Before'], ['y1', '1 yr']].filter(([k]) => r.hj[k]).map(([k, w]) => el('div', { class: 'small', text: w + ' figure: big change in one CMS update (' + f2(r.hj[k].prev) + ' to ' + f2(r.hj[k].now) + '). May be a payroll reporting problem.' })) : [])] : '\u2013');
-    const ser = el('td', { class: 'num' }, r.ser.before != null ? [String(r.ser.before), el('span', { class: 'arrow', text: '\u2192' }), r.ser.y1 == null ? '\u2013' : String(r.ser.y1)] : '\u2013');
-    const fin = el('td', { class: 'num' }, r.fines.before != null ? [money(r.fines.before), el('span', { class: 'arrow', text: '\u2192' }), r.fines.y1 == null ? '\u2013' : money(r.fines.y1)] : '\u2013');
-    tb.append(el('tr', {}, el('td', { class: 'num', title: r.date_note }, r.outcome === 'Pending' ? 'Pending, application submitted ' + fmtDay(r.date) : [fmtDay(r.date), dateMark(r.date_note)], notClosed(r) ? el('div', { class: 'small', text: 'Approved, not yet closed' }) : null, r.date_note === 'Approximate date' ? el('div', { class: 'small', text: 'Approximate. The state record does not give an exact date.' }) : null, r.mgmt_start ? el('div', { class: 'small', text: 'Buyer managing from ' + fmtMon(r.mgmt_start) }) : null, r.cms_op ? el('div', { class: 'small', text: 'CMS records updated ' + fmtMon(r.cms_op) }) : null), el('td', {}, D.facilities.some(f => f.id === r.fid) ? el('button', { class: 'linkbtn', text: r.name, onclick: () => showFacility(r.fid, true) }) : r.name, r.town ? el('div', { class: 'small', text: r.town }) : null), el('td', {}, r.label, r.outcome === 'Pending' ? el('div', { class: 'small', text: 'Pending' }) : null), newOwner, stars, hrs, ser, fin)); const cd = cecDetail(r.cec, 'Conditions and documents for this sale'); if (cd) tb.append(el('tr', { class: 'cecrow' }, el('td', { colspan: 8 }, cd))); });
+    const ser = el('td', { class: 'num sm', 'data-label': 'Serious citations: year before, year after' }, r.ser.before != null ? [String(r.ser.before), el('span', { class: 'arrow', text: '\u2192' }), r.ser.y1 == null ? '\u2013' : String(r.ser.y1)] : '\u2013');
+    const fin = el('td', { class: 'num sm', 'data-label': 'Fines: year before, year after' }, r.fines.before != null ? [money(r.fines.before), el('span', { class: 'arrow', text: '\u2192' }), r.fines.y1 == null ? '\u2013' : money(r.fines.y1)] : '\u2013');
+    tb.append(el('tr', { class: 'srow' }, el('td', { class: 'num sd', 'data-label': 'Date', title: r.date_note }, r.outcome === 'Pending' ? 'Pending, application submitted ' + fmtDay(r.date) : [fmtDay(r.date), dateMark(r.date_note)], notClosed(r) ? el('div', { class: 'small', text: 'Approved, not yet closed' }) : null, r.date_note === 'Approximate date' ? el('div', { class: 'small', text: 'Approximate. The state record does not give an exact date.' }) : null, r.mgmt_start ? el('div', { class: 'small', text: 'Buyer managing from ' + fmtMon(r.mgmt_start) }) : null, r.cms_op ? el('div', { class: 'small', text: 'CMS records updated ' + fmtMon(r.cms_op) }) : null), el('td', { class: 'sh' }, D.facilities.some(f => f.id === r.fid) ? el('button', { class: 'linkbtn', text: r.name, onclick: () => showFacility(r.fid, true) }) : r.name, r.town ? el('div', { class: 'small', text: r.town }) : null), el('td', { class: 'st', 'data-label': 'Type' }, r.label, r.outcome === 'Pending' ? el('div', { class: 'small', text: 'Pending' }) : null), newOwner, stars, hrs, ser, fin)); const cd = cecDetail(r.cec, 'Conditions and documents for this sale'); if (cd) tb.append(el('tr', { class: 'cecrow' }, el('td', { colspan: 8 }, cd))); });
   if (!rows.length) tb.append(el('tr', {}, el('td', { colspan: 8, text: 'No sales match.' })));
 }
 $('#date-legend').textContent = dateLegend();
@@ -2528,7 +2584,10 @@ $('#date-legend').textContent = dateLegend();
   }
   if (paras.length) box.replaceChildren(el('p', { class: 'small', style: 'margin-top:0', text: 'What the dates in this table show:' }), ...paras); else box.classList.add('hidden');
 })();
-['#sale-q', '#sale-parent', '#sale-cms'].forEach(s => $(s).addEventListener('input', drawSales)); drawSales();
+['#sale-q', '#sale-parent', '#sale-cms'].forEach(s => $(s).addEventListener('input', () => { salesShown = 20; drawSales(); }));
+$('#sale-sort').addEventListener('change', e => { const [k, d] = e.target.value.split(':'); sortKey = k; sortDir = +d; salesShown = 20; drawSales(); });
+if (PHONE.addEventListener) PHONE.addEventListener('change', drawSales);
+drawSales();
 
 /* ---------- related-party money: panel on each home, and the statewide table ---------- */
 const pc1 = v => v == null ? '–' : (v * 100).toFixed(1) + '%';
@@ -2540,6 +2599,11 @@ const LANDLORD_TXT = {
   no: 'No. The real estate was bought by, or stays with, people other than the operator\u2019s owners.',
   'no related rent': 'No related-party rent reported. The home either owns its own building or rents from an unrelated landlord; the cost report alone cannot tell those apart.',
   unknown: 'Unknown. The application does not say who bought the building and the cost report shows no related-party rent.' };
+const LANDLORD_PENDING_TXT = {
+  likely: 'Likely. The application was filed as a pair, one company to run the home and one to buy the building, by the same applicant.',
+  partly: 'Partly. The application shows the same people in both the operating and the real estate company, but not the same ownership shares.',
+  no: 'No. The application shows the building going to, or staying with, people other than the new operator\u2019s owners.',
+  unknown: 'Unknown. The application does not say who would own the building.' };
 const LANDLORD_SHORT = { yes: 'Yes', likely: 'Likely', partly: 'Partly', no: 'No', 'no related rent': 'No related rent', unknown: 'Unknown' };
 const RPB = (D.money && D.money.by_facility) || {};
 function rpLatest(b) { let i = -1; b.years.forEach((y, k) => { if (b.rev[k] != null) i = k; }); return i; }
@@ -2556,6 +2620,7 @@ function rpPanel(f) {
     el('div', { class: 'tblwrap' }, el('table', {}, el('thead', {}, el('tr', {}, ['Year', 'Revenue', 'All related-party', 'Rent', 'Management fees', 'Other (therapy, supplies, services)', 'Margin'].map((t, i) => el('th', { scope: 'col', class: i ? 'num' : '', text: t })))), body)));
   if (b.from_summary) wrap.append(el('p', { class: 'small', text: 'Reports for this home start in FY2021. The dollar categories come from different lines of the cost report, so rent and management fees may not add up to the all related-party total.' }));
   if (b.landlord) wrap.append(el('p', {}, el('b', { text: 'Is the landlord the same people as the operator? ' }), LANDLORD_TXT[b.landlord.toLowerCase()] || b.landlord));
+  if (b.landlord_pending) { const lp = b.landlord_pending; wrap.append(el('p', {}, el('b', { text: 'If the pending sale' + (lp.buyer ? ' to ' + lp.buyer : '') + ' goes through: ' }), LANDLORD_PENDING_TXT[lp.answer.toLowerCase()] || (lp.answer + (lp.detail ? '. ' + lp.detail + '.' : '')), ' This describes the buyer\u2019s application, not who owns the building today.')); }
   if (b.cos && b.cos.length) wrap.append(el('details', {}, el('summary', { text: 'Related companies named in the cost reports (' + b.cos.length + ')' }), el('ul', { class: 'docs' }, b.cos.map(c => el('li', { text: c.name + (c.role ? ' (' + c.role.toLowerCase() + ')' : '') + ', named ' + (c.y1 === c.y2 ? c.y1 : c.y1 + ' to ' + c.y2) })))));
   if (b.n_people_hidden) wrap.append(el('p', { class: 'small', text: 'Individual people named in the filings are not shown here.' }));
   return wrap;
@@ -2574,7 +2639,7 @@ function rpPanel(f) {
     return { then, later: nxt && nxt.buyer !== then ? { buyer: nxt.buyer, year: nxt.date.slice(0, 4) } : null }; };
   const R = ids.map(id => { const b = RPB[id], f = D.facilities.find(x => x.id === id), i = rpLatest(b); if (i < 0 || isClosed(f)) return null;
     const fs = FS[id], k0 = fs ? b.years.indexOf(fs.year - 1) : -1, before = k0 >= 0 ? b.rp_sh[k0] : null, after = fs && b.years[i] > fs.year ? b.rp_sh[i] : null, op = operatorIn(f, b.years[i]);
-    return { id, name: f ? f.name : id, town: f ? f.town : '', owner: op.then, later: op.later, current: ownerOf(f), year: b.years[i], rev: b.rev[i], rp: b.rp[i], rpsh: b.rp_sh[i], rent: b.rent[i], rentsh: b.rent_sh[i], mgmt: b.mgmt[i], mgmtsh: b.mgmt_sh[i], margin: b.margin[i], partial: !!(b.partial && b.partial[i]), landlord: b.landlord || '', sold: fs ? fs.year : null, before, after }; }).filter(Boolean);
+    return { id, name: f ? f.name : id, town: f ? f.town : '', owner: op.then, later: op.later, current: ownerOf(f), year: b.years[i], rev: b.rev[i], rp: b.rp[i], rpsh: b.rp_sh[i], rent: b.rent[i], rentsh: b.rent_sh[i], mgmt: b.mgmt[i], mgmtsh: b.mgmt_sh[i], margin: b.margin[i], partial: !!(b.partial && b.partial[i]), landlord: b.landlord || '', landlord_pending: b.landlord_pending || null, sold: fs ? fs.year : null, before, after }; }).filter(Boolean);
   const NONE_TXT = 'No cost report data available currently';
   D.facilities.forEach(f => { if ((!RPB[f.id] || !RPB[f.id].years.length) && !isClosed(f)) R.push({ id: f.id, name: f.name, town: f.town || '', owner: ownerOf(f), current: ownerOf(f), none: true, sold: (FS[f.id] || {}).year || null }); });
   const RC = [['name', 'Home'], ['owner', 'Operator that year'], ['year', 'Year'], ['rev', 'Revenue'], ['rpsh', 'All related-party'], ['rentsh', 'Rent'], ['mgmtsh', 'Mgmt fees'], ['margin', 'Margin'], ['sold', 'Sold'], ['ba', 'Before sale \u2192 newest'], ['landlord', 'Landlord = operator?']];
@@ -2586,15 +2651,15 @@ function rpPanel(f) {
     rows.sort((a, b) => { const A = a[rk] == null ? (rd < 0 ? -Infinity : Infinity) : a[rk], B = b[rk] == null ? (rd < 0 ? -Infinity : Infinity) : b[rk]; return (A < B ? -1 : A > B ? 1 : 0) * rd; });
     const tb = $('#rp-tbl tbody'); tb.replaceChildren();
     rows.forEach(r => tb.append(el('tr', {}, el('td', { style: 'min-width:13rem' }, D.facilities.some(f => f.id === r.id) ? el('button', { class: 'linkbtn', text: r.name, onclick: () => showFacility(r.id, true) }) : r.name, r.town ? el('div', { class: 'small', text: r.town }) : null), el('td', { class: 'small', style: 'min-width:9rem' }, r.owner || '', r.later ? el('div', { class: 'small', text: 'Sold to ' + r.later.buyer + ' in ' + r.later.year }) : null), el('td', { class: 'num' }, String(r.year), r.partial ? el('div', { class: 'small', text: 'Part of a year' }) : null), el('td', { class: 'num', text: money(r.rev) }), usdCell(r.rp, r.rpsh), usdCell(r.rent, r.rentsh), usdCell(r.mgmt, r.mgmtsh), el('td', { class: 'num', text: pc1(r.margin) }),
-      el('td', { class: 'num', text: r.sold ? String(r.sold) : '' }), el('td', { text: r.before != null && r.after != null ? pc1(r.before) + ' → ' + pc1(r.after) : '–' }), el('td', { class: 'small', text: r.landlord ? (LANDLORD_SHORT[r.landlord.toLowerCase()] || r.landlord) : '' }))));
+      el('td', { class: 'num', text: r.sold ? String(r.sold) : '' }), el('td', { text: r.before != null && r.after != null ? pc1(r.before) + ' → ' + pc1(r.after) : '–' }), el('td', { class: 'small' }, r.landlord ? (LANDLORD_SHORT[r.landlord.toLowerCase()] || r.landlord) : '', r.landlord_pending ? el('div', { class: 'small', text: 'Pending sale: ' + (LANDLORD_SHORT[r.landlord_pending.answer.toLowerCase()] || r.landlord_pending.answer) }) : null))));
     nones.forEach(r => tb.append(el('tr', {}, el('td', { style: 'min-width:13rem' }, D.facilities.some(f => f.id === r.id) ? el('button', { class: 'linkbtn', text: r.name, onclick: () => showFacility(r.id, true) }) : r.name, r.town ? el('div', { class: 'small', text: r.town }) : null), el('td', { class: 'small', style: 'min-width:9rem', text: r.owner || '' }), el('td', { class: 'small', colspan: RC.length - 2, text: NONE_TXT }))));
     if (!all.length) tb.append(el('tr', {}, el('td', { colspan: RC.length, text: 'No homes match.' })));
   }
   ['#rp-q', '#rp-sold'].forEach(s => $(s).addEventListener('input', draw)); draw();
   const nHave = R.filter(r => !r.none).length, nNone = R.length - nHave, nOld = R.filter(r => !r.none && RPB[r.id] && !RPB[r.id].from_summary).length;
   $('#rp-note').textContent = 'Cost reports are loaded for ' + nHave + ' of the ' + R.length + ' homes on this page. ' + nOld + ' of them have reports from as early as FY2015 (the homes in the state\u2019s change-of-control records); the other ' + (nHave - nOld) + ' start in FY2021. Homes that have closed are left out. The remaining ' + nNone + ' are listed at the bottom as "No cost report data available currently": the workbook has no cost report for them yet, or they have no federal provider number. ' + 'Source: Medicare cost reports (CMS-2540-10, worksheet A-8-1 for related-party costs). A report marked "part of a year" covers less than 11 months, usually because the home changed hands during the year; its margin and shares are not comparable with a full year. "Sold" is the year of the first state-approved sale of that home on this page. The before and after columns appear only when the home has a report for the year before that sale and a later one. Individual people named in the filings are not shown. A related-party payment is not by itself improper: it shows where money went, and how much of it stayed inside the owners’ group.';
-  $('#dl-rp').addEventListener('click', () => download('ri_nursing_home_related_party_costs.csv', [['ccn', 'home', 'town', 'operator_in_report_year', 'current_owner', 'cost_report_year', 'report_covers', 'net_patient_revenue', 'related_party_costs', 'related_party_pct_of_revenue', 'rent_to_related_landlord', 'rent_pct', 'management_fees_to_related', 'management_pct', 'operating_margin_pct', 'first_sale_year', 'related_party_pct_year_before_sale', 'related_party_pct_newest_year', 'landlord_same_as_operator', 'cost_report_status'],
-    ...R.map(r => r.none ? [r.id.startsWith('cec:') ? '' : r.id, r.name, r.town, r.owner || '', r.current || '', '', '', '', '', '', '', '', '', '', '', r.sold || '', '', '', '', NONE_TXT] : [r.id, r.name, r.town, r.owner || '', r.current || '', r.year, r.partial ? 'part of a year' : 'full year', r.rev, r.rp, r.rpsh == null ? '' : (r.rpsh * 100).toFixed(2), r.rent, r.rentsh == null ? '' : (r.rentsh * 100).toFixed(2), r.mgmt, r.mgmtsh == null ? '' : (r.mgmtsh * 100).toFixed(2), r.margin == null ? '' : (r.margin * 100).toFixed(2), r.sold || '', r.before == null ? '' : (r.before * 100).toFixed(2), r.after == null ? '' : (r.after * 100).toFixed(2), r.landlord, 'Cost report on file'])]));
+  $('#dl-rp').addEventListener('click', () => download('ri_nursing_home_related_party_costs.csv', [['ccn', 'home', 'town', 'operator_in_report_year', 'current_owner', 'cost_report_year', 'report_covers', 'net_patient_revenue', 'related_party_costs', 'related_party_pct_of_revenue', 'rent_to_related_landlord', 'rent_pct', 'management_fees_to_related', 'management_pct', 'operating_margin_pct', 'first_sale_year', 'related_party_pct_year_before_sale', 'related_party_pct_newest_year', 'landlord_same_as_operator', 'landlord_if_pending_sale_closes', 'cost_report_status'],
+    ...R.map(r => r.none ? [r.id.startsWith('cec:') ? '' : r.id, r.name, r.town, r.owner || '', r.current || '', '', '', '', '', '', '', '', '', '', '', r.sold || '', '', '', '', '', NONE_TXT] : [r.id, r.name, r.town, r.owner || '', r.current || '', r.year, r.partial ? 'part of a year' : 'full year', r.rev, r.rp, r.rpsh == null ? '' : (r.rpsh * 100).toFixed(2), r.rent, r.rentsh == null ? '' : (r.rentsh * 100).toFixed(2), r.mgmt, r.mgmtsh == null ? '' : (r.mgmtsh * 100).toFixed(2), r.margin == null ? '' : (r.margin * 100).toFixed(2), r.sold || '', r.before == null ? '' : (r.before * 100).toFixed(2), r.after == null ? '' : (r.after * 100).toFixed(2), r.landlord, r.landlord_pending ? r.landlord_pending.answer : '', 'Cost report on file'])]));
 })();
 
 /* ---------- facility lookup ---------- */
