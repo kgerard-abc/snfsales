@@ -1112,43 +1112,48 @@ def build_public_data(M, S, val, cec, mp, ccn_of, fn, cfg):
             b_['cos'], b_['n_people_hidden'] = _rp_companies(b_.pop('parties', []), b_['years'])
         print(f"Cost reports by home: {len(money['by_facility'])} homes, {sum(1 for b_ in money['by_facility'].values() if b_.get('from_summary'))} of them from the cost summary tabs")
         # The answer describes whoever runs the home now, so it comes from the newest sale that actually happened.
-        # A pending application describes the buyer's plan, not today's landlord: it is shown separately, labeled as
-        # pending, and never replaces the current answer (before November 2026 the strongest answer across every sale won,
-        # so AdviniaCare's pending "Likely" showed for Mayflower's homes, whose buildings are owned by an unrelated company).
-        # A sale that never closed is skipped. "Unknown" gives way to the cost reports below.
+        # A pending application, or a sale approved after the newest CMS file (not yet closed), describes the buyer's plan,
+        # not today's landlord: it is shown separately and never replaces the current answer. (Before November 2026 the
+        # strongest answer across every sale won, so AdviniaCare's pending "Likely" showed for Mayflower's three homes.)
+        # Sales that never closed are skipped, and an answer from an older sale is dropped once a later sale has happened.
+        latest_ = _d(M['latest'])
+        def _happened(r_):
+            oc_ = str(nz(getattr(r_, 'outcome', None)) or ''); w_ = _d(getattr(r_, 'decision', None))
+            if re.search(r'never closed|withdrawn|denied', oc_, re.I): return 'skip', w_
+            if re.search(r'pending', oc_, re.I): return 'pending', w_
+            if w_ and latest_ and w_ > latest_: return 'approved', w_
+            return 'done', w_
+        newest_ = {}
+        for r_ in log.itertuples():
+            k_ = cec_ccn.get(r_.facility); st_, w_ = _happened(r_)
+            if k_ is None or st_ != 'done' or not w_ or re.search(r'restructur|reorgani', str(nz(getattr(r_, 'type', None)) or ''), re.I): continue
+            if w_ > newest_.get(k_, ''): newest_[k_] = w_
         cur_ = {}
         for r_ in log.itertuples():
             lv_ = nz(getattr(r_, 'landlord', None)); k_ = cec_ccn.get(r_.facility)
             if not lv_ or k_ not in money['by_facility']: continue
-            ans_ = str(lv_).split(' - ')[0].strip()[:40]; oc_ = str(nz(getattr(r_, 'outcome', None)) or '')
-            if re.search(r'never closed|withdrawn|denied', oc_, re.I): continue
-            if re.search(r'pending', oc_, re.I):
-                money['by_facility'][k_]['landlord_pending'] = dict(answer=ans_, buyer=pubtxt(getattr(r_, 'buyer', None)) or '', detail=pubtxt(str(lv_).split(' - ', 1)[1]) if ' - ' in str(lv_) else None)
+            ans_ = str(lv_).split(' - ')[0].strip()[:40]; st_, w_ = _happened(r_)
+            if st_ == 'skip': continue
+            if st_ in ('pending', 'approved'):
+                money['by_facility'][k_]['landlord_pending'] = dict(answer=ans_, status=st_, buyer=pubtxt(getattr(r_, 'buyer', None)) or '')
                 continue
-            when_ = _d(getattr(r_, 'decision', None)) or str(nz(getattr(r_, 'year', None)) or '')
+            when_ = w_ or ''
+            if k_ in newest_ and when_ and (pd.Timestamp(newest_[k_]) - pd.Timestamp(when_)).days > 365:
+                print('  Landlord answer for', k_, r_.cec, 'is from a sale before the newest one; left out'); continue
             if k_ not in cur_ or when_ > cur_[k_][0]: cur_[k_] = (when_, ans_)
-        # An answer from an older sale says nothing about a later owner: keep it only if no sale that happened came more than a year after it.
-        newest_ = {}
-        for r_ in log.itertuples():
-            k_ = cec_ccn.get(r_.facility); oc_ = str(nz(getattr(r_, 'outcome', None)) or '')
-            if k_ is None or re.search(r'pending|never closed|withdrawn|denied', oc_, re.I) or re.search(r'restructur|reorgani', str(nz(getattr(r_, 'type', None)) or ''), re.I): continue
-            w_ = _d(getattr(r_, 'decision', None))
-            if w_ and w_ > newest_.get(k_, ''): newest_[k_] = w_
-        for k_, (when_, ans_) in list(cur_.items()):
-            if k_ in newest_ and len(when_) == 10 and (pd.Timestamp(newest_[k_]) - pd.Timestamp(when_)).days > 365:
-                print('  Landlord answer for', k_, 'is from a sale before the newest one; left out'); del cur_[k_]
         for k_, (when_, ans_) in cur_.items():
             if ans_.lower() != 'unknown': money['by_facility'][k_]['landlord'] = ans_
             else: money['by_facility'][k_]['landlord_unknown'] = True
+    else: newest_ = {}
     # Homes with no answer in the CEC Log (mostly never sold) get one from their own cost reports: rent to a related
     # landlord on Worksheet A-8-1 means the landlord is the same people. No related rent means the home either owns its
-    # building or rents from an unrelated landlord; the cost report alone cannot tell those apart.
-    # Only recent whole years count (the newest 4 report years), so a home whose last rent figures are from a previous
-    # owner's years (Greenville's 2016 to 2020 Genesis reports, say) gets no answer rather than one about the old owner.
-    last_y_ = max((y for b_ in money['by_facility'].values() for y in b_.get('years', [])), default=0)
-    for ccn_, b_ in money['by_facility'].items():
+    # building or rents from an unrelated landlord; the cost report alone cannot tell those apart. Only report years after
+    # the home's newest sale count, so a figure from a previous owner (Greenville's 2016 to 2020 Genesis reports) is not
+    # used to answer for the operator that bought it later.
+    for ccn_, b_ in (money['by_facility'].items() if money else []):
         if b_.get('landlord'): continue
-        rents_ = [v for y, v, pt in zip(b_.get('years', []), b_.get('rent', []), b_.get('partial', [False] * len(b_.get('rent', [])))) if v is not None and not pt and y >= last_y_ - 3]
+        after_ = int(newest_[ccn_][:4]) if ccn_ in newest_ else 0
+        rents_ = [v for y, v, pt in zip(b_.get('years', []), b_.get('rent', []), b_.get('partial', [False] * len(b_.get('rent', [])))) if v is not None and not pt and y > after_]
         if any((v or 0) > 0 for v in rents_[-3:]): b_['landlord'] = 'Yes'
         elif rents_: b_['landlord'] = 'No related rent'
         elif b_.get('landlord_unknown'): b_['landlord'] = 'Unknown'
@@ -2128,7 +2133,7 @@ footer a{color:var(--fg)}
 <li><b>Operator that year</b> is who ran the home in the year of that report: the buyer in the newest sale on this page approved by the end of that year, or the chain or owner CMS lists if the home never changed hands. If the home was sold after that report, the sale is noted under the name, so money paid before a sale is not shown under the buyer's name.</li>
 <li><b>Part of a year</b> means the report covers less than 11 months, usually because the home changed hands mid-year; its margin and shares are not comparable with a full year.</li>
 <li><b>Sold</b> is the year of the home's first sale on this page. <b>Before sale → newest</b> compares all related-party payments as a share of revenue in the year before that sale with the newest report.</li>
-<li><b>Landlord = operator?</b> asks whether the people who own the home's operator also own its building. <b>Yes</b>: the cost report itself shows rent to a related landlord. <b>Likely</b>: the state application was filed as a pair of companies, one to run the home and one to buy the building, by the same applicant, but the newest cost report predates the sale, so it does not show the rent yet. <b>No related rent</b>: no related-party rent in the cost report, so the home either owns its building or rents from an unrelated landlord; the report alone cannot tell which. <b>Partly</b>, <b>No</b>, and <b>Unknown</b> come from the state application. The answer is about whoever runs the home now. When a sale is pending, the buyer's plan is shown under it as "Pending sale," since the application describes what would happen, not who owns the building today.</li>
+<li><b>Landlord = operator?</b> asks whether the people who own the home's operator also own its building. <b>Yes</b>: the cost report itself shows rent to a related landlord. <b>Likely</b>: the state application was filed as a pair of companies, one to run the home and one to buy the building, by the same applicant, but the newest cost report predates the sale, so it does not show the rent yet. <b>No related rent</b>: no related-party rent in the cost report, so the home either owns its building or rents from an unrelated landlord; the report alone cannot tell which. <b>Partly</b>, <b>No</b>, and <b>Unknown</b> come from the state application. The answer is about whoever runs the home now. When a sale is pending, or approved but not yet closed, the buyer's plan is shown under it as "Pending sale" or "Approved sale," since the application describes what would happen, not who owns the building today.</li>
 <li><b>Why it matters.</b> Rent and fees paid to companies the business owners also control are costs to the home, so a home can report a loss while its owners are paid through the landlord or management company. A share that rises after a sale means more of the home's revenue is leaving it this way.</li>
 </ul></details>
 <div class="row"><input type="search" id="rp-q" placeholder="Search by home, town, or owner" aria-label="Search related-party table"><label class="chk"><input type="checkbox" id="rp-sold"> Only homes that were sold</label><button class="btn" id="dl-rp">Download this table (CSV)</button></div>
@@ -2620,7 +2625,7 @@ function rpPanel(f) {
     el('div', { class: 'tblwrap' }, el('table', {}, el('thead', {}, el('tr', {}, ['Year', 'Revenue', 'All related-party', 'Rent', 'Management fees', 'Other (therapy, supplies, services)', 'Margin'].map((t, i) => el('th', { scope: 'col', class: i ? 'num' : '', text: t })))), body)));
   if (b.from_summary) wrap.append(el('p', { class: 'small', text: 'Reports for this home start in FY2021. The dollar categories come from different lines of the cost report, so rent and management fees may not add up to the all related-party total.' }));
   if (b.landlord) wrap.append(el('p', {}, el('b', { text: 'Is the landlord the same people as the operator? ' }), LANDLORD_TXT[b.landlord.toLowerCase()] || b.landlord));
-  if (b.landlord_pending) { const lp = b.landlord_pending; wrap.append(el('p', {}, el('b', { text: 'If the pending sale' + (lp.buyer ? ' to ' + lp.buyer : '') + ' goes through: ' }), LANDLORD_PENDING_TXT[lp.answer.toLowerCase()] || (lp.answer + (lp.detail ? '. ' + lp.detail + '.' : '')), ' This describes the buyer\u2019s application, not who owns the building today.')); }
+  if (b.landlord_pending) { const lp = b.landlord_pending; wrap.append(el('p', {}, el('b', { text: (lp.status === 'approved' ? 'When the approved sale' + (lp.buyer ? ' to ' + lp.buyer : '') + ' closes: ' : 'If the pending sale' + (lp.buyer ? ' to ' + lp.buyer : '') + ' goes through: ') }), LANDLORD_PENDING_TXT[lp.answer.toLowerCase()] || lp.answer, ' This describes the buyer\u2019s application, not who owns the building today.')); }
   if (b.cos && b.cos.length) wrap.append(el('details', {}, el('summary', { text: 'Related companies named in the cost reports (' + b.cos.length + ')' }), el('ul', { class: 'docs' }, b.cos.map(c => el('li', { text: c.name + (c.role ? ' (' + c.role.toLowerCase() + ')' : '') + ', named ' + (c.y1 === c.y2 ? c.y1 : c.y1 + ' to ' + c.y2) })))));
   if (b.n_people_hidden) wrap.append(el('p', { class: 'small', text: 'Individual people named in the filings are not shown here.' }));
   return wrap;
@@ -2651,7 +2656,7 @@ function rpPanel(f) {
     rows.sort((a, b) => { const A = a[rk] == null ? (rd < 0 ? -Infinity : Infinity) : a[rk], B = b[rk] == null ? (rd < 0 ? -Infinity : Infinity) : b[rk]; return (A < B ? -1 : A > B ? 1 : 0) * rd; });
     const tb = $('#rp-tbl tbody'); tb.replaceChildren();
     rows.forEach(r => tb.append(el('tr', {}, el('td', { style: 'min-width:13rem' }, D.facilities.some(f => f.id === r.id) ? el('button', { class: 'linkbtn', text: r.name, onclick: () => showFacility(r.id, true) }) : r.name, r.town ? el('div', { class: 'small', text: r.town }) : null), el('td', { class: 'small', style: 'min-width:9rem' }, r.owner || '', r.later ? el('div', { class: 'small', text: 'Sold to ' + r.later.buyer + ' in ' + r.later.year }) : null), el('td', { class: 'num' }, String(r.year), r.partial ? el('div', { class: 'small', text: 'Part of a year' }) : null), el('td', { class: 'num', text: money(r.rev) }), usdCell(r.rp, r.rpsh), usdCell(r.rent, r.rentsh), usdCell(r.mgmt, r.mgmtsh), el('td', { class: 'num', text: pc1(r.margin) }),
-      el('td', { class: 'num', text: r.sold ? String(r.sold) : '' }), el('td', { text: r.before != null && r.after != null ? pc1(r.before) + ' → ' + pc1(r.after) : '–' }), el('td', { class: 'small' }, r.landlord ? (LANDLORD_SHORT[r.landlord.toLowerCase()] || r.landlord) : '', r.landlord_pending ? el('div', { class: 'small', text: 'Pending sale: ' + (LANDLORD_SHORT[r.landlord_pending.answer.toLowerCase()] || r.landlord_pending.answer) }) : null))));
+      el('td', { class: 'num', text: r.sold ? String(r.sold) : '' }), el('td', { text: r.before != null && r.after != null ? pc1(r.before) + ' → ' + pc1(r.after) : '–' }), el('td', { class: 'small' }, r.landlord ? (LANDLORD_SHORT[r.landlord.toLowerCase()] || r.landlord) : '', r.landlord_pending ? el('div', { class: 'small', text: (r.landlord_pending.status === 'approved' ? 'Approved sale: ' : 'Pending sale: ') + (LANDLORD_SHORT[r.landlord_pending.answer.toLowerCase()] || r.landlord_pending.answer) }) : null))));
     nones.forEach(r => tb.append(el('tr', {}, el('td', { style: 'min-width:13rem' }, D.facilities.some(f => f.id === r.id) ? el('button', { class: 'linkbtn', text: r.name, onclick: () => showFacility(r.id, true) }) : r.name, r.town ? el('div', { class: 'small', text: r.town }) : null), el('td', { class: 'small', style: 'min-width:9rem', text: r.owner || '' }), el('td', { class: 'small', colspan: RC.length - 2, text: NONE_TXT }))));
     if (!all.length) tb.append(el('tr', {}, el('td', { colspan: RC.length, text: 'No homes match.' })));
   }
