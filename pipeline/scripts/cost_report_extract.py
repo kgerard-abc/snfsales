@@ -1,6 +1,9 @@
 """Copy one home's rows out of the CMS cost report files, unchanged, one set of files per report.
 
-Usage: python3 pipeline/scripts/cost_report_extract.py 415035
+Usage: python3 pipeline/scripts/cost_report_extract.py 415035 [SNF10 SNF24]
+
+The optional list of form prefixes says which CMS files to read (default SNF10, form CMS-2540-10; SNF24 is the newer
+form CMS-2540-24, used for cost reports beginning in 2025).
 
 CMS's HCRIS files (SNF10FY<year>.ZIP) hold three CSV files for every nursing home in the country: _rpt (one row per
 report), _nmrc (every number on every worksheet), and _alpha (every piece of text). The _nmrc file alone is about
@@ -15,6 +18,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 HC = ROOT / "hcris"
 ccn = sys.argv[1]
+FORMS = sys.argv[2:] or ["SNF10"]
 OUT = ROOT / "cost_report_views" / f"{ccn}_cms_rows"
 OUT.mkdir(parents=True, exist_ok=True)
 HEAD = {
@@ -24,7 +28,7 @@ HEAD = {
     "nmrc": ["RPT_REC_NUM", "WKSHT_CD", "LINE_NUM", "CLMN_NUM", "ITM_VAL_NUM"],
     "alpha": ["RPT_REC_NUM", "WKSHT_CD", "LINE_NUM", "CLMN_NUM", "ALPHNMRC_ITM_TXT"],
 }
-for rpt in sorted(HC.glob("SNF10FY*_rpt.csv")):
+for rpt in sorted(p for f in FORMS for p in HC.glob(f"{f}FY*_rpt.csv")):
     name = rpt.name.replace("_rpt.csv", "")
     for r in csv.reader(open(rpt, encoding="latin-1")):
         if r[2].strip() != ccn: continue
