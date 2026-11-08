@@ -1862,28 +1862,28 @@ PAGE_TEMPLATE = r'''<!DOCTYPE html>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap">
 <style>
-:root{--bg:#F6F3EA;--fg:#1E2A32;--muted:#4E5860;--card:#EAE5D7;--line:#8F8570;--accent:#1E2A32;--gold:#93701F;--accent-soft:#E2DCCA;--sold:#92471F;--ctrl:#4E5860;--teal:#2F6B7A;--warn:#E9E1CC;--warn-line:#93701F;
+:root{--menu:#93701F;--bg:#F6F3EA;--fg:#1E2A32;--muted:#4E5860;--card:#EAE5D7;--line:#8F8570;--accent:#1E2A32;--gold:#93701F;--accent-soft:#E2DCCA;--sold:#92471F;--ctrl:#4E5860;--teal:#2F6B7A;--warn:#E9E1CC;--warn-line:#93701F;
 --s0:#8C8575;--s1:#6E1A20;--s2:#C4612F;--s3:#D4A82E;--s4:#5F9E6E;--s5:#1F5137;--chip-fg:#fff;--link:#1E2A32;--chart-bg:#ffffff;--grid:#D9D2C2;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#191E1A;--fg:#E8E4D8;--muted:#A2A99C;--card:#20251F;--line:#6E6F5A;--accent:#E8E4D8;--gold:#C9A44C;--accent-soft:#2E342D;--sold:#C98757;--ctrl:#A2A99C;--teal:#7FB6C4;--warn:#302219;--warn-line:#C9A44C;--link:#E8E4D8;--s0:#6E6F5A;--s1:#D98891;--s2:#C98757;--s3:#C9A44C;--s4:#82AC94;--s5:#5FA37C;--chip-fg:#17201A;--chart-bg:#171C16;--grid:#333A31}}
-:root[data-theme="dark"]{--bg:#191E1A;--fg:#E8E4D8;--muted:#A2A99C;--card:#20251F;--line:#6E6F5A;--accent:#E8E4D8;--gold:#C9A44C;--accent-soft:#2E342D;--sold:#C98757;--ctrl:#A2A99C;--teal:#7FB6C4;--warn:#302219;--warn-line:#C9A44C;--link:#E8E4D8;--s0:#6E6F5A;--s1:#D98891;--s2:#C98757;--s3:#C9A44C;--s4:#82AC94;--s5:#5FA37C;--chip-fg:#17201A;--chart-bg:#171C16;--grid:#333A31}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--menu:#C9A44C;--bg:#191E1A;--fg:#E8E4D8;--muted:#A2A99C;--card:#20251F;--line:#6E6F5A;--accent:#E8E4D8;--gold:#C9A44C;--accent-soft:#2E342D;--sold:#C98757;--ctrl:#A2A99C;--teal:#7FB6C4;--warn:#302219;--warn-line:#C9A44C;--link:#E8E4D8;--s0:#6E6F5A;--s1:#D98891;--s2:#C98757;--s3:#C9A44C;--s4:#82AC94;--s5:#5FA37C;--chip-fg:#17201A;--chart-bg:#171C16;--grid:#333A31}}
+:root[data-theme="dark"]{--menu:#C9A44C;--bg:#191E1A;--fg:#E8E4D8;--muted:#A2A99C;--card:#20251F;--line:#6E6F5A;--accent:#E8E4D8;--gold:#C9A44C;--accent-soft:#2E342D;--sold:#C98757;--ctrl:#A2A99C;--teal:#7FB6C4;--warn:#302219;--warn-line:#C9A44C;--link:#E8E4D8;--s0:#6E6F5A;--s1:#D98891;--s2:#C98757;--s3:#C9A44C;--s4:#82AC94;--s5:#5FA37C;--chip-fg:#17201A;--chart-bg:#171C16;--grid:#333A31}
 html{scroll-scroll-behavior:smooth;scroll-padding-top:env(safe-area-inset-top,0px)}
 *,*::before,*::after{box-sizing:inherit}
 body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 "Public Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
 a{color:var(--link)}
-.wrap{max-width:1080px;margin:0 auto;padding:0 18px}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px}@media (max-width:560px){.wrap{padding:0 18px}}
 header.masthead{background:var(--bg);color:var(--fg);padding:34px 0 0}
 .site-logo-link{display:inline-block;text-decoration:none}
-.site-logo{height:72px;width:auto;display:block;margin:0 0 20px}
-@media (max-width:560px){.site-logo{height:56px}header.masthead{padding-top:22px}}
-header.masthead h1{margin:0 0 8px;font-size:clamp(1.5rem,4.2vw,2.25rem);line-height:1.14;font-weight:800;letter-spacing:-.015em}
-header.masthead p{margin:0;max-width:760px;color:var(--muted);font-size:1.02rem}
+.site-logo{height:76px;width:auto;display:block;margin:0 0 22px}
+@media (max-width:560px){.site-logo{height:60px}header.masthead{padding-top:22px}}
+header.masthead h1{margin:0 0 12px;font-size:clamp(28px,5.2vw,40px);line-height:1.12;font-weight:800;letter-spacing:-.015em}
+header.masthead p{margin:0;max-width:640px;color:var(--muted);font-size:17px;line-height:1.55}
 header.masthead .wrap{padding-bottom:10px}
-.asof{display:block;margin-top:10px;color:var(--muted);font-size:.85rem}
+.asof{display:block;margin-top:14px;color:var(--muted);font-size:13px}
 nav.jump{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line);z-index:5;padding-top:env(safe-area-inset-top,0px)}
 nav.jump .wrap{display:flex;gap:22px;overflow-x:auto;padding-top:10px;padding-bottom:10px}
-nav.jump a{white-space:nowrap;text-decoration:none;padding:2px 0;font-size:.95rem;color:var(--fg);border-bottom:2px solid transparent}
-nav.jump a:hover,nav.jump a:focus-visible{border-bottom-color:var(--muted)}nav.jump a.on{border-bottom-color:var(--fg)}
+nav.jump a{white-space:nowrap;padding:3px 0;font-size:15px;font-weight:600;color:var(--menu);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:4px;border-bottom:3px solid transparent}
+nav.jump a:hover,nav.jump a:focus-visible{text-decoration-thickness:2px}nav.jump a.on{color:var(--fg);text-decoration:none;border-bottom-color:var(--fg)}
 section{padding:34px 0 8px}
 h2{font-size:1.5rem;margin:0 0 6px;line-height:1.25}
 h3{font-size:1.15rem;margin:22px 0 8px}
@@ -1999,7 +1999,7 @@ details{margin:8px 0}summary{cursor:pointer;font-weight:600}
 /* ABC-RI house style: small square corners, thin rules, no soft shadows */
 .card,.panel,.tblwrap,.note,.callout,.badge,.tip,ul.results,input[type=search],input[type=text],select,button.tab,.btn,.chip,ol.timeline .kind,.sq{border-radius:3px}
 .tip,.sugg{box-shadow:0 3px 10px rgba(30,42,50,.18)}
-nav.jump a{font-weight:500}
+
 nav.jump a.on,button.tab[aria-pressed="true"]{font-weight:600}
 h1,h2,h3{font-weight:700;letter-spacing:-.005em}
 h2{font-weight:700}
@@ -2012,7 +2012,7 @@ footer a{color:var(--fg)}
 <header class="masthead"><div class="wrap">
 <a class="site-logo-link" href="https://www.abc-ri.org/"><img class="site-logo" src="abcri-logo.png" width="420" height="160" alt="ABC-RI: Advocates for Better Care in Rhode Island"></a>
 <h1 id="ttl"></h1>
-<p>What CMS's public data shows about how Rhode Island nursing homes' ratings, staffing and inspections changed after the homes were sold, and who has owned each home over time.</p>
+<p>What CMS's public data shows about how Rhode Island nursing homes' ratings, staffing, and inspections changed after the homes were sold, and who has owned each home over time.</p>
 <span class="asof" id="asof"></span>
 </div></header>
 <nav class="jump" aria-label="Sections"><div class="wrap">
@@ -2099,7 +2099,7 @@ const $ = (s, r) => (r || document).querySelector(s);
 // Two pages share this file: index.html (everything else) and owners.html (owner groups), set by <body data-page>.
 const PAGE = document.body.dataset.page || 'main';
 document.querySelectorAll('nav.jump a').forEach(a => { const h = a.getAttribute('href');
-  if (h === '#groups') { a.setAttribute('href', 'owners.html'); if (PAGE === 'owners') a.classList.add('on'); }
+  if (h === '#groups') { a.setAttribute('href', 'owners.html'); if (PAGE === 'owners') { a.classList.add('on'); a.setAttribute('aria-current', 'page'); } }
   else if (PAGE === 'owners' && h && h.startsWith('#') && h !== '#about') a.setAttribute('href', 'index.html' + h); });
 const el = (tag, attrs, ...kids) => { const n = document.createElement(tag); for (const k in (attrs || {})) { if (k === 'class') n.className = attrs[k]; else if (k === 'text') n.textContent = attrs[k]; else if (k.startsWith('on')) n.addEventListener(k.slice(2), attrs[k]); else if (attrs[k] !== null && attrs[k] !== undefined) n.setAttribute(k, attrs[k]); } for (const c of kids.flat()) { if (c === null || c === undefined || c === false) continue; n.append(c.nodeType ? c : document.createTextNode(String(c))); } return n; };
 const NS = 'http://www.w3.org/2000/svg';
