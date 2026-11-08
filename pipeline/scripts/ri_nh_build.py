@@ -1878,12 +1878,12 @@ header.masthead{background:var(--bg);color:var(--fg);padding:34px 0 0}
 @media (max-width:560px){.site-logo{height:56px}header.masthead{padding-top:22px}}
 header.masthead h1{margin:0 0 8px;font-size:clamp(1.5rem,4.2vw,2.25rem);line-height:1.14;font-weight:800;letter-spacing:-.015em}
 header.masthead p{margin:0;max-width:760px;color:var(--muted);font-size:1.02rem}
-header.masthead .wrap{padding-bottom:16px;border-bottom:1px solid var(--line)}
-.asof{display:inline-block;margin-top:14px;padding:3px 10px;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:2px;font-size:.85rem;font-weight:600}
-nav.jump{position:sticky;top:0;background:var(--card);border-bottom:1px solid var(--line);z-index:5;padding-top:env(safe-area-inset-top,0px)}
-nav.jump .wrap{display:flex;gap:6px;overflow-x:auto;padding-top:8px;padding-bottom:8px}
-nav.jump a{white-space:nowrap;text-decoration:none;padding:5px 12px;border-radius:999px;font-size:.92rem;color:var(--fg);border:1px solid var(--line)}
-nav.jump a:hover,nav.jump a:focus-visible{background:var(--accent-soft)}
+header.masthead .wrap{padding-bottom:10px}
+.asof{display:block;margin-top:10px;color:var(--muted);font-size:.85rem}
+nav.jump{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line);z-index:5;padding-top:env(safe-area-inset-top,0px)}
+nav.jump .wrap{display:flex;gap:22px;overflow-x:auto;padding-top:10px;padding-bottom:10px}
+nav.jump a{white-space:nowrap;text-decoration:none;padding:2px 0;font-size:.95rem;color:var(--fg);border-bottom:2px solid transparent}
+nav.jump a:hover,nav.jump a:focus-visible{border-bottom-color:var(--muted)}nav.jump a.on{border-bottom-color:var(--fg)}
 section{padding:34px 0 8px}
 h2{font-size:1.5rem;margin:0 0 6px;line-height:1.25}
 h3{font-size:1.15rem;margin:22px 0 8px}
@@ -1999,7 +1999,7 @@ details{margin:8px 0}summary{cursor:pointer;font-weight:600}
 /* ABC-RI house style: small square corners, thin rules, no soft shadows */
 .card,.panel,.tblwrap,.note,.callout,.badge,.tip,ul.results,input[type=search],input[type=text],select,button.tab,.btn,.chip,ol.timeline .kind,.sq{border-radius:3px}
 .tip,.sugg{box-shadow:0 3px 10px rgba(30,42,50,.18)}
-nav.jump a{border-radius:2px;font-weight:500}
+nav.jump a{font-weight:500}
 nav.jump a.on,button.tab[aria-pressed="true"]{font-weight:600}
 h1,h2,h3{font-weight:700;letter-spacing:-.005em}
 h2{font-weight:700}
