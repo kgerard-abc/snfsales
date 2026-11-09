@@ -1934,6 +1934,7 @@ h3{font-size:1.15rem;margin:22px 0 8px}
 .card .big{font-size:2rem;font-weight:700;line-height:1.1}
 .card .lbl{font-size:.9rem;color:var(--muted);margin-top:2px}
 .card .cmp{font-size:.88rem;margin-top:6px}
+.ombuds{max-width:680px;font-size:1rem;line-height:1.5}.ombuds strong{display:block;margin-bottom:2px}.ombuds a{color:var(--fg);font-weight:700;white-space:nowrap}
 .panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:12px 0}
 .tabs{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 10px}
 button.tab,.btn{font:inherit;font-size:.92rem;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer}
@@ -2093,6 +2094,7 @@ footer a{color:var(--fg)}
 <p class="small lede" id="finding-intro" style="margin-top:-6px"></p>
 <div class="tiles" id="tiles" aria-label="Key numbers"></div>
 <p class="small" id="tiles-why" style="margin-top:0"></p>
+<aside class="panel ombuds" aria-label="Long-Term Care Ombudsman Program"><strong>Have a concern about care?</strong>The Rhode&nbsp;Island Long-Term Care Ombudsman Program advocates for residents of nursing homes and assisted living residences. Residents and families can call <a href="tel:+14017853340">401-785-3340</a> (toll-free <a href="tel:+18883510808">1-888-351-0808</a>).</aside>
 <div class="panel" id="study-panel"><h3 style="margin-top:0">Month by month: sold homes compared with similar homes</h3>
 <div class="row"><div class="tabs" role="group" aria-label="Which changes" id="set-tabs" style="margin:0"></div><div class="tabs" role="group" aria-label="Choose a measure" id="metric-tabs" style="margin:0"></div></div>
 <p class="small" style="margin:6px 0 0">Each point is the average change from the last CMS figure before the sale (0, at "Sale"). Points left of "Sale" show the year leading up to it.</p>
@@ -2977,7 +2979,7 @@ const ab = $('#about-body');
 /* The same footer as the other two ABC-RI sites: who we are, the three sites, where the data comes from, and where to send corrections. */
 $('#foot').append(
   el('p', {}, el('b', {}, el('a', { href: 'https://www.abc-ri.org/', text: 'Advocates for Better Care in\u00A0Rhode\u00A0Island (ABC-RI)' })), ' is an independent advocacy organization dedicated to protecting the rights and improving the care of long-term care residents in\u00A0Rhode\u00A0Island.'),
-  el('p', {}, 'Our public data sites: ', el('a', { href: 'https://snfdashboard.abc-ri.org/', text: 'Nursing home dashboard' }), ' \u00B7 ', el('b', { text: 'Nursing home sales (this site)' }), ' \u00B7 ', el('a', { href: 'https://alinspections.abc-ri.org/', text: 'Assisted living inspections' })),
+  el('p', {}, 'Our public data sites: ', el('a', { href: 'https://snfdashboard.abc-ri.org/', text: 'Nursing home dashboard' }), ' \u00B7 ', el('b', { text: 'Nursing home sales (this site)' }), ' \u00B7 ', el('a', { href: 'https://alinspections.abc-ri.org/', text: 'Assisted living inspections' }), ' \u00B7 ', el('a', { href: 'https://snfdashboard.abc-ri.org/#care', text: 'Which kind of care?' })),
   el('p', {}, [D.meta.credit, 'Data through ' + D.meta.updated + '. Page built ' + D.meta.built + '.'].filter(Boolean).join(' \u00B7 '), D.meta.contact ? [' \u00B7 Corrections: ', el('a', { href: 'mailto:' + D.meta.contact, text: D.meta.contact })] : null));
 function download(name, rows) { const esc = v => { v = v == null ? '' : String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }; const blob = new Blob([rows.map(r => r.map(esc).join(',')).join('\n')], { type: 'text/csv' }); const a = el('a', { href: URL.createObjectURL(blob), download: name }); document.body.append(a); a.click(); a.remove(); }
 $('#dl-sales').addEventListener('click', () => download('ri_nursing_home_sales.csv', [['cec_id', 'date', 'date_source', 'home', 'town', 'type', 'outcome', 'buyer_group', 'applicant', 'stars_before', 'stars_1yr', 'stars_2yr', 'nurse_hrs_before', 'nurse_hrs_1yr', 'serious_cites_before', 'serious_cites_after', 'fines_before', 'fines_after', 'conditions_beyond_standard', 'conditions_triggered', 'documents']].concat(D.sales.map(r => [r.cec, r.date, r.date_note, r.name, r.town, r.label, r.outcome, r.buyer, r.who, r.m.overall.before, r.m.overall.y1, r.m.overall.y2, r.m.hours.before, r.m.hours.y1, r.ser.before, r.ser.y1, r.fines.before, r.fines.y1, (CD[r.cec] || {}).extra || (CD[r.cec] || {}).cond || '', (CD[r.cec] || {}).trig || '', ((CD[r.cec] || {}).links || []).map(l => l.role + ': ' + l.url).join(' | ')]))));
