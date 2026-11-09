@@ -314,7 +314,11 @@ def upload(identifier, path, filename, md, access, secret):
     item = get_item(identifier)
     resp = item.upload(files={filename: str(path)}, metadata=(None if item.exists else md), access_key=access, secret_key=secret,
                        retries=8, retries_sleep=30, verbose=False, validate_identifier=True)
-    return bool(resp) and all(r.status_code == 200 for r in resp)
+    if resp and all(r.status_code == 200 for r in resp): return True
+    if not resp:   # nothing was sent: fine if archive.org already holds this exact file
+        item = get_item(identifier)
+        return any(f.get("name") == filename and int(f.get("size") or -1) == os.path.getsize(path) for f in item.files)
+    raise RuntimeError("archive.org answered " + ", ".join(str(r.status_code) for r in resp))
 
 def child_rec(r, u):
     """A link found inside an HSC report, filed in the same item as the report."""
@@ -536,7 +540,8 @@ def main():
             elif stored and stored[0]["status"] == "too_large":
                 status, note = "too_large", f"{stored[0]['bytes'] / 1e6:.0f} MB, over the {a.max_mb} MB limit"
             else:
-                status = "failed"; note = note or "upload did not return success"
+                errs = "; ".join(x["error"] for x in stored if x.get("error"))
+                status = "failed"; note = note or errs or "upload did not return success"
         entry.update({"status": status, "note": note})
         if status not in ("archived", "partial"): entry["attempts"] = int(prior.get("attempts", 0)) + 1
         manifest["links"][r["url"]] = entry
