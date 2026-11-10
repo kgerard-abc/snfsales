@@ -1,0 +1,23 @@
+name: Temporary page check
+on:
+  push:
+    branches: [tmp-check-mgmt-start]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      MASTER_SHEET_ID: 1PAgtaNxnLerzBGVojlxgp-yB7N89msak6giJh4Sg6Wk
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: pipeline/requirements.txt
+      - run: pip install -r pipeline/requirements.txt
+      - name: Rebuild and compare with the live page
+        run: |
+          cp index.html live.html
+          python3 pipeline/build_site.py "$MASTER_SHEET_ID" > build.log 2>&1 || (tail -40 build.log; exit 1)
+          python3 .github/tmp/cmp.py live.html index.html
