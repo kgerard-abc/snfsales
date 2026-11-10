@@ -839,9 +839,9 @@ def cost_panel(cec, S):
     sold_ccns = set(changed.ccn)                                                   # the "never sold" comparison leaves out any home that changed control at all
     out = dict(years=sorted(int(y) for y in c.year.dropna().unique()), by_facility={}, compare={}, n_homes=0)
     for ccn, g in by_all.items():
-        out['by_facility'][ccn] = dict(years=[int(y) for y in g.index], rev=[_r(v, 0) for v in g['rev']], rp=[_r(v, 0) for v in g['rp']], rent=[_r(v, 0) for v in g['rent']], mgmt=[_r(v, 0) for v in g['mgmt']],
+        out['by_facility'][ccn] = dict(years=[int(y) for y in g.index], rev=[_r(v, 0) for v in g['rev']], exp=[_r(v, 0) for v in g['exp']], rp=[_r(v, 0) for v in g['rp']], rent=[_r(v, 0) for v in g['rent']], mgmt=[_r(v, 0) for v in g['mgmt']],
                                         rp_sh=[_r(v, 4) for v in g['rp_sh']], rent_sh=[_r(v, 4) for v in g['rent_sh']], mgmt_sh=[_r(v, 4) for v in g['mgmt_sh']], margin=[_r(v, 4) for v in g['margin_sh']],
-                                        partial=[bool(v) for v in g['partial']],
+                                        partial=[bool(v) for v in g['partial']], fye=[(None if nz(v) is None else str(v)) for v in (g['fye'] if 'fye' in g.columns else [None] * len(g))],
                                         parties=[(None if nz(v) is None else str(v)[:400]) for v in g['parties']])
     ce = cec.get('costs_extra')
     if ce is not None and len(ce):                                       # homes outside the state's change-of-control records: shown on their own pages and in the table, not in the statewide comparisons
@@ -1858,6 +1858,10 @@ def run(out_dir, cec_path=None, config=None, std_dir=None, verbose=True):
     names = _json.load(open(names_path, encoding='utf-8')) if os.path.exists(names_path) else {}
     extras = pd.read_excel(EXTRAS_PATH, dtype=str) if EXTRAS_PATH and os.path.exists(EXTRAS_PATH) else None
     D = enrich.enrich(D, M['hu'], M['pu'], extras, CHAINS, names)
+    import projections
+    pipe = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    D['proj'] = projections.build(D, os.path.join(pipe, 'projections.json'), os.path.join(pipe, 'pbj_quarters.csv'))
+    if D['proj']: say(f"  projected vs actual: {len(D['proj']['rows'])} sales, {sum(len(r['years']) for r in D['proj']['rows'])} years compared; payroll records through {D['proj']['last_staffing_year']}")
     if CHAINS_ASOF:
         try: D['chain_asof'] = 'updated ' + dt.date.fromisoformat(CHAINS_ASOF).strftime('%B %-d, %Y')
         except ValueError: pass
@@ -2085,7 +2089,7 @@ footer a{color:var(--fg)}
 <span class="asof" id="asof"></span>
 </div></header>
 <nav class="jump" aria-label="Sections"><div class="wrap">
-<a href="#sold">When homes were sold</a><a href="#lookup">Look up a home</a><a href="#groups">Owner groups</a><a href="#related">Money to owners’ companies</a><a href="#about">About the data</a>
+<a href="#sold">When homes were sold</a><a href="#lookup">Look up a home</a><a href="#groups">Owner groups</a><a href="#projected">Projected and actual</a><a href="#related">Money to owners’ companies</a><a href="#about">About the data</a>
 </div></nav>
 <main class="wrap">
 <section id="sold"><h2>What happened when homes were sold</h2>
@@ -2135,6 +2139,19 @@ footer a{color:var(--fg)}
 <p class="small" id="og-desc"></p>
 <div class="tblwrap"><table id="og-tbl" class="ogtbl"></table></div>
 <ul class="small notes" id="og-notes"></ul>
+</section>
+
+<section id="projected"><h2>What buyers projected in their applications, and what happened</h2>
+<p class="lede">Every buyer files an application with the state before it can take over a nursing home. Appendix A of the application lists the staff and the budget the buyer plans for its first three years. Here those projections sit beside what the home later reported: nurse staffing from CMS’s daily payroll records, and money from the home’s Medicare cost reports.</p>
+<p class="lede finding" id="proj-finding"></p>
+<ul class="small notes" id="proj-points"></ul>
+<div class="tblwrap stack"><table id="proj-tbl"><caption>One row for each year the buyer ran the home for the whole year. Each cell shows what the application projected, then what the home reported. A dash means the figure is not in the application or not reported yet.</caption><thead></thead><tbody></tbody></table></div>
+<div class="row"><button class="btn" id="dl-proj">Download this table (CSV)</button></div>
+<div class="panel" id="proj-caps-panel"><h3 style="margin-top:0;font-size:1rem">Limits on first-year operating costs in the state’s approval</h3>
+<p class="small" style="margin-top:0">For some sales, the Health Services Council’s adopted report made a limit on operating costs in the buyer’s first full year a condition of approval. This compares each limit with the operating expenses the home reported on its Medicare cost report for its first whole year under the buyer.</p>
+<div class="tblwrap stack"><table id="proj-caps"><thead></thead><tbody></tbody></table></div></div>
+<details class="small" style="margin:8px 0 0"><summary>How these figures are compared</summary>
+<ul style="margin:6px 0 0" id="proj-how"></ul></details>
 </section>
 
 <section id="related"><h2>Money paid to companies the business owners also control, by home</h2>
@@ -2631,6 +2648,96 @@ const LANDLORD_PENDING_TXT = {
 const LANDLORD_SHORT = { yes: 'Yes', likely: 'Likely', partly: 'Partly', no: 'No', 'no related rent': 'No related rent', unknown: 'Unknown' };
 const RPB = (D.money && D.money.by_facility) || {};
 function rpLatest(b) { let i = -1; b.years.forEach((y, k) => { if (b.rev[k] != null) i = k; }); return i; }
+/* ---------- what buyers projected in their applications, and what happened ---------- */
+const PJ = D.proj && D.proj.rows ? D.proj.rows : [];
+const PJ_COLS = [['nurse_fte', 'Nurse staff'], ['rn_fte', 'RNs'], ['revenue', 'Revenue'], ['rent', 'Rent to a related landlord'], ['mgmt', 'Related management fees'], ['margin', 'Margin']];
+const pjFmt = (k, v) => v == null ? '–' : (k === 'margin' ? pc1(v) : (k.endsWith('_fte') ? (Math.round(v * 10) / 10).toLocaleString('en-US') : money(v)));
+function pjChange(k, p, a) {
+  if (p == null || a == null) return '';
+  if (k === 'margin') { const d = (a - p) * 100; return Math.abs(d) < 0.05 ? 'same' : (d > 0 ? 'up ' : 'down ') + Math.abs(d).toFixed(1) + ' points'; }
+  if (!p) return a ? 'none projected' : 'same';
+  const r = a / p; if (r >= 1.995) return (Math.round(r * 10) / 10) + ' times'; const d = (r - 1) * 100;
+  return Math.abs(d) < 0.5 ? 'same' : (d > 0 ? '+' : '−') + Math.abs(Math.round(d)) + '%';
+}
+function pjCell(r, y, k) {
+  const p = y.projected[k], a = y.actual[k], staffOff = k.endsWith('_fte') && r.staffing_ok === false;
+  const rentNA = (k === 'rent' || k === 'mgmt') && a == null && p != null;
+  const td = el('td', { class: 'num', 'data-label': PJ_COLS.find(c => c[0] === k)[1] });
+  if (staffOff) { td.append(el('span', { class: 'small', text: 'Not compared (see note)' })); return td; }
+  if (p == null && a == null) { td.textContent = '–'; return td; }
+  td.append(el('div', {}, pjFmt(k, p), ' → ', el('b', { text: rentNA ? 'not reported' : pjFmt(k, a) })));
+  const c = pjChange(k, p, a); if (c) td.append(el('div', { class: 'small', text: c }));
+  return td;
+}
+function pjRows(rows) { const out = []; rows.forEach(r => r.years.forEach(y => out.push({ r, y }))); return out; }
+function pjSummary() {
+  const all = pjRows(PJ);
+  const rent = all.filter(x => x.y.projected.rent != null && x.y.actual.rent != null), rentUp = rent.filter(x => x.y.actual.rent > x.y.projected.rent);
+  const rp = rent.reduce((t, x) => t + x.y.projected.rent, 0), ra = rent.reduce((t, x) => t + x.y.actual.rent, 0);
+  const mar = all.filter(x => x.y.projected.margin != null && x.y.actual.margin != null), marDown = mar.filter(x => x.y.actual.margin < x.y.projected.margin);
+  const st = all.filter(x => x.r.staffing_ok !== false && x.y.projected.nurse_fte != null && x.y.actual.nurse_fte != null), stDown = st.filter(x => x.y.actual.nurse_fte < x.y.projected.nurse_fte);
+  const rev = all.filter(x => x.y.projected.revenue != null && x.y.actual.revenue != null), revDown = rev.filter(x => x.y.actual.revenue < x.y.projected.revenue);
+  const homes = new Set(all.map(x => x.r.fid)).size, waiting = PJ.filter(r => !r.years.length);
+  return { all, homes, rent, rentUp, rp, ra, mar, marDown, st, stDown, rev, revDown, waiting };
+}
+function pjSaleText(r) { return (r.buyer || 'The buyer') + (r.via === 'management' ? ' (took over management ' : ' (took over ownership ') + fmtDay(r.start) + ')'; }
+(function () {
+  if (!PJ.length || !PJ.some(r => r.years.length)) { $('#projected').classList.add('hidden'); document.querySelectorAll('nav.jump a[href="#projected"]').forEach(a => a.classList.add('hidden')); return; }
+  const S = pjSummary(), yrs = n => n + (n === 1 ? ' year' : ' years');
+  const bits = [];
+  if (S.rent.length) bits.push(`homes paid more rent to a landlord the business owners also control than the buyer projected in ${S.rentUp.length} of ${S.rent.length} years compared (${money(S.ra)} paid, against ${money(S.rp)} projected)`);
+  if (S.mar.length) bits.push(`the margin the home reported was lower than projected in ${S.marDown.length} of ${S.mar.length}`);
+  $('#proj-finding').textContent = bits.length ? `At the ${S.homes} homes with an application and later reports to compare, ${bits.join(', and ')}.` : '';
+  const pts = $('#proj-points');
+  if (S.st.length) pts.append(el('li', { text: `Nurse staff: the payroll records show fewer full-time-equivalent nurse staff than the application projected in ${S.stDown.length} of ${yrs(S.st.length)} compared. Payroll records count hours worked, not paid time off, so a home staffed exactly as planned would show somewhat fewer here.` }));
+  if (S.rev.length) pts.append(el('li', { text: `Revenue was below the buyer’s projection in ${S.revDown.length} of ${yrs(S.rev.length)}. Lower revenue with higher rent and fees leaves less for care.` }));
+  const off = PJ.filter(r => r.staffing_ok === false && r.years.length);
+  if (off.length) pts.append(el('li', { text: `The staff tables in ${off.length === 1 ? 'one application' : off.length + ' applications'} (${off.map(r => r.name).join(', ')}) give staff counts that do not fit their own payroll figures, so their staffing is not compared. RIDOH staff found these applications "acceptable in form."` }));
+  if (S.waiting.length) pts.append(el('li', { text: `Not yet comparable: ${S.waiting.map(r => r.name).join('; ')}. The buyer has not run the home for a whole projected year with reports filed yet.` }));
+  const cols = [['home', 'Home and year'], ...PJ_COLS];
+  $('#proj-tbl thead').append(el('tr', {}, cols.map((c, i) => el('th', { scope: 'col', class: i ? 'num' : '', text: c[1] }))));
+  const tb = $('#proj-tbl tbody');
+  PJ.forEach(r => r.years.forEach((y, j) => tb.append(el('tr', {}, el('td', { 'data-label': 'Home' }, j === 0 ? el('button', { class: 'linkbtn', text: r.name, onclick: () => showFacility(r.fid, true) }) : el('span', { class: 'small', text: r.name }), el('div', { class: 'small', text: (j === 0 ? pjSaleText(r) + '. ' : '') + String(y.year) })), PJ_COLS.map(c => pjCell(r, y, c[0]))))));
+  const caps = PJ.filter(r => r.cost_cap && r.cost_cap.actual != null);
+  if (!caps.length) $('#proj-caps-panel').classList.add('hidden');
+  else {
+    $('#proj-caps thead').append(el('tr', {}, ['Home', 'Limit in the approval', 'First whole year', 'Operating expenses reported', 'Difference'].map((t, i) => el('th', { scope: 'col', class: i ? 'num' : '', text: t }))));
+    caps.forEach(r => { const c = r.cost_cap, d = c.actual - c.amount;
+      $('#proj-caps tbody').append(el('tr', {}, el('td', { 'data-label': 'Home' }, el('button', { class: 'linkbtn', text: r.name, onclick: () => showFacility(r.fid, true) }), el('div', { class: 'small' }, r.buyer + '. ', el('a', { href: c.report, target: '_blank', rel: 'noopener', text: 'Council report' }))),
+        el('td', { class: 'num', 'data-label': 'Limit in the approval', text: money(c.amount) }), el('td', { class: 'num', 'data-label': 'First whole year', text: String(c.year) }), el('td', { class: 'num', 'data-label': 'Operating expenses reported', text: money(c.actual) }),
+        el('td', { class: 'num', 'data-label': 'Difference' }, (d > 0 ? money(d) + ' over' : money(-d) + ' under'), el('div', { class: 'small', text: (d > 0 ? '+' : '\u2212') + Math.abs(Math.round(d / c.amount * 100)) + '%' })))); });
+    const over = caps.filter(r => r.cost_cap.actual > r.cost_cap.amount).length;
+    pts.append(el('li', { text: `Limits on first-year operating costs: ${over} of ${caps.length} homes whose approval set one reported higher operating expenses than the limit in their first whole year (table below).` }));
+  }
+  const how = $('#proj-how');
+  [
+    'Projected figures are the buyer’s own, from Appendix A of its application (Table 2, staff; Table 3, revenue and expenses), copied from the page and checked by hand. Each home’s page links to the application and gives the page numbers.',
+    'A year is compared only if the buyer ran the home for the whole year, counted from when it took over management, if that came before the sale. Years when the buyer had already sold or handed over the home are left out.',
+    'Nurse staff are full-time equivalents: hours worked by RNs (including the director of nursing and RN administrators), LPNs, and nursing aides (including aides in training and medication aides) in CMS’s daily payroll records for the year, divided by 2,080 hours. Days that look like gaps in the records (under 1.5 nurse hours per resident) are left out, and the year is scaled to 365 days. Payroll records count hours worked, not vacation or sick time, so they run somewhat below a budget of paid positions. Contract and agency staff are included.',
+    'Revenue is net patient revenue and margin is the operating margin, both from the home’s Medicare cost report for that year. The projected margin is the application’s operating profit divided by its revenue.',
+    'Rent and management fees on the cost report are what the home paid to companies the business owners also control (Worksheet A-8-1). Rent paid to an unrelated landlord is not on that worksheet, so it shows as "not reported." The projected rent is the application’s Leasehold Expenses or rent line.',
+    'The operating cost limit is the condition in the adopted Health Services Council report, in its words, for example "that the operating costs for the first full operating year not exceed $18,191,423.00." It is compared with total operating expenses on the cost report for the first whole year the buyer ran the home. The report does not define "first full operating year," so a different reading (for example the first 12 months after closing) could give a different figure. A home that takes in more revenue than it projected usually also spends more; the table above shows each home\u2019s revenue for the same year.',
+    'Cost report years that add together a report from before the buyer took over (for example a seller’s 13-month report ending in January) are left out.'
+  ].forEach(t => how.append(el('li', { text: t })));
+  $('#dl-proj').addEventListener('click', () => download('ri_nursing_home_projected_vs_actual.csv', [['ccn', 'home', 'cec_id', 'buyer', 'buyer_start', 'year', 'projected_nurse_fte', 'actual_nurse_fte', 'projected_rn_fte', 'actual_rn_fte', 'projected_net_patient_revenue', 'actual_net_patient_revenue', 'projected_rent', 'actual_rent_to_related_landlord', 'projected_management_fees', 'actual_management_fees_to_related', 'projected_margin', 'actual_margin', 'staffing_compared', 'application', 'staff_page', 'budget_page'],
+    ...S.all.map(({ r, y }) => [r.fid, r.name, r.cec, r.buyer, r.start, y.year, y.projected.nurse_fte, y.actual.nurse_fte, y.projected.rn_fte, y.actual.rn_fte, y.projected.revenue, y.actual.revenue, y.projected.rent, y.actual.rent, y.projected.mgmt, y.actual.mgmt, y.projected.margin, y.actual.margin, r.staffing_ok === false ? 'no' : 'yes', r.link, r.staff_page, r.budget_page])]));
+})();
+function projPanel(f) {
+  const rs = PJ.filter(r => r.fid === f.id); if (!rs.length) return null;
+  const wrap = el('div', { class: 'panel' }, el('h3', { style: 'margin-top:0', text: 'What the buyer projected in its application, and what happened' }));
+  rs.forEach(r => {
+    wrap.append(el('p', { class: 'small' }, pjSaleText(r) + '. Projections from ', r.link ? el('a', { href: r.link, target: '_blank', rel: 'noopener', text: r.document || 'the application' }) : (r.document || 'the application'), `, Appendix A (staff on page ${r.staff_page}, budget on page ${r.budget_page}).`));
+    if (!r.years.length) { wrap.append(el('p', { text: 'No whole year under this buyer has reports filed yet, so nothing is compared.' })); return; }
+    const tb = el('tbody'); r.years.forEach(y => tb.append(el('tr', {}, el('td', { 'data-label': 'Year', text: String(y.year) }), PJ_COLS.map(c => pjCell(r, y, c[0])))));
+    wrap.append(el('div', { class: 'tblwrap stack' }, el('table', {}, el('caption', { text: 'Each cell: projected → reported.' }), el('thead', {}, el('tr', {}, [['y', 'Year'], ...PJ_COLS].map((c, i) => el('th', { scope: 'col', class: i ? 'num' : '', text: c[1] })))), tb)));
+    if (r.cost_cap && r.cost_cap.actual != null) { const c = r.cost_cap, d = c.actual - c.amount; wrap.append(el('p', {}, el('b', { text: 'Limit on first-year operating costs: ' }), `The state\u2019s approval set a limit of ${money(c.amount)}. In ${c.year}, its first whole year under the buyer, the home reported ${money(c.actual)} in operating expenses, ${money(Math.abs(d))} ${d > 0 ? 'over' : 'under'} the limit (`, el('a', { href: c.report, target: '_blank', rel: 'noopener', text: 'Council report' }), ').')); }
+    if (r.staffing_note) wrap.append(el('p', { class: 'small', text: r.staffing_note }));
+    if (r.note) wrap.append(el('p', { class: 'small', text: r.note }));
+  });
+  wrap.append(el('p', { class: 'small' }, 'Staff are full-time equivalents from CMS’s daily payroll records (hours worked, so somewhat below a budget of paid positions); money is from the home’s Medicare cost reports. ', el('a', { href: '#projected', text: 'How these figures are compared' }), '.'));
+  return wrap;
+}
+
 function rpPanel(f) {
   if (!D.money) return null;
   const b = RPB[f.id]; if (!b || !b.years.length) return el('div', { class: 'panel' }, el('h3', { style: 'margin-top:0', text: 'Money paid to related companies' }), el('p', { text: 'No cost report data available currently for this home.' }));
@@ -2793,6 +2900,7 @@ function showFacility(id, scroll) {
     head.append(el('p', { class: 'small', text: `As of the ${fmtMon(f.now.asof)} CMS file.` + (f.sff ? ` CMS special focus status: ${f.sff}.` : '') + (f.abuse ? ' CMS displays an abuse icon for this home.' : '') })); }
   box.append(head);
   const eraP = eraPanel(f); if (eraP) box.append(eraP);
+  const pjP = projPanel(f); if (pjP) box.append(pjP);
   const rpP = rpPanel(f); if (rpP) box.append(rpP);
   if (f.events.length) { const ol = el('ol', { class: 'timeline' }); f.events.forEach(e => ol.append(el('li', {}, el('div', { class: 'small', title: e.date_note || '' }, fmtDay(e.date), dateMark(e.date_note)), el('div', {}, el('span', { class: 'kind ' + (e.kind === 'cms' ? 'cms' : e.kind === 'sale' ? 'sale' : e.kind === 'parent' ? 'parent' : (e.kind === 'closed' || e.kind === 'unclosed') ? 'closed' : e.kind === 'mgmt' ? 'mgmt' : ''), text: KIND_LBL[e.kind] || e.label }), (e.kind === 'closed' || e.kind === 'unclosed') ? el('span', { text: e.label }) : e.label && e.kind !== 'cms' ? el('span', { text: [e.buyer, e.who].filter(Boolean).join(' \u2014 ') }) : el('span', { text: e.label + (e.who ? ': ' + e.who : '') }), e.outcome ? el('span', { class: 'small', text: ' \u00B7 ' + e.outcome }) : null, el('div', { class: 'small', text: e.src }), cecDetail(e.cec, 'Conditions and documents for this state review'))))); box.append(el('details', { class: 'panel', open: eraP ? null : '' }, el('summary', { text: 'Every record behind this, in date order' }), el('p', { class: 'small', text: 'State-reviewed changes and changes visible in CMS data, newest first.' }), ol, el('p', { class: 'small', text: dateLegend() }))); }
   else box.append(el('div', { class: 'panel' }, el('p', { text: 'No ownership changes on record for this home.' })));
@@ -2967,6 +3075,7 @@ const ab = $('#about-body');
  ['Payroll data problems', 'When a home does not send its payroll-based staffing data on time, fails a CMS staffing audit, or reports 4 or more days in a quarter with no RN, CMS gives it 1 staffing star (Five-Star Technical Users\' Guide, September 2026), and the hours it publishes can be implausibly low. Reported hours under 1.5 per resident per day, and turnover of 90% or more (CMS assigns its worst turnover score when payroll data is missing), are treated as that kind of problem and left out (gray bands on the hours and turnover charts).'],
  ['Homes without a star rating', 'CMS does not publish star ratings for homes in its Special Focus Facility program, which targets homes with a history of serious quality problems. Those months are counted as 0 stars (0 is not a CMS score) so that a home being in the program shows up in statewide averages, the share of low-rated homes, the star-mix chart (gray layer) and the sold-versus-not-sold comparison, including in the downloadable CSVs.'],
  ['Money paid to related parties', 'Each home files a Medicare cost report that lists payments to related parties: companies the same owners control, such as the landlord or a management company. Those payments are costs to the home, so a home can report thin or negative margins while its owners are paid through rent and fees. The before-and-after chart compares the same homes between the year before the sale and two years after, which is why its home counts are smaller than the ratings comparison.'],
+ ['What buyers projected, and what happened', 'Projected figures come from Appendix A of each buyer\u2019s change in effective control application (Table 2, staff; Table 3, revenue and expenses), copied by hand from the page and listed with page numbers in pipeline/projections.json in this site\u2019s GitHub repository. Actual nurse staffing comes from CMS\u2019s Payroll Based Journal daily nurse staffing files (data.cms.gov), added up for each calendar year; money comes from the same Medicare cost reports as the table below. The limits on first-year operating costs are quoted from the conditions of approval in the adopted Health Services Council reports.'],
  ['Money paid to companies the business owners also control, by home', 'The money table and the panel on each home\u2019s page come from the same Medicare cost reports. All related-party costs is what the home reported paying companies its owners also control. Rent and management fees are the two biggest pieces; the rest is shown as other related companies (therapy, supplies, billing and similar). Only company names are shown, not the people behind them. The before and after column compares the year before a home\u2019s first sale on this page with its newest report. Margin is the operating margin the home reported.'],
  ['"CMS records updated" dates', 'CMS\u2019s files are not updated the day a sale closes. Where a sale has one, this page shows the first monthly CMS file listing the new operator; across these sales that came a median of about eight months after the date of record. It is a reporting lag, not a second event, and it matters for two reasons: ratings in those months were still filed under the old operator\u2019s name, and a CMS operator change with no matching state record is a sign of a change that may not have gone through review.'],
  ['Management agreements and timing', 'A buyer sometimes takes over day-to-day management of a home under a management agreement before the state approves the sale, and CMS can take months to list a new operator. Where a management start date is known it is shown on the home’s timeline and beside the sale. So the last rating before a sale may already reflect the buyer\u2019s management, and the sales table shows when CMS first lists the new operator. These agreements are not published. They have been requested through APRA from RIDOH.'],

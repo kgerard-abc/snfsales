@@ -1,0 +1,391 @@
+{
+ "about": "What each buyer projected for its first years, from Appendix A of its change in effective control application (Table 2, staff; Table 3, revenue and expenses). Every figure was copied from the page named here and checked by eye on November 10, 2026. Pages are PDF page numbers. nurse_fte = director of nursing + RNs + LPNs + nursing aides (and nursing administrators or medication aides when the table lists them); rn_fte = director of nursing + RNs (+ an RN nursing administrator). revenue = net patient revenue. profit = operating profit or loss. rent = the Leasehold Expenses or rent line, left out when the application labels it as mortgage, taxes, or property costs. mgmt = management or consulting fees, given only when the line is fees alone. staffing_ok false means the table's own payroll does not fit its staff counts, so the counts are not compared. Edit here to correct a figure; the page rebuilds from this file. cost_cap is the condition of approval in the adopted Health Services Council report that limits operating costs in the first full operating year; it is compared with the operating expenses on the cost report for the first whole year the buyer ran the home.",
+ "sales": [
+  {
+   "cec": "CEC-070",
+   "home": "Crystal Lake Rehabilitation and Care Center",
+   "buyer": "Fink / Leifer / Oberlander",
+   "document": "CL Operating LLC application (2018)",
+   "link": "https://drive.google.com/file/d/19wVgOLpPj7omElulC4CFj5qE6CrJTAsl/view",
+   "staff_page": 15,
+   "budget_page": 16,
+   "staffing_ok": true,
+   "years": {
+    "2020": {
+     "nurse_fte": 30.8,
+     "rn_fte": 10.1,
+     "revenue": 5519454,
+     "profit": -164530
+    },
+    "2021": {
+     "nurse_fte": 32.6,
+     "rn_fte": 10.5,
+     "revenue": 6214511,
+     "profit": 319147
+    }
+   }
+  },
+  {
+   "cec": "CEC-080",
+   "home": "Lincolnwood Rehabilitation and Healthcare Center",
+   "buyer": "Marquis/Tryko",
+   "document": "Lincolnwood Operator LLC application, later filing (2021)",
+   "link": "https://drive.google.com/file/d/1W75FPEaWjM7GIY3DXZIIdeCnQ8RPqxRW/view",
+   "staff_page": 13,
+   "budget_page": 14,
+   "staffing_ok": true,
+   "note": "The application projected fewer nurses than the home had: 10 RNs and 50 aides, down from 19 RNs and 76 aides in 2019 (page 12).",
+   "years": {
+    "2022": {
+     "nurse_fte": 74,
+     "rn_fte": 11,
+     "revenue": 18617844,
+     "profit": 925402,
+     "rent": 2050000,
+     "mgmt": 1147010
+    },
+    "2023": {
+     "nurse_fte": 74,
+     "rn_fte": 11,
+     "revenue": 20611174,
+     "profit": 2218685,
+     "rent": 2091000,
+     "mgmt": 1267144
+    },
+    "2024": {
+     "nurse_fte": 74,
+     "rn_fte": 11,
+     "revenue": 20937072
+    }
+   },
+   "cost_cap": {
+    "amount": 18191423.0,
+    "report": "https://drive.google.com/file/d/1SFr9JKGGd0rtuvB9ZY0l1Wg0jGBznCC9/view",
+    "words": "that the operating costs for the first full operating year not exceed $18,191,423.00"
+   }
+  },
+  {
+   "cec": "CEC-078",
+   "home": "Berkshire Place",
+   "buyer": "Green Tree Healthcare Management",
+   "document": "Berkshire Place SNF LLC application (2021)",
+   "link": "https://drive.google.com/file/d/15qmMBa5NsxwBRS53F2Qj4pYMDgdlQ8Ub/view",
+   "staff_page": 13,
+   "budget_page": 14,
+   "staffing_ok": true,
+   "years": {
+    "2022": {
+     "nurse_fte": 105,
+     "rn_fte": 14,
+     "revenue": 19771685,
+     "profit": 3564679,
+     "rent": 78548,
+     "mgmt": 600000
+    },
+    "2023": {
+     "nurse_fte": 105,
+     "rn_fte": 14,
+     "revenue": 19969402,
+     "profit": 3554531,
+     "rent": 79333,
+     "mgmt": 600000
+    }
+   },
+   "cost_cap": {
+    "amount": 16834615.1,
+    "report": "https://drive.google.com/file/d/1tpPk6o9a0yml6ijyU2tKX0P7TY3uXIDJ/view",
+    "words": "that the operating costs for the first full operating year not exceed $16,834,615.10"
+   }
+  },
+  {
+   "cec": "CEC-082",
+   "home": "Silver Creek Rehab and Healthcare Center",
+   "buyer": "Green Tree Healthcare Management",
+   "document": "Silver Creek Manor SNF LLC application (2021)",
+   "link": "https://drive.google.com/file/d/1hujWeXwEZwyk23lMQpTm5Y5E2LP7xiAU/view",
+   "staff_page": 13,
+   "budget_page": 14,
+   "staffing_ok": true,
+   "years": {
+    "2022": {
+     "nurse_fte": 99,
+     "rn_fte": 27,
+     "revenue": 12898305,
+     "profit": 1478927,
+     "rent": 89320,
+     "mgmt": 600000
+    },
+    "2023": {
+     "nurse_fte": 99,
+     "rn_fte": 27,
+     "revenue": 13091780,
+     "profit": 1520096,
+     "rent": 90660,
+     "mgmt": 600000
+    }
+   },
+   "cost_cap": {
+    "amount": 11419378.8,
+    "report": "https://drive.google.com/file/d/1NHvQiLz6AmK65ae1H1GTMObvC0I70z8L/view",
+    "words": "that the operating costs for the first full operating year not exceed $11,419,378.80"
+   }
+  },
+  {
+   "cec": "CEC-084",
+   "home": "The Dawn Hill Home for Rehab and Healthcare (formerly Saint Elizabeth Manor)",
+   "buyer": "Green Tree Healthcare Management",
+   "document": "Greentree Nursing and Rehab LLC application (2021)",
+   "link": "https://drive.google.com/file/d/1jmDGwDbZN3ACvbB1k7XY4oOBp6iYNQP2/view",
+   "staff_page": 13,
+   "budget_page": 14,
+   "staffing_ok": true,
+   "years": {
+    "2022": {
+     "nurse_fte": 135,
+     "rn_fte": 31,
+     "revenue": 15492797,
+     "profit": 1341979,
+     "rent": 51005,
+     "mgmt": 600000
+    },
+    "2023": {
+     "nurse_fte": 135,
+     "rn_fte": 31,
+     "revenue": 15647727,
+     "profit": 1232148,
+     "rent": 51515,
+     "mgmt": 600000
+    }
+   },
+   "cost_cap": {
+    "amount": 14493524.1,
+    "report": "https://drive.google.com/file/d/1GuAGulY-yixo5LmJsShnDLZB-3yeFLJf/view",
+    "words": "that the operating costs for the first full operating year not exceed $14,493,524.10"
+   }
+  },
+  {
+   "cec": "CEC-081",
+   "home": "Bayview Rehabilitation and Healthcare (formerly Scalabrini Villa)",
+   "buyer": "Marquis/Tryko",
+   "document": "Bayview Operator LLC application (2021)",
+   "link": "https://drive.google.com/file/d/1NRLQD26e2yQyjbXrsliNJbzpgeUpbw8C/view",
+   "staff_page": 13,
+   "budget_page": 14,
+   "staffing_ok": true,
+   "note": "The application projected fewer nurses than the home had: 5 RNs and 27 aides, down from 16 RNs and 36 aides budgeted for 2020 (page 12).",
+   "years": {
+    "2022": {
+     "nurse_fte": 41,
+     "rn_fte": 6,
+     "revenue": 12088250,
+     "profit": 1889624,
+     "rent": 1395329,
+     "mgmt": 665436
+    },
+    "2023": {
+     "nurse_fte": 41,
+     "rn_fte": 6,
+     "revenue": 13088045,
+     "profit": 1965647,
+     "rent": 1837729,
+     "mgmt": 720127
+    }
+   }
+  },
+  {
+   "cec": "CEC-083",
+   "home": "Lakeside Nursing (South County Nursing & Rehab)",
+   "buyer": "Eden Healthcare",
+   "document": "South County SNF Operations LLC application, resubmitted September 2, 2021",
+   "link": "https://drive.google.com/file/d/1wd7PLSRXWUQtzL0EyLrAxgJYEuVhSi4_/view",
+   "staff_page": 13,
+   "budget_page": 14,
+   "staffing_ok": true,
+   "years": {
+    "2022": {
+     "nurse_fte": 43.4,
+     "revenue": 11287335,
+     "profit": 78040,
+     "rent": 1872720
+    }
+   }
+  },
+  {
+   "cec": "CEC-086",
+   "home": "Brentwood Health Center",
+   "buyer": "Eden Healthcare",
+   "document": "Brentwood application, resubmitted April 13, 2022",
+   "link": "https://drive.google.com/file/d/19a62AMZH2VtCXhFBHy0Fr7wX79qkMH0T/view",
+   "staff_page": 13,
+   "budget_page": 14,
+   "staffing_ok": true,
+   "years": {
+    "2023": {
+     "nurse_fte": 55,
+     "rn_fte": 14,
+     "revenue": 10532802,
+     "profit": 342035,
+     "rent": 483786
+    },
+    "2024": {
+     "nurse_fte": 55,
+     "rn_fte": 14,
+     "revenue": 10743458,
+     "profit": 302976,
+     "rent": 493462
+    }
+   }
+  },
+  {
+   "cec": "CEC-093",
+   "home": "Sunny View Nursing Home",
+   "buyer": "Eden Healthcare",
+   "document": "83 Corona St Eden Operations application, later filing (2022); same figures as the November 4, 2021 filing",
+   "link": "https://drive.google.com/file/d/1JI3dgNkN1Q1bkpGZlD0nufh63UHir_Mb/view",
+   "staff_page": 13,
+   "budget_page": 14,
+   "staffing_ok": true,
+   "years": {
+    "2023": {
+     "nurse_fte": 41,
+     "rn_fte": 11,
+     "revenue": 7066397,
+     "profit": 405756,
+     "rent": 187272
+    },
+    "2024": {
+     "nurse_fte": 41,
+     "rn_fte": 11,
+     "revenue": 7207725,
+     "profit": 413871,
+     "rent": 191017
+    }
+   }
+  },
+  {
+   "cec": "CEC-095",
+   "home": "Pawtucket Falls Healthcare Center",
+   "buyer": "Cch Healthcare/Mayers",
+   "document": "Violet SNF Holdco LLC application (November 7, 2023)",
+   "link": "https://archive.org/download/ri-cec-2023-violet-snf-holdco-llc/Violet%20SNF%20Holdco%20LLC%20CEC%20-%202023.11.07%20Violet%20SNF%20Holdco%20LLC%20CEC%20Application%20_%20Exhibits_Pawtucket%20Falls_FINAL.pdf",
+   "staff_page": 13,
+   "budget_page": 14,
+   "staffing_ok": true,
+   "years": {
+    "2024": {
+     "nurse_fte": 76.5,
+     "rn_fte": 14.7,
+     "revenue": 16691971,
+     "profit": -709456
+    },
+    "2025": {
+     "nurse_fte": 90.2,
+     "rn_fte": 16.7,
+     "revenue": 19052988,
+     "profit": 336614
+    }
+   }
+  },
+  {
+   "cec": "CEC-096",
+   "home": "The Friendly Home",
+   "buyer": "Eden Healthcare",
+   "document": "Friendly Eden Operations application, resubmitted July 31, 2023",
+   "link": "https://drive.google.com/file/d/1_GBAjsW61wxdh2_subm98Gw0KZnGyngW/view",
+   "staff_page": 13,
+   "budget_page": 14,
+   "staffing_ok": true,
+   "years": {
+    "2024": {
+     "nurse_fte": 72,
+     "rn_fte": 16,
+     "revenue": 13292916,
+     "profit": 104588,
+     "rent": 713803
+    },
+    "2025": {
+     "nurse_fte": 72,
+     "rn_fte": 16,
+     "revenue": 13558774,
+     "profit": 106679,
+     "rent": 728079
+    }
+   }
+  },
+  {
+   "cec": "CEC-114",
+   "home": "Respiratory and Rehabilitation Center of RI",
+   "buyer": "Mayflower",
+   "document": "Coventry, Greenville, and Warren Operations RI LLC applications, resubmitted March 21, 2024",
+   "link": "https://drive.google.com/file/d/1SSiGGtI2lav6usyarXU-ZdwuSNV94rDN/view",
+   "staff_page": 12,
+   "budget_page": 13,
+   "staffing_ok": false,
+   "staffing_note": "The staff table gives every nurse the same pay: 25 RNs for $1,404,000, 36 LPNs for $2,021,760, and 40 aides for $2,246,900, about $56,000 each with benefits, so its counts are not compared.",
+   "years": {
+    "2024": {
+     "nurse_fte": 102,
+     "rn_fte": 26,
+     "revenue": 21224585,
+     "profit": 1233066
+    },
+    "2025": {
+     "nurse_fte": 102,
+     "rn_fte": 26,
+     "revenue": 23166325,
+     "profit": 1700025
+    }
+   }
+  },
+  {
+   "cec": "CEC-105",
+   "home": "Greenville Skilled Nursing and Rehabilitation",
+   "buyer": "Mayflower",
+   "document": "Coventry, Greenville, and Warren Operations RI LLC applications, resubmitted March 21, 2024",
+   "link": "https://drive.google.com/file/d/1SSiGGtI2lav6usyarXU-ZdwuSNV94rDN/view",
+   "staff_page": 38,
+   "budget_page": 39,
+   "staffing_ok": false,
+   "staffing_note": "The staff table's counts do not fit its payroll (18 RNs for $720,000, about $40,000 each with benefits), so they are not compared.",
+   "years": {
+    "2024": {
+     "nurse_fte": 113,
+     "rn_fte": 19,
+     "revenue": 12014064,
+     "profit": 368475
+    },
+    "2025": {
+     "nurse_fte": 113,
+     "rn_fte": 19,
+     "revenue": 13149684,
+     "profit": 634693
+    }
+   }
+  },
+  {
+   "cec": "CEC-117",
+   "home": "Warren Center",
+   "buyer": "Mayflower",
+   "document": "Coventry, Greenville, and Warren Operations RI LLC applications, resubmitted March 21, 2024",
+   "link": "https://drive.google.com/file/d/1SSiGGtI2lav6usyarXU-ZdwuSNV94rDN/view",
+   "staff_page": 64,
+   "budget_page": 65,
+   "staffing_ok": false,
+   "staffing_note": "The staff table's counts do not fit its payroll (18 RNs for $330,000, about $18,000 each with benefits), so they are not compared.",
+   "years": {
+    "2024": {
+     "nurse_fte": 109,
+     "rn_fte": 19,
+     "revenue": 6928399,
+     "profit": 761311
+    },
+    "2025": {
+     "nurse_fte": 109,
+     "rn_fte": 19,
+     "revenue": 7039785,
+     "profit": 789799
+    }
+   }
+  }
+ ]
+}
