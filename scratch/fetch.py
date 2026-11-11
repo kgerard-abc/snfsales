@@ -58,7 +58,10 @@ def gdoc(kind, did):
 
 
 def pdf_text(path):
-    n = int(re.search(r'Pages:\s+(\d+)', subprocess.run(['pdfinfo', path], capture_output=True, text=True).stdout).group(1))
+    m = re.search(r'Pages:\s+(\d+)', subprocess.run(['pdfinfo', path], capture_output=True, text=True).stdout)
+    if not m:
+        raise ValueError('PDF would not open')
+    n = int(m.group(1))
     pages = []
     for p in range(1, n + 1):
         t = subprocess.run(['pdftotext', '-layout', '-f', str(p), '-l', str(p), path, '-'], capture_output=True, text=True).stdout
@@ -91,7 +94,13 @@ def save(key, meta, data):
     base = os.path.join(OUT, re.sub(r'[^\w-]', '_', key)[:80])
     if data[:5] == b'%PDF-':
         open(base + '.pdf', 'wb').write(data)
-        pages = pdf_text(base + '.pdf')
+        try:
+            pages = pdf_text(base + '.pdf')
+        except Exception as e:
+            meta['note'] = f'could not read PDF: {e}'
+            json.dump(meta, open(base + '.json', 'w'), indent=1)
+            os.remove(base + '.pdf')
+            return meta
         meta['pages'] = len(pages)
         meta['links'] = pdf_links(base + '.pdf')
         with open(base + '.txt', 'w') as f:
@@ -104,7 +113,15 @@ def save(key, meta, data):
     return meta
 
 
+def already(key):
+    p = os.path.join(OUT, re.sub(r'[^\w-]', '_', key)[:80] + '.json')
+    return json.load(open(p)) if os.path.exists(p) else None
+
+
 def fetch(item):
+    prev = already(item['id'])
+    if prev and (prev.get('status') == 'ok' or 'skipped' in str(prev.get('status'))):
+        return prev
     res, err = (None, 'no source')
     if item.get('archive_url'):
         res, err = get(item['archive_url'])
@@ -146,6 +163,8 @@ for d in list(done):
         item = {'id': fid, 'kind': 'file', 'class': 'linked', 'label': f'linked from {d["label"][:80]} (page {ln["page"]})',
                 'rows': d.get('rows', []), 'from': d['id'], 'uri': u}
         print('follow', item['label'][:90], flush=True)
+        if already(fid):
+            continue
         if g:
             res, err = gdoc(g.group(1), fid)
             if res is None:
