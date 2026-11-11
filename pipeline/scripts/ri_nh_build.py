@@ -647,15 +647,25 @@ def compute_sales(M, cec, ccn_of):
         s = pd.Timestamp(a[m][0]); return s if (s - d).days <= tol else None
     out = []
     S['evd'] = pd.to_datetime(S['evd']); S['ccn'] = S['ccn'].where(S['ccn'].notna(), None)
+    # When the buyer ran the home under a management agreement before the sale (Management Agreements tab), its time in
+    # charge starts then, so "before", year 1 and year 2 are counted from that start, the same way the owner groups table,
+    # the home pages and the citation counts measure it. Otherwise they are counted from the sale date. Money (cost
+    # reports) stays on the sale date: rent and fees to the new owners' companies begin when they own the home.
+    MGc = cec.get('mgmt', {})
+    S['mgmt'] = pd.to_datetime(pd.Series([T((MGc.get(c) or {}).get('start')) for c in S.cec], index=S.index))
+    S['start'] = pd.to_datetime(pd.Series([(m if (T(m) is not None and (T(e) is None or T(m) < T(e))) else e) for m, e in zip(S.mgmt, S.evd)], index=S.index))
     for i, r in S.iterrows():
         d = {k: None for k in ['before', 'y1', 'y2', 'exit', 'next_event']}
-        ev = T(r.evd); ccn = nz(r.ccn)
+        ev = T(r.evd); st = T(r.start); ccn = nz(r.ccn)
         if r.has_data and ev is not None and (nz(r.outcome) or '') != 'Pending' and nz(r.override) not in ('closure', 'not a sale', 'not completed'):
-            b = prev_snap(ccn, ev); d['before'] = b if (b is not None and b >= floor) else None
-            others = S[(S.ccn == ccn) & (S.evd > ev + pd.Timedelta(days=1)) & (S.outcome.fillna('') != 'Pending') & S.type.isin(SALE_TYPES)]
-            ne = T(others.evd.min()) if len(others) else None; d['next_event'] = ne
+            b = prev_snap(ccn, st); d['before'] = b if (b is not None and b >= floor) else None
+            # the next owner's time starts at its management start too, even while its purchase is still pending
+            others = S[(S.ccn == ccn) & (S.start > st + pd.Timedelta(days=1)) & ((S.evd > ev + pd.Timedelta(days=1)) | S.evd.isna())
+                       & ((S.outcome.fillna('') != 'Pending') | S.mgmt.notna()) & S.type.isin(SALE_TYPES)
+                       & ~S.override.fillna('').isin(['closure', 'not a sale', 'not completed'])]
+            ne = T(others.start.min()) if len(others) else None; d['next_event'] = ne
             for k, m in (('y1', 12), ('y2', 24)):
-                s2 = next_snap(ccn, ev + pd.DateOffset(months=m))
+                s2 = next_snap(ccn, st + pd.DateOffset(months=m))
                 d[k] = s2 if (s2 is not None and (ne is None or s2 < ne)) else None
             a = snaps_by[ccn]; mm = a < np.datetime64(ne) if ne is not None else np.ones(len(a), bool)
             d['exit'] = pd.Timestamp(a[mm][-1]) if mm.any() and d['before'] is not None else None
@@ -668,8 +678,8 @@ def compute_sales(M, cec, ccn_of):
     hu, pu = M['hu'], M['pu']; hu = hu.assign(sd=pd.to_datetime(hu.survey_date)); pu = pu[pu.penalty_type == 'Fine'].assign(pd_=pd.to_datetime(pu[pu.penalty_type == 'Fine'].penalty_date))
     horizon = first - pd.DateOffset(years=3)
     def window(r, k):
-        ev = T(r.evd)
-        if ev is None or not r.has_data: return None
+        ev = T(r.start)      # the management start when the buyer ran the home before the sale, else the sale date
+        if ev is None or T(r.evd) is None or not r.has_data: return None
         if k == 'before':
             return (ev - pd.DateOffset(months=12), ev) if (T(r['before']) is not None and ev - pd.DateOffset(months=12) >= horizon) else None
         if k == 'y1': return (ev, ev + pd.DateOffset(months=12)) if T(r['y1']) is not None else None
@@ -750,8 +760,10 @@ def event_study(M, S, val, metric, sale_rows, qrange=range(-4, 9), tol=45):
     """Average change from the last snapshot before each sale, for sold homes vs similar homes that were not sold (see match_controls)."""
     fac = M['fac']; snaps = pd.to_datetime(pd.Series(M['snaps'])); latest = pd.Timestamp(M['latest'])
     evd_by = {}
-    for r in S[S.counts].itertuples():
-        if T(r.evd) is not None and nz(r.ccn): evd_by.setdefault(r.ccn, []).append(T(r.evd))
+    for r in S.itertuples():       # sale dates, and management starts (including a pending buyer's), rule a home out as "not sold"
+        if not nz(r.ccn): continue
+        if r.counts and T(r.evd) is not None: evd_by.setdefault(r.ccn, []).append(T(r.evd))
+        if T(r.mgmt) is not None and nz(r.override) not in ('closure', 'not a sale', 'not completed'): evd_by.setdefault(r.ccn, []).append(T(r.mgmt))
     for r in M['ev_own'][M['ev_own'].category.isin(['Operator change', 'Change of ownership (CMS flag)'])].itertuples(): evd_by.setdefault(r.ccn, []).append(pd.Timestamp(r.snap))
     def near(t):
         i = (snaps - t).abs().idxmin(); return snaps[i].strftime('%Y-%m-%d') if abs((snaps[i] - t).days) <= tol else None
@@ -1209,7 +1221,7 @@ def build_public_data(M, S, val, cec, mp, ccn_of, fn, cfg):
     # event studies
     study = {}
     for setname, types in (('sold', ('Ownership/operator change',)), ('all', tuple(cfg['public_include_types']))):
-        sales = S[S.counts & S.type.isin(types) & S.before.notna() & ~S.pre_method]; study[setname] = dict(n_events=int(len(sales)), n_homes=int(sales.ccn.nunique()), metrics={})
+        sales = S[S.counts & S.type.isin(types) & S.before.notna() & ~S.pre_method]; study[setname] = dict(n_events=int(len(sales)), n_homes=int(sales.ccn.nunique()), n_mgmt=int((sales.mgmt.notna() & (sales.mgmt < sales.evd)).sum()), metrics={})
         for m, hb in (('overall', True), ('staffing', True), ('hours', True), ('rn', True), ('turnover', False)):
             res, sold, ctrl, lev_ = event_study(M, S, val, m, sales); study[setname]['metrics'][m] = dict(points=res, summary=cohort_summary(sold, ctrl, m, hb, lev_))
     # owner groups: stars at acquisition vs 1 year, 2 years and latest (each comparison uses only homes with data at that point)
@@ -1713,8 +1725,11 @@ def write_sale_timing(wb, cec, M, ctx):
         f = {}
         f['A'] = f'=IF({TRK}A{r}="","",{TRK}A{r})'; f['B'] = f'=IF(A{r}="","",{TRK}B{r})'
         f['C'] = f"=IF(A{r}=\"\",\"\",IFERROR(INDEX('CCN Map'!$B$5:$B$400,MATCH(B{r},'CCN Map'!$A$5:$A$400,0))&\"\",\"\"))"
-        f['D'] = f'=IF(A{r}="","",IF(ISNUMBER({TRK}I{r}),{TRK}I{r},IF(ISNUMBER({TRK}F{r}),{TRK}F{r},IFERROR(DATE(VALUE(RIGHT({TRK}F{r},4)),VALUE(LEFT({TRK}F{r},2)),VALUE(MID({TRK}F{r},4,2))),""))))'
-        f['E'] = f'=IF(D{r}="","",IF(ISNUMBER({TRK}I{r}),"CMS takeover date","RIDOH decision date"))'
+        # the buyer's management start (Management Agreements tab) when it is earlier than the sale, else the sale date
+        ev_ = f'IF(ISNUMBER({TRK}I{r}),{TRK}I{r},IF(ISNUMBER({TRK}F{r}),{TRK}F{r},IFERROR(DATE(VALUE(RIGHT({TRK}F{r},4)),VALUE(LEFT({TRK}F{r},2)),VALUE(MID({TRK}F{r},4,2))),"")))'
+        mg_ = f"IFERROR(INDEX('Management Agreements'!$C$5:$C$300,MATCH(A{r},'Management Agreements'!$A$5:$A$300,0)),\"\")"
+        f['D'] = f'=IF(A{r}="","",IF(AND(ISNUMBER({mg_}),ISNUMBER({ev_})),IF({mg_}<{ev_},{mg_},{ev_}),{ev_}))'
+        f['E'] = f'=IF(D{r}="","",IF(AND(ISNUMBER({mg_}),D{r}={mg_}),"Management agreement start",IF(ISNUMBER({TRK}I{r}),"CMS takeover date","RIDOH decision date")))'
         f['O'] = f"=IF(A{r}=\"\",\"\",IFERROR(INDEX('Event Overrides'!$B$5:$B$200,MATCH(A{r},'Event Overrides'!$A$5:$A$200,0))&\"\",\"\"))"
         f['F'] = f'=IF(A{r}="","",IF($O{r}<>"",IF(OR($O{r}="sale",$O{r}="parent company change"),1,0),IF(AND({TRK}E{r}<>"Pending",(' + '+'.join(cnt(t).format(r=r) for t in SALE_TYPES) + ')>0),1,0)))'
         f['G'] = f'=IF(OR($A{r}="",$C{r}="",$D{r}="",$O{r}="closure",$O{r}="not a sale",$O{r}="not completed"),"",IF(COUNTIFS({Bc},$C{r},{A},"<"&$D{r})=0,"",_xlfn.MAXIFS({A},{Bc},$C{r},{A},"<"&$D{r})))'
@@ -1805,7 +1820,7 @@ def write_read_me(wb, M, S, cec, mp, cfg, ctx):
     line('Facility Summary (CEC)', 'Four columns were added at the right: CCN, former / other names, CMS-detected changes and latest CMS rating. Column B ("Other names in the record") is unchanged.')
     line('Post-Sale Tracker', 'The rating, staffing, turnover, citation and fine blocks are now grey formula cells that read the CMS tabs. If you type a number over one of them, that number stays and the formula is not restored on later updates. Ombudsman columns are still manual.')
     sec('How the Post-Sale Tracker numbers are chosen')
-    for a, b in [('Event date', 'The CMS takeover date if the tracker has one (column I), otherwise the RIDOH decision date (column F).'), ('Before', 'The last CMS monthly file before the event date. Note: the tracker headers for staffing, turnover, citations and fines say "12 mo prior"; ratings, staffing hours, turnover use this last-file-before value, and citation and fine counts use the 12 months before the event.'),
+    for a, b in [('Event date', 'The CMS takeover date if the tracker has one (column I), otherwise the RIDOH decision date (column F). If the Management Agreements tab shows the buyer managing the home earlier, that start date is used instead, so the buyer is measured from when it took over running the home.'), ('Before', 'The last CMS monthly file before the event date. Note: the tracker headers for staffing, turnover, citations and fines say "12 mo prior"; ratings, staffing hours, turnover use this last-file-before value, and citation and fine counts use the 12 months before the event.'),
                  ('Year 1 / Year 2', 'The first CMS file at least 12 / 24 months after the event (within about 3 months of that date). Left blank if the next ownership change at that CCN came first, the facility left the CMS files, or the date has not arrived yet.'),
                  ('At exit, or current', 'The last CMS file before the next ownership change at the same CCN; if there is none, the latest file.'), ('Citations and fines', 'Counted by inspection / penalty date in the 12 months before, months 0-12 after (Year 1) and months 12-24 after (Year 2).'),
                  ('CMS shows an operator change', "The first CMS file, up to 6 months before the event or later (limit 730 days), whose operator (legal business name) differs from the earlier one. CMS usually shows a new operator months after the state's decision.")]: line(a, b)
@@ -2094,7 +2109,7 @@ footer a{color:var(--fg)}
 <span class="asof" id="asof"></span>
 </div></header>
 <nav class="jump" aria-label="Sections"><div class="wrap">
-<a href="#sold">When homes were sold</a><a href="#lookup">Look up a home</a><a href="#groups">Owner groups</a><a href="#projected">Projected and actual</a><a href="#related">Money to owners’ companies</a><a href="#about">About the data</a>
+<a href="#sold">When homes were sold</a><a href="#allsales">Every sale since 2007</a><a href="#lookup">Look up a home</a><a href="#groups">Owner groups</a><a href="#projected">Projected and actual</a><a href="#related">Money to owners’ companies</a><a href="#about">About the data</a>
 </div></nav>
 <main class="wrap">
 <section id="sold"><h2>What happened when homes were sold</h2>
@@ -2104,7 +2119,7 @@ footer a{color:var(--fg)}
 <p class="small" id="tiles-why" style="margin-top:0"></p>
 <div class="panel" id="study-panel"><h3 style="margin-top:0">Month by month: sold homes compared with similar homes</h3>
 <div class="row"><div class="tabs" role="group" aria-label="Which changes" id="set-tabs" style="margin:0"></div><div class="tabs" role="group" aria-label="Choose a measure" id="metric-tabs" style="margin:0"></div></div>
-<p class="small" style="margin:6px 0 0">Each point is the average change from the last CMS figure before the sale (0, at "Sale"). Points left of "Sale" show the year leading up to it.</p>
+<p class="small" style="margin:6px 0 0">Each point is the average change from the last CMS figure before the sale (0, at "Sale"). Points left of "Sale" show the year leading up to it. When the buyer began managing the home before the sale and that date is on record, "Sale" is the date it began managing.</p>
 <div class="chartbox" id="study-line"></div><div class="legend"><span><i style="border-color:var(--sold)"></i>Homes that were sold</span><span><i class="dash" style="border-color:var(--ctrl)"></i>Similar homes that were not sold</span></div>
 <div class="callout" id="study-text" aria-live="polite"></div>
 <details style="margin-top:8px"><summary>The same change as bars: the year before, the first year after, and the second</summary><p class="small" id="study-howto" style="margin:4px 0 0"></p>
@@ -2120,7 +2135,7 @@ footer a{color:var(--fg)}
 
 
 
-<h3>Every sale, one row each</h3>
+<h3 id="allsales" style="scroll-margin-top:64px">Every sale since 2007</h3>
 <div class="row"><input type="search" id="sale-q" placeholder="Search by home, town or owner" aria-label="Search sales"><label class="chk"><input type="checkbox" id="sale-parent" checked> Include chain reorganizations</label><label class="chk"><input type="checkbox" id="sale-cms"> Only homes with CMS data</label><label class="phone-only" for="sale-sort">Sort by <select id="sale-sort"><option value="date:-1">Newest first</option><option value="date:1">Oldest first</option><option value="name:1">Home, A to Z</option><option value="buyer:1">New owner, A to Z</option></select></label><button class="btn" id="dl-sales">Download this table (CSV)</button></div>
 <div class="tblwrap stack"><table id="sales-tbl"><caption>Dates are the CMS takeover date where CMS lists one, otherwise the state's decision date. Stars are CMS overall ratings (5 is best). Nurse hours are what homes report to CMS, per resident per day. The line under them is CMS's case-mix adjusted figure, which accounts for how much care the residents need. A note under the hours marks a figure that changed by more than 1 hour in one CMS update, which is rare and can mean a payroll reporting problem.</caption><thead></thead><tbody></tbody></table></div><div class="phone-only" id="sales-more"></div><p class="small" id="date-legend"></p>
 <p class="small">Blank cells mean CMS data is not available for that period: the sale was before CMS data starts in April 2019, is too recent for a year to have passed, or the home left the CMS files.</p>
@@ -2384,7 +2399,7 @@ function drawStudy() {
         el('tbody', {}, hs.slice().sort((a, b) => { const da = chg(a.b, a.y2), db = chg(b.b, b.y2); if (da == null && db == null) return a.date < b.date ? 1 : -1; if (da == null) return 1; if (db == null) return -1; return m.hb ? da - db : db - da; })
           .map(h => { const d = chg(h.b, h.y2); return el('tr', {}, el('td', { text: h.name }), el('td', { text: fmtMon(h.date) }), el('td', { class: 'small', text: h.buyer || '' }), el('td', { class: 'num', text: fmtv(h.b) }), el('td', { class: 'num', text: fmtv(h.y1) }), el('td', { class: 'num', text: fmtv(h.y2) }), el('td', { class: 'num', text: d == null ? 'not yet' : fmts(d) })); }))))));
   }
-  $('#study-note').textContent = `Based on ${st_.n_events} sales (${st_.n_homes} homes) with a CMS rating before the sale, in files from April 2019. Months a home was in CMS's Special Focus Facility program count as 0 stars. "Similar homes" were not sold and had no new operator from a year before to two years after the sale, and they started where the sold home started: the same CMS star rating on the same date (within one star if fewer than 3 homes matched), or, for staffing hours and turnover, the 8 homes with the closest figure. Matching the starting point matters because homes at the bottom of the ratings tend to rise, and homes at the top tend to fall, whoever owns them. The groups are small, so a difference of a few tenths can come from one or two homes. A buyer sometimes runs a home under a management agreement before the state approves the sale, and CMS can take months to show a new operator, so the "before" rating may already reflect the buyer's management. This shows what happened, not why: ratings also move with inspections, staffing rules and the pandemic, which is why the comparison bars matter.`;
+  $('#study-note').textContent = `Based on ${st_.n_events} sales (${st_.n_homes} homes) with a CMS rating before the sale, in files from April 2019. Months a home was in CMS's Special Focus Facility program count as 0 stars. "Similar homes" were not sold and had no new operator from a year before to two years after the sale, and they started where the sold home started: the same CMS star rating on the same date (within one star if fewer than 3 homes matched), or, for staffing hours and turnover, the 8 homes with the closest figure. Matching the starting point matters because homes at the bottom of the ratings tend to rise, and homes at the top tend to fall, whoever owns them. The groups are small, so a difference of a few tenths can come from one or two homes. A buyer sometimes runs a home under a management agreement before the state approves the sale. When that date is on record (${st_.n_mgmt || 0} of these sales), the comparison starts when the buyer began managing the home, not at the sale. The agreements are not published, so other buyers may have been managing before the sale too, and CMS can take months to show a new operator, so some "before" ratings may already reflect the buyer's management. This shows what happened, not why: ratings also move with inspections, staffing rules and the pandemic, which is why the comparison bars matter.`;
   [...$('#set-tabs').children].forEach(b => b.setAttribute('aria-pressed', b.dataset.k === setKey)); [...$('#metric-tabs').children].forEach(b => b.setAttribute('aria-pressed', b.dataset.k === metKey));
 }
 [['sold', 'Homes sold to a new operator'], ['all', 'Including chain reorganizations']].forEach(a => $('#set-tabs').append(el('button', { class: 'tab', 'data-k': a[0], 'aria-pressed': 'false', text: a[1], onclick: () => { setKey = a[0]; drawStudy(); } })));
@@ -2448,7 +2463,7 @@ drawMoney();
   money('other_sh', 'Other payments to companies the business owners also control', 'management fees and services, not rent', true);
   money('margin', 'Operating margin the home reported', 'after rent and fees to companies the business owners also control', false);
   if (!rows.length) { $('#ba-panel').classList.add('hidden'); return; }
-  $('#ba-lede').textContent = 'Each row follows the same sold homes from the last figure before the sale to two years after, and compares the change with homes that were not sold over the same years. For ratings and staffing, "before" is the last CMS figure before the sale and the comparison is similar homes: homes not sold that started at the same rating (or, for hours, the closest figure). For the money rows, "before" is the cost-report year before the sale and the comparison is every home that never changed hands and filed reports for the same two years. Chain reorganizations are not included.';
+  $('#ba-lede').textContent = 'Each row follows the same sold homes from the last figure before the sale to two years after, and compares the change with homes that were not sold over the same years. For ratings and staffing, "before" is the last CMS figure before the sale (or before the buyer began managing the home, when that date is on record) and the comparison is similar homes: homes not sold that started at the same rating (or, for hours, the closest figure). For the money rows, "before" is the cost-report year before the sale and the comparison is every home that never changed hands and filed reports for the same two years. Chain reorganizations are not included.';
   $('#ba-count').textContent = 'A row counts only homes with a figure at both ends, so the counts differ: a home sold too recently has no "two years after" yet, CMS leaves staffing blank when payroll data is missing, and the money rows come from annual Medicare cost reports, which run through fiscal year ' + ((D.money && D.money.last_year) || '') + '.';
   const tb = el('tbody');
   rows.forEach(r => tb.append(el('tr', {}, el('th', { scope: 'row' }, el('span', { class: 'm', text: r.label }), el('span', { class: 'sub', text: r.sub })),
@@ -2476,14 +2491,19 @@ drawMoney();
 
 /* state review details: conditions, whether they were triggered, and the linked documents */
 const CD = D.cecdocs || {};
-function cecDetail(id, label) {
+function cecDetail(id, what) {
   const d = CD[id]; if (!d) return null;
   const parts = [];
-  const cx = d.extra || d.cond; if (cx) parts.push(el('p', {}, el('b', { text: d.extra ? 'Conditions beyond the standard set of statutory conditions: ' : 'Conditions: ' }), cx));
-  if (d.trig) parts.push(el('p', {}, el('b', { text: 'Triggered? ' }), d.trig));
+  const pend = d.extra === 'Pending';
+  if (pend) parts.push(el('p', {}, el('b', { text: 'Conditions: ' }), 'none yet. The state has not decided this application.'));
+  else { const cx = d.extra || d.cond; if (cx) parts.push(el('p', {}, el('b', { text: d.extra ? 'Conditions beyond the standard set of statutory conditions: ' : 'Conditions: ' }), cx));
+    if (d.trig) parts.push(el('p', {}, el('b', { text: 'Triggered? ' }), d.trig)); }
   const items = d.links.map(l => el('li', {}, el('a', { href: l.url, target: '_blank', rel: 'noopener' }, l.role + ': ' + l.label))).concat(d.notes.map(n => el('li', { class: 'small', text: n })));
   if (items.length) parts.push(el('ul', { class: 'docs' }, items));
-  return parts.length ? el('details', { class: 'cecdetail' }, el('summary', { text: label || 'Conditions and documents' }), parts) : null;
+  if (!parts.length) return null;
+  // "and conditions" only when there are conditions to show (a pending application has none yet).
+  const hasCond = !pend && !!(d.extra || d.cond || d.trig);
+  return el('details', { class: 'cecdetail' }, el('summary', { text: 'CEC documents' + (hasCond ? ' and conditions' : '') + ' for ' + (what || 'this sale') }), parts);
 }
 /* a buyer's record: every Rhode Island home it has run, counted only while it ran each one, and CMS's national figures */
 const money0 = v => '$' + Math.round(v || 0).toLocaleString('en-US');
@@ -2602,7 +2622,7 @@ function drawSales() {
       ...(r.hj ? [['before', 'Before'], ['y1', '1 yr']].filter(([k]) => r.hj[k]).map(([k, w]) => el('div', { class: 'small', text: w + ' figure: big change in one CMS update (' + f2(r.hj[k].prev) + ' to ' + f2(r.hj[k].now) + '). May be a payroll reporting problem.' })) : [])] : '\u2013');
     const ser = el('td', { class: 'num sm', 'data-label': 'Serious citations: year before, year after' }, r.ser.before != null ? [String(r.ser.before), el('span', { class: 'arrow', text: '\u2192' }), r.ser.y1 == null ? '\u2013' : String(r.ser.y1)] : '\u2013');
     const fin = el('td', { class: 'num sm', 'data-label': 'Fines: year before, year after' }, r.fines.before != null ? [money(r.fines.before), el('span', { class: 'arrow', text: '\u2192' }), r.fines.y1 == null ? '\u2013' : money(r.fines.y1)] : '\u2013');
-    tb.append(el('tr', { class: 'srow' }, el('td', { class: 'num sd', 'data-label': 'Date', title: r.date_note }, r.outcome === 'Pending' ? 'Pending, application submitted ' + fmtDay(r.date) : [fmtDay(r.date), dateMark(r.date_note)], notClosed(r) ? el('div', { class: 'small', text: 'Approved, not yet closed' }) : null, r.date_note === 'Approximate date' ? el('div', { class: 'small', text: 'Approximate. The state record does not give an exact date.' }) : null, r.mgmt_start ? el('div', { class: 'small', text: 'Buyer managing from ' + fmtMon(r.mgmt_start) }) : null, r.cms_op ? el('div', { class: 'small', text: 'CMS records updated ' + fmtMon(r.cms_op) }) : null), el('td', { class: 'sh' }, D.facilities.some(f => f.id === r.fid) ? el('button', { class: 'linkbtn', text: r.name, onclick: () => showFacility(r.fid, true) }) : r.name, r.town ? el('div', { class: 'small', text: r.town }) : null), el('td', { class: 'st', 'data-label': 'Type' }, r.label, r.outcome === 'Pending' ? el('div', { class: 'small', text: 'Pending' }) : null), newOwner, stars, hrs, ser, fin)); const cd = cecDetail(r.cec, 'Conditions and documents for this sale'); if (cd) tb.append(el('tr', { class: 'cecrow' }, el('td', { colspan: 8 }, cd))); });
+    tb.append(el('tr', { class: 'srow' }, el('td', { class: 'num sd', 'data-label': 'Date', title: r.date_note }, r.outcome === 'Pending' ? 'Pending, application submitted ' + fmtDay(r.date) : [fmtDay(r.date), dateMark(r.date_note)], notClosed(r) ? el('div', { class: 'small', text: 'Approved, not yet closed' }) : null, r.date_note === 'Approximate date' ? el('div', { class: 'small', text: 'Approximate. The state record does not give an exact date.' }) : null, r.mgmt_start ? el('div', { class: 'small', text: 'Buyer managing from ' + fmtMon(r.mgmt_start) }) : null, r.cms_op ? el('div', { class: 'small', text: 'CMS records updated ' + fmtMon(r.cms_op) }) : null), el('td', { class: 'sh' }, D.facilities.some(f => f.id === r.fid) ? el('button', { class: 'linkbtn', text: r.name, onclick: () => showFacility(r.fid, true) }) : r.name, r.town ? el('div', { class: 'small', text: r.town }) : null), el('td', { class: 'st', 'data-label': 'Type' }, r.label, r.outcome === 'Pending' ? el('div', { class: 'small', text: 'Pending' }) : null), newOwner, stars, hrs, ser, fin)); const cd = cecDetail(r.cec, r.outcome === 'Pending' ? 'this pending sale' : r.kind === 'parent' ? 'this chain reorganization' : 'this sale'); if (cd) tb.append(el('tr', { class: 'cecrow' }, el('td', { colspan: 8 }, cd))); });
   if (!rows.length) tb.append(el('tr', {}, el('td', { colspan: 8, text: 'No sales match.' })));
 }
 $('#date-legend').textContent = dateLegend();
@@ -2853,7 +2873,7 @@ function eraPanel(f) {
   const nApproved = f.events.filter(e => ['sale', 'parent', 'internal'].includes(e.kind) && e.outcome !== 'Pending').length + (f.undated || []).filter(u => ['sale', 'parent', 'internal'].includes(u.kind) && !u.pending).length;
   if (nApproved) wrap.append(el('p', { style: 'margin:6px 0', text: 'The state has approved ' + nApproved + (nApproved === 1 ? ' change' : ' changes') + ' of control for this home since 2007.' }));
   const pend = f.events.filter(e => e.outcome === 'Pending').concat((f.undated || []).filter(u => u.pending));
-  pend.forEach(p => wrap.append(el('div', { class: 'note', text: 'Pending with the state: ' + ([p.buyer, p.who].filter(Boolean).join(', ') || 'application not yet decided') + '. Not included in the history below until it is decided.' })));
+  pend.forEach(p => wrap.append(el('div', { class: 'note' }, 'Pending with the state: ' + ([p.buyer, p.who].filter(Boolean).join(', ') || 'application not yet decided') + '. Not included in the history below until it is decided.', p.cec ? cecDetail(p.cec, 'this pending sale') : null)));
   const list = el('div', { class: 'eras' }); wrap.append(list);
   eras.forEach(r => {
     const first = r.evs[0] || {}, names = r.kind === 'earlier' ? 'Earlier owner' : (first.buyer || first.who || 'New owner');
@@ -2889,6 +2909,7 @@ function eraPanel(f) {
     else if (r.startApprox || r.endApprox) card.append(el('p', { class: 'small', style: 'margin:8px 0 0', text: 'The state record does not give an exact date, so no rating change is shown for this period.' }));
     else card.append(el('p', { class: 'small', style: 'margin:8px 0 0', text: 'Too short, or too long ago, for CMS ratings on this page to show a change (CMS files here start in ' + fmtMon(D.dates[0]) + ').' }));
     if (r.notes && r.notes.length) card.append(el('ul', { class: 'notes' }, r.notes.map(n => el('li', { text: fmtDay(n.date) + ': ' + (KIND_LBL[n.kind] || n.label) + (n.who ? ' (' + [n.buyer, n.who].filter(Boolean).join(', ') + ')' : '') }))));
+    r.evs.filter(e => e.cec).forEach(e => card.append(cecDetail(e.cec, e.kind === 'parent' ? 'this chain reorganization' : 'this sale')));
     list.append(card);
   });
   return wrap;
@@ -2911,7 +2932,7 @@ function showFacility(id, scroll) {
   const eraP = eraPanel(f); if (eraP) box.append(eraP);
   const pjP = projPanel(f); if (pjP) box.append(pjP);
   const rpP = rpPanel(f); if (rpP) box.append(rpP);
-  if (f.events.length) { const ol = el('ol', { class: 'timeline' }); f.events.forEach(e => ol.append(el('li', {}, el('div', { class: 'small', title: e.date_note || '' }, fmtDay(e.date), dateMark(e.date_note)), el('div', {}, el('span', { class: 'kind ' + (e.kind === 'cms' ? 'cms' : e.kind === 'sale' ? 'sale' : e.kind === 'parent' ? 'parent' : (e.kind === 'closed' || e.kind === 'unclosed') ? 'closed' : e.kind === 'mgmt' ? 'mgmt' : ''), text: KIND_LBL[e.kind] || e.label }), (e.kind === 'closed' || e.kind === 'unclosed') ? el('span', { text: e.label }) : e.label && e.kind !== 'cms' ? el('span', { text: [e.buyer, e.who].filter(Boolean).join(' \u2014 ') }) : el('span', { text: e.label + (e.who ? ': ' + e.who : '') }), e.outcome ? el('span', { class: 'small', text: ' \u00B7 ' + e.outcome }) : null, el('div', { class: 'small', text: e.src }), cecDetail(e.cec, 'Conditions and documents for this state review'))))); box.append(el('details', { class: 'panel', open: eraP ? null : '' }, el('summary', { text: 'Every record behind this, in date order' }), el('p', { class: 'small', text: 'State-reviewed changes and changes visible in CMS data, newest first.' }), ol, el('p', { class: 'small', text: dateLegend() }))); }
+  if (f.events.length) { const ol = el('ol', { class: 'timeline' }); f.events.forEach(e => ol.append(el('li', {}, el('div', { class: 'small', title: e.date_note || '' }, fmtDay(e.date), dateMark(e.date_note)), el('div', {}, el('span', { class: 'kind ' + (e.kind === 'cms' ? 'cms' : e.kind === 'sale' ? 'sale' : e.kind === 'parent' ? 'parent' : (e.kind === 'closed' || e.kind === 'unclosed') ? 'closed' : e.kind === 'mgmt' ? 'mgmt' : ''), text: KIND_LBL[e.kind] || e.label }), (e.kind === 'closed' || e.kind === 'unclosed') ? el('span', { text: e.label }) : e.label && e.kind !== 'cms' ? el('span', { text: [e.buyer, e.who].filter(Boolean).join(' \u2014 ') }) : el('span', { text: e.label + (e.who ? ': ' + e.who : '') }), e.outcome ? el('span', { class: 'small', text: ' \u00B7 ' + e.outcome }) : null, el('div', { class: 'small', text: e.src }), cecDetail(e.cec, 'this state review'))))); box.append(el('details', { class: 'panel', open: eraP ? null : '' }, el('summary', { text: 'Every record behind this, in date order' }), el('p', { class: 'small', text: 'State-reviewed changes and changes visible in CMS data, newest first.' }), ol, el('p', { class: 'small', text: dateLegend() }))); }
   else box.append(el('div', { class: 'panel' }, el('p', { text: 'No ownership changes on record for this home.' })));
   if (f.has_cms) {
     const mk = []; f.events.forEach(e => { if (e.kind === 'cms' || e.kind === 'realestate' || e.kind === 'unclosed') return; const x = MS(e.date); mk.push({ x, color: e.kind === 'sale' ? css('--sold') : (e.kind === 'closed' ? css('--fg') : css('--accent')), dash: e.kind === 'internal' ? '3 3' : '', title: KIND_LBL[e.kind] + ', ' + fmtDay(e.date) }); });
@@ -3074,7 +3095,7 @@ function showFacility(id, scroll) {
 /* ---------- about + downloads ---------- */
 const ab = $('#about-body');
 [['Where the numbers come from', 'CMS Nursing Home Care Compare monthly files (star ratings, staffing, turnover, inspection citations, fines, ownership fields), Rhode Island homes only, and the Rhode Island Department of Health\u2019s annual reports of Change in Effective Control (CEC) reviews.'],
- ['Conditions and documents', 'Under each home in the sales table and on its timeline, "Conditions and documents" lists what the Health Services Council recommended and the Health Department decided: the conditions beyond the standard set of statutory conditions, whether any were triggered, and links to the Council\u2019s report and decision letter and to the public comments, applicant responses, presentations and meeting transcripts that report links. Most approvals carry the same standard set of statutory conditions: carry out the project as approved, become accredited within 2 years, run national background checks, give the state data on request, no discrimination by payment source, a good-faith search for another payor before discharging a resident, and individualized resident-centered care. Those are not repeated under each sale, only anything added to them (a few 2022 approvals, for example, dropped the accreditation condition). "No public record found" under triggered means the page found nothing public showing a condition was tested, not that it was met. Some approvals were never completed; those are marked on the home\u2019s timeline and not counted as sales.'],
+ ['CEC documents and conditions', 'Under each sale in the sales table, on each owner\u2019s block on a home\u2019s page, and on its timeline, "CEC documents and conditions" lists what the Health Services Council recommended and the Health Department decided: the conditions beyond the standard set of statutory conditions, whether any were triggered, and links to the Council\u2019s report and decision letter and to the public comments, applicant responses, presentations and meeting transcripts that report links. Most approvals carry the same standard set of statutory conditions: carry out the project as approved, become accredited within 2 years, run national background checks, give the state data on request, no discrimination by payment source, a good-faith search for another payor before discharging a resident, and individualized resident-centered care. Those are not repeated under each sale, only anything added to them (a few 2022 approvals, for example, dropped the accreditation condition). "No public record found" under triggered means the page found nothing public showing a condition was tested, not that it was met. Some approvals were never completed; those are marked on the home\u2019s timeline and not counted as sales.'],
  ['What "sold" means here', 'A change of control approved by the state, most often a sale to a new operator. "Chain reorganizations" are the records the state log marks as a corporate parent change rather than a sale to a different buyer; since April 2019 that is only the 2022 Tryko-to-Marquis reorganization of four homes. Every other change of control on this page is a sale to a new owner or operator. Estate and internal restructurings and real-estate-only deals are shown on a home\u2019s timeline but not counted as sales.'],
  ['Dates', 'The sale date is CMS\u2019s takeover date when CMS lists one, otherwise the state\u2019s decision date. CMS files usually show a new operator several months later. The date shown in the CMS-data timeline entries is when CMS\u2019s files first showed the change.'],
  ['Star ratings', 'CMS revised how star ratings are calculated in April 2019 (the statewide average fell from 3.8 to 3.35 in a single month) and has adjusted its methods since. Charts start after that change. Ratings are one measure of a home, not a full picture of care.'],
