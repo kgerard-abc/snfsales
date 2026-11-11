@@ -1,0 +1,456 @@
+
+===== SLIDE 1 =====
+Health Concepts Nursing Facilities 
+Change of Ownership
+Deal 
+Overview
+Presentation to the Rhode Island Health Services Council
+August 9, 2022
+===== SLIDE 2 =====
+Overview of Presentation	
+We were engaged to help the Rhode Island Department of Health (“RIDOH”) understand the transaction contemplated by Health Concepts to sell and transfer ownership of 10 nursing facilities to Tryko and Kadima (“Transaction”) 
+This presentation reflects our understanding of the Transaction, as memorialized in the Transaction documents and the supplemental documentation we received from the transacting parties
+Capitalized terms used herein are either from the Transaction documents directly, or were based on defined terms in the Transaction documents but were renamed for the ease of explaining the Transaction in the context of this presentation
+2
+===== SLIDE 3 =====
+Proposed Deal Summary
+Health Concepts currently owns and operates 10 nursing facilities in Rhode Island
+It desires to sell all 10 facilities
+4 of the facilities would be sold directly to Tryko, which currently operates other nursing facilities in Rhode Island
+6 of the facilities would be sold indirectly to Kadima, which currently owns and operates 6 nursing facilities in Pennsylvania, but none in Rhode Island
+The purchase price for the overall deal is: $86M 
+3
+===== SLIDE 4 =====
+Transaction History
+July 2021:
+Health Concepts entered into an Asset Purchase Agreement (“APA”) with Tryko to sell the real estate/facility assets of its 10 nursing facilities to Tryko
+Health Concepts entered into 10 Operations Transfer Agreements (“OTAs”) with Tryko to transition operations of the 10 nursing facilities to Tryko
+October 2021:
+Tryko entered into a Membership Interest Purchase Agreement (“MIPA”) with Kadima to transfer Tryko’s ownership interests in various entities that are parties to the APA and OTAs with Health Concepts 
+As a result, Kadima will become the ultimate owner of those entities, which are acquiring real estate/facility assets or are parties to OTAs with respect to 6 nursing facilities 
+4
+===== SLIDE 5 =====
+Complicated Structure
+The Transaction is complicated because:
+The number of legal entities involved
+There are 10 nursing facilities, each of which will have New Real Estate Owners and New Licensees/Operators, and some of which will have Interim Licensees/Operators 
+The agreements are entered into by named parties “or [their] designees” 
+E.g., The Interim Licensees/Operators are Tryko designees, and serve as place holder entities
+The number of assignments to other entities
+Because there was an APA, and then a MIPA, the transaction contemplates Tryko assigning certain rights and designating certain new entities to step in its shoes as the parties to particular Transaction documents
+Some of the entities have very complicated ownership structures
+This is particularly true with respect to the ownership structures of the Tryko entities
+5
+===== SLIDE 6 =====
+Ownership Transfer Mechanisms
+Understanding the various agreements through which the change of ownership will be effectuated
+6
+===== SLIDE 7 =====
+The Asset Purchase Agreement (“APA”)
+The APA was executed in July 2021 between Health Concepts and Tryko
+Under the APA, Tryko will acquire the real estate/facility assets of the 10 nursing facilities from Health Concepts
+Tryko (through its 
+“Purchaser” 
+RSO Investments LLC) will buy the real estate and physical facility assets of all 10 nursing facilities
+Tryko will simultaneously assign Purchaser’s right under the APA to buy:
+4 of the 10 nursing facilities to 4 other Tryko owned entities: “
+Tryko Facility Purchaser Entities
+”
+6 of the 10 nursing facilities to 6 “
+Single Purpose Entities
+” that Tryko also owns 
+All 10 Tryko Facility Purchaser Entities and Single Purpose Entities will be under common ownership with the Purchaser, 
+RSO Investments 
+LLC, and ultimately owned by Tryko through Rainwood Holdings LLC
+7
+===== SLIDE 8 =====
+The Membership Interest Purchase Agreement (“MIPA”)
+The MIPA was executed in October 2021 between Tryko and Kadima
+Under the MIPA, Tryko will transfer its membership interests (i.e., ownership) in the 6 Single Purpose Entities to Kadima
+Under the APA, the 6 Single Purpose Entities will acquire real estate/facility assets of 6 nursing facilities 
+Thus, by transferring the ownership of the 6 Single Purpose Entities, under the MIPA, Kadima will become the real estate/facility asset owner of 6 nursing facilities
+The MIPA does not impact the other 4 nursing 
+facilities 
+Tryko is retaining the ownership interests in the 4 Tryko Facility Purchaser Entities
+Tryko will become the new real estate owner of 4 nursing facilities 
+8
+===== SLIDE 9 =====
+Rainwood Holdings, LLC
+RSO Investments  LLC (APA Purchaser)
+Ownership Structure under APA
+Tryko*
+6 Single Purpose Entities
+4 Tryko Facility Purchaser Entities
+100%
+100%
+100%
+100%
+Ownership Structure under MIPA
+Rainwood Holdings, LLC
+RSO Investments  LLC (APA Purchaser)
+Tryko*
+4 Tryko Facility Purchaser Entities
+6 Single Purpose Entities to become Ultimate Real Estate Owners 
+100%
+100%
+100%
+100%
+Assignment of Right to Buy 
+Real Estate Assets 
+under APA 
+Bayberry Rehabilitation & Nursing LLC
+Kadima*
+100%
+* Reflects oversimplified, ultimate ownership
+Transfer of Membership Interests under MIPA
+Real Estate/Facility Ownership
+9
+Ownership Structure 
+After Tryko’s Assignments
+Rainwood Holdings, LLC
+RSO Investments  LLC (APA Purchaser)
+Tryko*
+100%
+100%
+Assignment
+===== SLIDE 10 =====
+The 10 Operations Transfer Agreements (“OTAs”)
+The 10 OTAs were executed in July 2021 between the current Health Concepts operators and Tryko
+Under the OTAs, the operations of each facility will transfer from the current operators to 10 “
+Interim Operators
+” (one per nursing facility) 
+The Interim Operators will all be owned by Tryko, through Rainwood Holdings, LLC
+The OTAs (and all assignments to be described) will become effective simultaneously at Closing
+The Interim Operators will exercise no ownership or control over the facilities
+10
+===== SLIDE 11 =====
+4 Operations Transfer Agreements (“OTAs”)
+Interim Operators are defined to include Tryko designees
+For 4 nursing facilities, Tryko will assign the 4 OTAs from Interim Operators to other Tryko affiliates
+Tryko, through the other Tryko affiliates, will become the “
+New Licensee/Operator
+” of 4 nursing facilities
+11
+===== SLIDE 12 =====
+6 Operations Transfer Agreements (“OTAs”)
+For 6 facilities, Tryko will assign the OTAs from the Interim Operators to the respective 
+“Ultimate Licensee/Operator”
+The Interim Operators are owned by Tryko
+The Ultimate Licensee/Operators will initially be owned by Tryko
+The Ultimate Licensee/Operators will be parties to the respective 6 OTAs
+Under the MIPA, Tryko will transfer its membership interests (i.e., ownership) in the 6 Ultimate Licensee/Operators to Kadima
+Kadima will become a party to the 6 OTAs, and the owner of the Ultimate Licensee/Operators of 6 nursing facilities
+12
+===== SLIDE 13 =====
+Rainwood Holdings, LLC
+Ownership Structure 
+under APA
+Tryko*
+10 Interim Operators
+100%
+100%
+Ownership Structure under MIPA
+Rainwood Holdings, LLC
+Tryko*
+6 Ultimate Licensee/Operators
+100%
+100%
+100%
+Bayberry Rehabilitation & Nursing LLC
+Kadima*
+100%
+* Reflects oversimplified, ultimate ownership
+Transfer of Membership Interests under MIPA
+Ownership Structure 
+After Tryko’s Assignment
+Rainwood Holdings, LLC
+Tryko*
+6 Ultimate Licensee/ Operators
+100%
+100%
+4 New Licensee/ Operators
+100%
+4 New Licensee/ Operators
+Current Health Concepts Operators 
+OTAs
+Current Health Concepts Operators 
+OTAs
+OTAs
+Current Health Concepts Operators 
+OTAs
+OTAs
+Licensee/Operator Ownership
+13
+10 Interim Operators
+100%
+Assignment
+Assignment
+===== SLIDE 14 =====
+Tryko
+14
+===== SLIDE 15 =====
+Health Concepts Entities Transferring to Tryko
+Heritage Hills Rehabilitation and Healthcare Center
+Morgan Health Center
+Riverview Healthcare Community
+Westerly Health Center
+15
+===== SLIDE 16 =====
+80 Douglas Pike LLC d/b/a 
+Heritage Hills Rehabilitation and Healthcare Center
+16
+80 Douglas Pike LLC D/B/A Heritage Hills Rehabilitation and Healthcare Center
+Real Estate Owner: 
+80 Douglas Pike LLC and Ryan Finance, LLC
+Licensee/Operator:  
+80 Douglas Pike LLC
+The Kevin S Ryan Irrevocable Trust – 2020 
+66.67%
+33.33%
+David M. Ryan (Trustee)
+Kevin S. Ryan
+PRE CLOSE
+===== SLIDE 17 =====
+80 Douglas Pike LLC d/b/a 
+Heritage Hills Rehabilitation and Healthcare Center
+Health Concepts Real Estate Owner: 
+80 Douglas Pike LLC and Ryan Finance, LLC
+Health Concepts Licensee/Operator: 
+80 Douglas Pike LLC
+Assets Transfer Pursuant
+to Asset Purchase 
+Agreement (APA)
+Purchaser: 
+RSO Investments LLC (or designee) 
+Tryko* 
+Interim Operator: 
+Shore Point Holdings LLC (or designee)
+Operators Will Enter into Operations Transfer Agreement (OTA) 
+* Reflects oversimplified, ultimate ownership
+AT CLOSE
+17
+New Licensee/ Operator: 
+Heritage Hills Operator LLC
+Tryko Facility Purchaser: 
+Heritage Hills Property, LLC
+Rights 
+Assigned
+Rights 
+Assigned
+Rainwood Holdings, LLC
+===== SLIDE 18 =====
+Heritage Hills Operator LLC d/b/a Heritage Hills Rehabilitation and Healthcare Center
+Formerly 80 Douglas Pike LLC d/b/a Heritage Hills Rehabilitation and Healthcare Center
+           
+18
+Heritage Hills Operator LLC d/b/a Heritage Hills Rehabilitation and Healthcare Center
+(New Licensee/Operator)
+Lease agreement
+Real Estate Owner: 
+Heritage Hills 
+Property LLC*
+Quinto Nexgen LLC
+Skilled Venture LLC
+UKR Nexgen LLC
+Tryko Nexgen Holdings LLC
+RSBRMK Holdings LLC
+UAK 2020 Irrevocable Trust
+NFR 2020 Irrevocable Trust
+YR Nexgen Trust
+SK Nexgen Trust
+YK Nexgen Trust
+Uri Kahanow
+Aviva Kahanow (Trustee)
+Fraide Rokeach
+Mindee Posen (Trustee)
+Yitzchok Rokowsky (Trustee)
+Osher Flagler (Trustee)
+Tzvi Levovitz (Trustee)
+Yizchok Rokowsky (Trustee)
+78.6%
+1.4%	
+20%
+.001
+%
+99.999%
+27.74%
+72.26%
+50.002
+%
+24.999%
+24.999%
+.001%
+99.999%
+POST CLOSE
+18
+*Ownership of Real Estate Owner is the
+same as ownership of the New Licensee/Operator 
+===== SLIDE 19 =====
+Kadima
+19
+===== SLIDE 20 =====
+Health Concepts Entities Transferring to Kadima
+Bayberry Commons
+Eastgate Nursing & Rehabilitation Center
+Elmwood Health Center
+South Kingston Nursing & Rehabilitation Center
+Village House Nursing & Rehabilitation Center
+West Shore Health Center
+20
+===== SLIDE 21 =====
+198 Waterman Avenue LLC d/b/a 
+Eastgate Nursing & Rehabilitation Center
+PRE CLOSE 
+21
+198 Waterman Avenue LLC d/b/a Eastgate Nursing & Rehabilitation Center
+Real Estate Owner:  
+198 Waterman Avenue LLC and Ryan Finance, LLC
+Licensee/Operator: 
+198 Waterman Avenue LLC 
+The Kevin S Ryan Irrevocable Trust – 2020 
+66.67%
+33.33%
+David M. Ryan (Trustee)
+Kevin S. Ryan
+===== SLIDE 22 =====
+198 Waterman Avenue LLC d/b/a 
+Eastgate Nursing & Rehabilitation Center
+Health Concepts Real Estate Owner: 
+198 Waterman Avenue LLC and Ryan Finance, LLC
+Health Concepts Licensee/Operator: 
+198 Waterman Avenue LLC 
+Assets Transfer Pursuant
+to Asset Purchase 
+Agreement (APA)
+Purchaser: 
+RSO Investments LLC (or designee) 
+Tryko* 
+Interim Operator: 
+Shore Point Investments LLC (or designee)
+Operators Will Enter into Operations Transfer Agreement (OTA) 
+* Reflects oversimplified, ultimate ownership
+AT CLOSE
+22
+Rainwood Holdings, LLC
+===== SLIDE 23 =====
+198 Waterman Avenue LLC d/b/a 
+Eastgate Nursing & Rehabilitation Center
+Transfer of Membership Interests (i.e.,
+Ownership) 
+in Single Purpose Entity 
+(
+which 
+becomes Ultimate 
+Real 
+Estate 
+Owner) and in Ultimate Licensee/
+Operator Pursuant to Membership 
+Interest Purchase Agreement 
+(MIPA)
+Lease Agreement
+Purchaser: 
+RSO Investments LLC (or designee)
+Rainwood Holdings, LLC
+Interim Operator: 
+Shore Point Investments LLC (or designee)
+No actual ownership or operational control
+Ultimate Licensee/Operator: 
+Eastgate Rehabilitation & Nursing, LLC D/B/A Kadima Rehabilitation and Nursing at Eastgate
+Ultimate Real Estate Owner: 
+Eastgate Property Management, LLC
+Bayberry Rehabilitation & Nursing LLC
+* Reflects oversimplified, ultimate ownership
+Single Purpose Entity: 
+Eastgate Property Management, LLC
+Rights 
+Assigned
+Ultimate Licensee/Operator: 
+Eastgate Rehabilitation & Nursing, LLC
+SIMULTANEOUSLY AT CLOSE
+23
+Rights 
+Assigned
+TRYKO*
+KADIMA*
+===== SLIDE 24 =====
+Eastgate Rehabilitation & Nursing LLC d/b/a Kadima Rehabilitation & Nursing at Eastgate 
+(
+Formerly: 198 Waterman Avenue LLC d/b/a Eastgate Nursing & Rehabilitation Center)
+Eastgate Rehabilitation & Nursing LLC d/b/a Kadima Rehabilitation & Nursing at Eastgate
+(Licensee/Operator)
+Management
+Company: 
+Kadima Healthcare Group, Inc.
+Ultimate Real Estate Owner: 
+Eastgate Property Management, LLC
+Lease agreement
+Management
+ Agreement
+50%
+50%
+Daniel Morris
+Jonathan Strauss
+POST CLOSE
+24
+===== SLIDE 25 =====
+Ownership Structure of Eastgate Property Management, LLC
+Ultimate Real Estate Owner of Eastgate Rehabilitation & Nursing LLC d/b/a Kadima Rehabilitation & Nursing at Eastgate
+Ultimate Real Estate Owner: 
+Eastgate Property Management, LLC
+28.92%
+28.92%
+5%
+Provident Investors LLC
+18.58%
+Rhode Island Investors LLC
+18.58%
+Daniel Morris
+Jonathan Strauss
+Ephraim Mordy Lahasky
+Sharon
+ 
+Shtern
+Herman
+ 
+Shtern
+100%
+100%
+===== SLIDE 26 =====
+Ownership Structure of Kadima Healthcare Group, Inc.
+Management Company of Eastgate Rehabilitation & Nursing LLC d/b/a Kadima Rehabilitation & Nursing at Eastgate
+Management
+Company: 
+Kadima Healthcare Group, Inc.
+50%
+50%
+Daniel Morris
+Jonathan Strauss
+===== SLIDE 27 =====
+Questions?
+27
+===== SLIDE 28 =====
+Thank You
+28
+===== SLIDE 29 =====
+29
+Contact Information
+29
+Maya Frazier
+98 San Jacinto Blvd., Ste 1900
+Austin, Texas 78701
+512-676-7545
+Maya.Frazier@hklaw.com 
+Jeff Mittleman
+10 St. James Avenue, 11
+th
+ Fl.
+Boston, MA 02116
+617-854-1411
+Jeffrey.Mittleman@hklaw.com
+Ilenna Stein 
+10 St. James Avenue, 11
+th
+ Fl.
+Boston, MA 02116
+617-854-1456
+Ilenna.Stein@hklaw.com
