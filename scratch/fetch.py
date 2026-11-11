@@ -180,3 +180,44 @@ for d in list(done):
         d.setdefault('folders', [ln['uri'] for ln in d['links'] if 'folders/' in ln.get('uri', '')])
         json.dump(d, open(os.path.join(OUT, re.sub(r'[^\w-]', '_', d['id'])[:80] + '.json'), 'w'), indent=1)
 print('done')
+
+
+# Presentations: PowerPoint files from Drive, and Google Slides exported as plain text.
+import io, zipfile
+def pptx_text(data):
+    z = zipfile.ZipFile(io.BytesIO(data))
+    slides = sorted((n for n in z.namelist() if re.match(r'ppt/slides/slide\d+\.xml$', n)), key=lambda n: int(re.search(r'(\d+)', n.split('/')[-1]).group(1)))
+    out = []
+    for i, n in enumerate(slides, 1):
+        x = z.read(n).decode('utf8', 'ignore')
+        out.append(f'\n===== SLIDE {i} =====\n' + '\n'.join(html.unescape(t) for t in re.findall(r'<a:t>([^<]*)</a:t>', x)))
+    return ''.join(out), len(slides)
+
+for f in sorted(os.listdir(OUT)):
+    if not f.endswith('.json'):
+        continue
+    m = json.load(open(os.path.join(OUT, f)))
+    note = str(m.get('note', ''))
+    if m.get('status') != 'ok' or not (note.startswith('not a PDF') or note.startswith('could not read PDF')) or m.get('slides'):
+        continue
+    u = m.get('uri', '')
+    g = re.search(r'docs\.google\.com/presentation/d/([\w-]{20,})', u)
+    try:
+        if g:
+            r = S.get(f'https://docs.google.com/presentation/d/{g.group(1)}/export/pptx', timeout=120)
+            data = r.content
+        else:
+            res, err = drive(m['id'])
+            data = res[0] if res else b''
+        if data[:2] != b'PK':
+            m['note'] = note + ' | retry: not a PowerPoint file'
+        else:
+            text, n = pptx_text(data)
+            open(os.path.join(OUT, f[:-5] + '.txt'), 'w').write(text)
+            m['slides'] = n
+            m['note'] = 'PowerPoint text'
+    except Exception as e:
+        m['note'] = note + f' | retry failed: {e}'
+    print('slides', m['id'], m.get('slides'), m['note'][:60], flush=True)
+    json.dump(m, open(os.path.join(OUT, f), 'w'), indent=1)
+    time.sleep(1)
