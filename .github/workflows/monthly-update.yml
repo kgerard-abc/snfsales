@@ -49,6 +49,11 @@ jobs:
           if [ "$ok" = "0" ]; then echo "::error::The CMS download step failed (see the notices above)."; exit 1; fi
           if grep -q "NOTHING NEW" fetch.log; then echo "new=no" >> "$GITHUB_OUTPUT"; else echo "new=yes" >> "$GITHUB_OUTPUT"; fi
 
+      - name: Add any new quarter of CMS payroll staffing records (best effort)
+        if: steps.fetch.outputs.new == 'yes'
+        continue-on-error: true
+        run: python3 pipeline/scripts/pbj_years.py
+
       - name: Build the page and workbook
         if: steps.fetch.outputs.new == 'yes'
         run: |
@@ -102,7 +107,7 @@ jobs:
           rm -rf pipeline/out
           git config user.name "abc-ri-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add -A index.html owners.html sales.json pipeline/history pipeline/cms_chains.csv
+          git add -A index.html owners.html sales.json pipeline/history pipeline/cms_chains.csv pipeline/pbj_quarters.csv
           if git diff --cached --quiet; then echo "No changes."; exit 0; fi
           git commit -m "Monthly CMS update"
           git push
