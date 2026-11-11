@@ -6,6 +6,11 @@ name: Archive CEC documents to the Internet Archive
 # Start with "dry_run", then "test_3", then "full". Re-running "full" skips files that are already archived.
 
 on:
+  # Drive limits how many files one computer can download, so this also runs by itself every 4 hours
+  # until everything is archived. Each run picks up where the last one stopped.
+  # Links that fail 8 times are skipped after that. Remove this schedule once the archive is complete.
+  schedule:
+    - cron: '17 */4 * * *'
   workflow_dispatch:
     inputs:
       mode:
@@ -43,7 +48,7 @@ jobs:
         env:
           IA_ACCESS: ${{ secrets.IA_ACCESS }}
           IA_SECRET: ${{ secrets.IA_SECRET }}
-          MODE: ${{ inputs.mode }}
+          MODE: ${{ inputs.mode || 'full' }}
           YEARS: ${{ inputs.years }}
           ONLY: ${{ inputs.only }}
         run: |
