@@ -328,10 +328,12 @@ def _flag_partial_years(df):
     """Mark cost-report years that cover only part of a year: a home that changed hands mid-year files a stub report
     (for example a fiscal year ending 05/22/2025). The workbook lists each year's fiscal year end date(s); when a year
     has one end date and it comes less than 330 days after the previous report's end date, the year is partial. When two
-    stub reports were added together (two dates listed) the year is whole. Partial years are flagged, not dropped: they
+    stub reports were added together (two dates listed) the year is whole, unless together they reach more than about
+    13 months past the previous report's end (The Friendly Home's 2024 row adds the seller's January 2023 to January 30,
+    2024 report to the buyer's): that row covers more than a year and is flagged 'long' as well as partial. Partial years are flagged, not dropped: they
     appear on the home's page and in the table with a note, and are left out of the statewide comparisons."""
     if df is None or not len(df): return df
-    df = df.copy(); df['partial'] = False
+    df = df.copy(); df['partial'] = False; df['long'] = False
     if 'fye' not in df.columns: return df
     def ends(v):
         out = []
@@ -349,6 +351,7 @@ def _flag_partial_years(df):
                 end = e[0]
                 if prev_end is not None and (end - prev_end).days < 330: df.loc[i, 'partial'] = True
                 elif prev_end is None and end.year == int(r.year) and not (end.month in (3, 6, 9, 12) and end.day >= 28): df.loc[i, 'partial'] = True
+            elif len(e) > 1 and prev_end is not None and (max(e) - prev_end).days > 400: df.loc[i, 'partial'] = True; df.loc[i, 'long'] = True
             if e: prev_end = max(e)
     return df
 
@@ -823,6 +826,7 @@ def cost_panel(cec, S):
     if c is None or not len(c): return None
     c = c.copy()
     if 'partial' not in c.columns: c['partial'] = False
+    c['long'] = c['long'].fillna(False).astype(bool) if 'long' in c.columns else False
     for k in ('rp', 'rent', 'mgmt'): c[k + '_sh'] = c[k] / c['rev']
     # For the before-and-after rows: a home that reports related-party costs but no rent line paid no rent to a related
     # landlord, so count it as 0 rather than leave the home out (leaving it out dropped homes that went from no related
@@ -841,7 +845,7 @@ def cost_panel(cec, S):
     for ccn, g in by_all.items():
         out['by_facility'][ccn] = dict(years=[int(y) for y in g.index], rev=[_r(v, 0) for v in g['rev']], exp=[_r(v, 0) for v in g['exp']], rp=[_r(v, 0) for v in g['rp']], rent=[_r(v, 0) for v in g['rent']], mgmt=[_r(v, 0) for v in g['mgmt']],
                                         rp_sh=[_r(v, 4) for v in g['rp_sh']], rent_sh=[_r(v, 4) for v in g['rent_sh']], mgmt_sh=[_r(v, 4) for v in g['mgmt_sh']], margin=[_r(v, 4) for v in g['margin_sh']],
-                                        partial=[bool(v) for v in g['partial']], fye=[(None if nz(v) is None else str(v)) for v in (g['fye'] if 'fye' in g.columns else [None] * len(g))],
+                                        partial=[bool(v) for v in g['partial']], long=[bool(v) for v in (g['long'] if 'long' in g.columns else [False] * len(g))], fye=[(None if nz(v) is None else str(v)) for v in (g['fye'] if 'fye' in g.columns else [None] * len(g))],
                                         parties=[(None if nz(v) is None else str(v)[:400]) for v in g['parties']])
     ce = cec.get('costs_extra')
     if ce is not None and len(ce):                                       # homes outside the state's change-of-control records: shown on their own pages and in the table, not in the statewide comparisons
@@ -2750,7 +2754,7 @@ function rpPanel(f) {
   const body = el('tbody');
   b.years.forEach((y, k) => { if (b.rev[k] == null && b.rp[k] == null) return;
     const oth = b.rp[k] == null ? null : Math.max(0, b.rp[k] - (b.rent[k] || 0) - (b.mgmt[k] || 0)), othSh = oth == null || !b.rev[k] ? null : oth / b.rev[k];
-    body.append(el('tr', {}, el('td', { text: String(y) + (saleYrs.has(y) ? ' (sold this year)' : '') + (b.partial && b.partial[k] ? ' (part of a year)' : '') }), el('td', { class: 'num', text: money(b.rev[k]) }), usdCell(b.rp[k], b.rp_sh[k]), usdCell(b.rent[k], b.rent_sh[k]), usdCell(b.mgmt[k], b.mgmt_sh[k]), usdCell(oth, othSh), el('td', { class: 'num', text: pc1(b.margin[k]) }))); });
+    body.append(el('tr', {}, el('td', { text: String(y) + (saleYrs.has(y) ? ' (sold this year)' : '') + (b.long && b.long[k] ? ' (more than a year: two reports added together)' : (b.partial && b.partial[k] ? ' (part of a year)' : '')) }), el('td', { class: 'num', text: money(b.rev[k]) }), usdCell(b.rp[k], b.rp_sh[k]), usdCell(b.rent[k], b.rent_sh[k]), usdCell(b.mgmt[k], b.mgmt_sh[k]), usdCell(oth, othSh), el('td', { class: 'num', text: pc1(b.margin[k]) }))); });
   const wrap = el('div', { class: 'panel' }, el('h3', { style: 'margin-top:0', text: 'Money paid to related companies' }),
     el('p', { class: 'small' }, 'From the home’s Medicare cost reports (CMS form 2540-10, Worksheet A-8-1, from ', el('a', { href: 'https://www.cms.gov/data-research/statistics-trends-and-reports/cost-reports', target: '_blank', rel: 'noopener', text: 'CMS’s HCRIS files' }), '). "Related" means a company the home’s owners also control. Rent is paid to a related landlord and management fees to a related management company; small figures under each dollar amount are its share of net patient revenue. A year marked "sold" is a year the state approved a sale of this home.'),
     el('div', { class: 'tblwrap' }, el('table', {}, el('thead', {}, el('tr', {}, ['Year', 'Revenue', 'All related-party', 'Rent', 'Management fees', 'Other (therapy, supplies, services)', 'Margin'].map((t, i) => el('th', { scope: 'col', class: i ? 'num' : '', text: t })))), body)));
@@ -2775,7 +2779,7 @@ function rpPanel(f) {
     return { then, later: nxt && nxt.buyer !== then ? { buyer: nxt.buyer, year: nxt.date.slice(0, 4) } : null }; };
   const R = ids.map(id => { const b = RPB[id], f = D.facilities.find(x => x.id === id), i = rpLatest(b); if (i < 0 || isClosed(f)) return null;
     const fs = FS[id], k0 = fs ? b.years.indexOf(fs.year - 1) : -1, before = k0 >= 0 ? b.rp_sh[k0] : null, after = fs && b.years[i] > fs.year ? b.rp_sh[i] : null, op = operatorIn(f, b.years[i]);
-    return { id, name: f ? f.name : id, town: f ? f.town : '', owner: op.then, later: op.later, current: ownerOf(f), year: b.years[i], rev: b.rev[i], rp: b.rp[i], rpsh: b.rp_sh[i], rent: b.rent[i], rentsh: b.rent_sh[i], mgmt: b.mgmt[i], mgmtsh: b.mgmt_sh[i], margin: b.margin[i], partial: !!(b.partial && b.partial[i]), landlord: b.landlord || '', landlord_pending: b.landlord_pending || null, sold: fs ? fs.year : null, before, after }; }).filter(Boolean);
+    return { id, name: f ? f.name : id, town: f ? f.town : '', owner: op.then, later: op.later, current: ownerOf(f), year: b.years[i], rev: b.rev[i], rp: b.rp[i], rpsh: b.rp_sh[i], rent: b.rent[i], rentsh: b.rent_sh[i], mgmt: b.mgmt[i], mgmtsh: b.mgmt_sh[i], margin: b.margin[i], partial: !!(b.partial && b.partial[i]), long: !!(b.long && b.long[i]), landlord: b.landlord || '', landlord_pending: b.landlord_pending || null, sold: fs ? fs.year : null, before, after }; }).filter(Boolean);
   const NONE_TXT = 'No cost report data available currently';
   D.facilities.forEach(f => { if ((!RPB[f.id] || !RPB[f.id].years.length) && !isClosed(f)) R.push({ id: f.id, name: f.name, town: f.town || '', owner: ownerOf(f), current: ownerOf(f), none: true, sold: (FS[f.id] || {}).year || null }); });
   const RC = [['name', 'Home'], ['owner', 'Operator that year'], ['year', 'Year'], ['rev', 'Revenue'], ['rpsh', 'All related-party'], ['rentsh', 'Rent'], ['mgmtsh', 'Mgmt fees'], ['margin', 'Margin'], ['sold', 'Sold'], ['ba', 'Before sale \u2192 newest'], ['landlord', 'Landlord = operator?']];
@@ -2786,7 +2790,7 @@ function rpPanel(f) {
     const all = R.filter(r => (!onlyS || r.sold) && (!q || (r.name + ' ' + r.town + ' ' + r.owner + ' ' + (r.current || '')).toLowerCase().includes(q))), rows = all.filter(r => !r.none), nones = all.filter(r => r.none).sort((a, b) => a.name.localeCompare(b.name));
     rows.sort((a, b) => { const A = a[rk] == null ? (rd < 0 ? -Infinity : Infinity) : a[rk], B = b[rk] == null ? (rd < 0 ? -Infinity : Infinity) : b[rk]; return (A < B ? -1 : A > B ? 1 : 0) * rd; });
     const tb = $('#rp-tbl tbody'); tb.replaceChildren();
-    rows.forEach(r => tb.append(el('tr', {}, el('td', { style: 'min-width:13rem' }, D.facilities.some(f => f.id === r.id) ? el('button', { class: 'linkbtn', text: r.name, onclick: () => showFacility(r.id, true) }) : r.name, r.town ? el('div', { class: 'small', text: r.town }) : null), el('td', { class: 'small', style: 'min-width:9rem' }, r.owner || '', r.later ? el('div', { class: 'small', text: 'Sold to ' + r.later.buyer + ' in ' + r.later.year }) : null), el('td', { class: 'num' }, String(r.year), r.partial ? el('div', { class: 'small', text: 'Part of a year' }) : null), el('td', { class: 'num', text: money(r.rev) }), usdCell(r.rp, r.rpsh), usdCell(r.rent, r.rentsh), usdCell(r.mgmt, r.mgmtsh), el('td', { class: 'num', text: pc1(r.margin) }),
+    rows.forEach(r => tb.append(el('tr', {}, el('td', { style: 'min-width:13rem' }, D.facilities.some(f => f.id === r.id) ? el('button', { class: 'linkbtn', text: r.name, onclick: () => showFacility(r.id, true) }) : r.name, r.town ? el('div', { class: 'small', text: r.town }) : null), el('td', { class: 'small', style: 'min-width:9rem' }, r.owner || '', r.later ? el('div', { class: 'small', text: 'Sold to ' + r.later.buyer + ' in ' + r.later.year }) : null), el('td', { class: 'num' }, String(r.year), r.partial ? el('div', { class: 'small', text: r.long ? 'More than a year (two reports added together)' : 'Part of a year' }) : null), el('td', { class: 'num', text: money(r.rev) }), usdCell(r.rp, r.rpsh), usdCell(r.rent, r.rentsh), usdCell(r.mgmt, r.mgmtsh), el('td', { class: 'num', text: pc1(r.margin) }),
       el('td', { class: 'num', text: r.sold ? String(r.sold) : '' }), el('td', { text: r.before != null && r.after != null ? pc1(r.before) + ' → ' + pc1(r.after) : '–' }), el('td', { class: 'small' }, r.landlord ? (LANDLORD_SHORT[r.landlord.toLowerCase()] || r.landlord) : '', r.landlord_pending ? el('div', { class: 'small', text: (r.landlord_pending.status === 'approved' ? 'Approved sale: ' : 'Pending sale: ') + (LANDLORD_SHORT[r.landlord_pending.answer.toLowerCase()] || r.landlord_pending.answer) }) : null))));
     nones.forEach(r => tb.append(el('tr', {}, el('td', { style: 'min-width:13rem' }, D.facilities.some(f => f.id === r.id) ? el('button', { class: 'linkbtn', text: r.name, onclick: () => showFacility(r.id, true) }) : r.name, r.town ? el('div', { class: 'small', text: r.town }) : null), el('td', { class: 'small', style: 'min-width:9rem', text: r.owner || '' }), el('td', { class: 'small', colspan: RC.length - 2, text: NONE_TXT }))));
     if (!all.length) tb.append(el('tr', {}, el('td', { colspan: RC.length, text: 'No homes match.' })));
@@ -2795,7 +2799,7 @@ function rpPanel(f) {
   const nHave = R.filter(r => !r.none).length, nNone = R.length - nHave, nOld = R.filter(r => !r.none && RPB[r.id] && !RPB[r.id].from_summary).length;
   $('#rp-note').textContent = 'Cost reports are loaded for ' + nHave + ' of the ' + R.length + ' homes on this page. ' + nOld + ' of them have reports from as early as FY2015 (the homes in the state\u2019s change-of-control records); the other ' + (nHave - nOld) + ' start in FY2021. Homes that have closed are left out. The remaining ' + nNone + ' are listed at the bottom as "No cost report data available currently": the workbook has no cost report for them yet, or they have no federal provider number. ' + 'Source: Medicare cost reports (CMS-2540-10, worksheet A-8-1 for related-party costs). A report marked "part of a year" covers less than 11 months, usually because the home changed hands during the year; its margin and shares are not comparable with a full year. "Sold" is the year of the first state-approved sale of that home on this page. The before and after columns appear only when the home has a report for the year before that sale and a later one. Individual people named in the filings are not shown. A related-party payment is not by itself improper: it shows where money went, and how much of it stayed inside the owners’ group.';
   $('#dl-rp').addEventListener('click', () => download('ri_nursing_home_related_party_costs.csv', [['ccn', 'home', 'town', 'operator_in_report_year', 'current_owner', 'cost_report_year', 'report_covers', 'net_patient_revenue', 'related_party_costs', 'related_party_pct_of_revenue', 'rent_to_related_landlord', 'rent_pct', 'management_fees_to_related', 'management_pct', 'operating_margin_pct', 'first_sale_year', 'related_party_pct_year_before_sale', 'related_party_pct_newest_year', 'landlord_same_as_operator', 'landlord_if_pending_sale_closes', 'cost_report_status'],
-    ...R.map(r => r.none ? [r.id.startsWith('cec:') ? '' : r.id, r.name, r.town, r.owner || '', r.current || '', '', '', '', '', '', '', '', '', '', '', r.sold || '', '', '', '', '', NONE_TXT] : [r.id, r.name, r.town, r.owner || '', r.current || '', r.year, r.partial ? 'part of a year' : 'full year', r.rev, r.rp, r.rpsh == null ? '' : (r.rpsh * 100).toFixed(2), r.rent, r.rentsh == null ? '' : (r.rentsh * 100).toFixed(2), r.mgmt, r.mgmtsh == null ? '' : (r.mgmtsh * 100).toFixed(2), r.margin == null ? '' : (r.margin * 100).toFixed(2), r.sold || '', r.before == null ? '' : (r.before * 100).toFixed(2), r.after == null ? '' : (r.after * 100).toFixed(2), r.landlord, r.landlord_pending ? r.landlord_pending.answer : '', 'Cost report on file'])]));
+    ...R.map(r => r.none ? [r.id.startsWith('cec:') ? '' : r.id, r.name, r.town, r.owner || '', r.current || '', '', '', '', '', '', '', '', '', '', '', r.sold || '', '', '', '', '', NONE_TXT] : [r.id, r.name, r.town, r.owner || '', r.current || '', r.year, r.long ? 'more than a year' : (r.partial ? 'part of a year' : 'full year'), r.rev, r.rp, r.rpsh == null ? '' : (r.rpsh * 100).toFixed(2), r.rent, r.rentsh == null ? '' : (r.rentsh * 100).toFixed(2), r.mgmt, r.mgmtsh == null ? '' : (r.mgmtsh * 100).toFixed(2), r.margin == null ? '' : (r.margin * 100).toFixed(2), r.sold || '', r.before == null ? '' : (r.before * 100).toFixed(2), r.after == null ? '' : (r.after * 100).toFixed(2), r.landlord, r.landlord_pending ? r.landlord_pending.answer : '', 'Cost report on file'])]));
 })();
 
 /* ---------- facility lookup ---------- */
