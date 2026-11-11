@@ -1,0 +1,186 @@
+
+===== PAGE 1 =====
+November 14, 2025
+
+Via Electronic Mail Only
+
+Health Services Council
+3 Capitol Hill
+Providence, RI 02908
+
+Re: Change in Effective Control Application to Transfer Operations for Greenwood
+Operations RI LLC (Greenwood Center), indirectly owned by Mayflower H ealthcare LLC
+(55%) and ESRI H oldco LLC (45%); and Change in Effective Control Application to Transfer
+Real Estate for Greenwood RI Propco LLC (same), owned by Jacob Taub (50%) and
+Menachem Kofman (50%)
+
+To the Health Services Council:
+
+On behalf of the Office of the Health Care Advocate at the Rhode Island Office of the Attorney
+General (the “Office”), we submit this letter in response to Change in Effective Control Applications
+(CEC Application) for Greenwood Center, a 130-bed skilled nursing facility in Warwick, RI.
+
+This Office has commented previously on the use of related entities in skilled nursing transactions,
+both generally and as to prior transactions involving Mayflower Healthcare LLC. No related entities
+have been disclosed in the present transaction, but the application indicates that Greenwood
+Operations RI LLC may exercise an option to purchase Greenwood RI Propco, LLC, which could
+result in these entities coming under common ownership at some point in the future.
+
+Recognizing the special circumstances presented by the bankruptcy proceedings, this Office is
+nevertheless concerned about future use of related entities, which can have a significant impact on the
+long-term financial health of skilled nursing facilities in Rhode Island. We recommend that the Health
+Services Council conduct further inquiry and consider conditioning future approvals on updated
+disclosures should the purchase option with respect to Greenwood RI Propco, LLC be exercised and
+the entities come under common ownership.
+
+Background
+
+Related entities are companies under common ownership with a nursing home administrator with
+whom the nursing home contracts. The risk to the nursing home is that if related entities are charging
+above-market rates for the contracted services, the precious resources of these facilities will be diverted
+away from patient care as profit. Transactions involving related entities may be linked to asset shielding
+                                                    1
+
+===== PAGE 2 =====
+(where single-use LLCs serve to insulate parent companies from liability) and profit tunnelling (where
+LLCs under common ownership migrate profits away from patient care through inflated fees). The
+use of related entities may also lead to distorted financial reporting to Medicare and Medicaid,
+permitting nursing home operators to list expenses as “costs” billed through arms-length transactions,
+when they are in fact profits shifted to common owners.
+
+A working paper published by the National Bureau of Economic Research suggests 68% of profits in
+the skilled nursing care industry were hidden through related entity transactions in 2019. 1 Price
+increases were especially prevalent in real estate and management services, with costs increasing by
+42.4% and 24.6%, respectively, when the operator transacted with a related entity.
+
+Related Entities in this Transaction
+
+This transaction includes a CEC application for the operating entity (indirectly owned by Mayflower
+Healthcare LLC and ESRI Holdco LLC) and a CEC application for the real estate entity (owned by
+Jacob Taub and Menachem Kofman). To ensure a diligent review of the application and to guard
+against potential risks to patient care, the Office recommends that the Health Services Council review
+for and address the following issues raised by the application:
+
+    1. Does Greenwood Operations RI LLC Intend to Exercise its Purchase Option?
+
+       The application states that there are no business relationships between Mayflower Healthcare
+       LLC, ESRI Holdco LLC, and the operating entities (see CEC Application for Greenwood
+       Operations RI LLC at 25, Appendix G, Question 3)—but also indicates that Greenwood
+       Operations RI LLC (via these same owners) retains an option to purchase the real estate
+       entities that are currently under separate ownership. This would put real estate and operations
+       under common ownership and will likely result in them entering a lease arrangement. The
+       Office recommends that if Greenwood Operations RI LLC exercises this option, the Health
+       Services Council should require the applicant to resubmit responses to all questions included
+       as part of the present CEC application, including budget projections, to ensure that the Health
+       Services Council has a complete picture of how the addition of related entities will impact the
+       financial health of the facility.
+
+    2. Does this Transaction involve Consulting Agreements Between Related Entities?
+
+       In April 2025, the Health Services Council approved a transaction involving Mayflower
+       Healthcare LLC (three SNFs, operating entities only) that included significant related entities
+       issues. Specifically, the transaction disclosed a consulting agreement with RGW Consulting,
+       LLC, but did not disclose that the entity was commonly owned by Zev Schwartz. 2
+
+
+
+1
+ A. Gandhi and A. Olenski, Tunnelling and Hidden Profits in Health Care, NBER Working Paper
+32258 at 2 (March 2024, rev. Sept. 2024), https://www.nber.org/papers/w32258.
+2
+ In the prior transaction, RGW Consulting, LLC assessed a 5% “management fee” on the operating
+entities, despite being under common ownership by Zev Schwartz.
+
+
+                                                  2
+
+===== PAGE 3 =====
+   The current application includes no Consulting Agreements and states that no individuals or
+   ownership interests will have more than 5% control over any subcontractor that intends to
+   contract with the operating entity. See CEC Application for Greenwood Operations RI LLC
+   at 6, 25. The Office recommends that the Health Services Council inquire as to whether
+   management or consulting services will be contracted through related entities—and if so, the
+   Office recommends that the Council request and review these agreements.
+
+3. Will This Transaction Result in Payroll Reductions for RNs, LPs, and Nursing Aides?
+
+   According to the payroll expense sheet, Greenwood Center proposes to increase staffing
+   without increasing payroll and fringe benefits. The Office is concerned that any cost-cutting
+   measures create a risk of potentially underpaying and/or undercompensating staff; this risk is
+   illustrated below by comparing FY2024 to FY2025, which shows a net increase in FTEs
+   without a commensurate increase in payroll/fringe benefits. This results in a per capita
+   reduction in payroll and fringe benefits, which is anticipated to persist through FY2028.
+
+   The Office recommends that the Health Services Council inquire into the impact of these
+   reductions, whether they represent true pay cuts and/or reduction in benefits for nursing staff,
+   and if so, how the applicant plans to mitigate anticipated impacts on patient care.
+
+                FY: 2024                     FY: 2025 (current)
+                FTE Payroll / Fringe         FTE Payroll / Fringe
+    RN          22.3 $2,768,230              27     $2,732,224
+    LPN         8.4   $898,151               11     $891,801
+    N. Aide     40.6 $2,510,737              49     $2,247,582
+
+                FY: 2024                     FY: 2025 (current)
+                FTE Per Capita               FTE Per Capita
+    RN          22.3 $124,136                27     $101,193
+    LPN         8.4   $106,923               11     $81,072
+    N. Aide     40.6 $61,841                 49     $45,869
+
+   See CEC Application for Greenwood Operations RI LLC at 11, Appendix A, Question 2.
+
+4. How will the Proposed Rent Increase Impact Patient Care?
+   According to the profit and loss sheet, Greenwood Center proposes to increase the rent by
+   95% between FY2025 and FY2026, with an additional 5.5% increase planned in 2028. The
+   Office asks the Health Services Council to inquire as to the likely impact of a 95% rent increase
+   and suggests that the applicant describe how it will mitigate likely impacts on patient care.
+   This Office strongly recommends that the Health Services Council inquire into the reasons
+   for this significant increase in lease amount and request documentation demonstrating that
+   this amount represents fair market value.
+
+                               FY: 2024            FY: 2025 (current)       FY: 2026
+    Lease / Rent Expense       $810,475            $554,565                 $1,080,000
+
+
+                                              3
+
+===== PAGE 4 =====
+        See CEC Application for Greenwood Operations RI LLC at 12, Appendix A, Question 3.
+
+    5. Clarifying “Patient Care” and “Building Expenses.”
+        According to the profit and loss sheet, Greenwood Center includes a line item for “patient
+        care” and “building expenses,” which are significant: in 2026, for instance, Greenwood Center
+        projects that it will spend $284K on patient care, and $181K on building expenses, per month,
+        assessed on top of payroll for nursing staff, supplies, and lease/rent. No further detail is
+        provided. The Office recommends that the Council engage in further inquiry into these
+        expenses to ascertain their potential impact on the facility’s financial outlook and ability to
+        safely provide patient care.
+
+                                    FY: 2024              FY: 2025 (current)        FY: 2026
+         Other: (Patient Care)      $4,381,932            $3,656,209                $3,418,129
+         Other: (Building Exp.)     $1,905,349            $2,093,532                $2,180,922
+
+        See CEC Application for Greenwood Operations RI LLC at 12, Appendix A, Question 3.
+
+Conclusion
+
+The Office recommends that the Health Services Council make a full inquiry as to these and any other
+relevant terms prior to approval of this CEC application. We hope that future reviews can incorporate
+a standing review of related entities held by the applicant and any plans to utilize related entities in the
+administration of Rhode Island facilities following CEC approval.
+
+Please let us know if there are any questions we can answer to assist in your review.
+
+
+
+
+Katie Gradowski
+Special Assistant Attorney General
+ (401) 274-4400 Ext 2810
+kgradowski@riag.ri.gov
+
+
+
+
+                                                     4
+

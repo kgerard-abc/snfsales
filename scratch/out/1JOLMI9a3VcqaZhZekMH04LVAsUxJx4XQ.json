@@ -1,0 +1,39 @@
+{
+ "id": "1JOLMI9a3VcqaZhZekMH04LVAsUxJx4XQ",
+ "kind": "file",
+ "class": "linked",
+ "label": "linked from 11/25/2025; 12/2/2025 Greenwood Operations RI LLC Report of the Health Services  (page 4)",
+ "rows": [
+  "Greenwood Operations RI, LLC"
+ ],
+ "from": "1J5gldgWHCUdY2KLwDXJPYGw4AxpORZME",
+ "uri": "https://drive.google.com/file/d/1JOLMI9a3VcqaZhZekMH04LVAsUxJx4XQ/view",
+ "status": "ok",
+ "pages": 316,
+ "links": [
+  {
+   "page": 5,
+   "uri": "mailto:zevs@mayflowerhcs.com"
+  },
+  {
+   "page": 5,
+   "uri": "mailto:procha@apslaw.com"
+  },
+  {
+   "page": 15,
+   "uri": "mailto:Paula.Pullano@health.ri.gov"
+  },
+  {
+   "page": 15,
+   "uri": "mailto:Paula.Pullano@health.ri.gov"
+  },
+  {
+   "page": 44,
+   "uri": "mailto:ZevS@mayflowerhcs.com"
+  },
+  {
+   "page": 155,
+   "uri": "mailto:avk@kandsllp.com"
+  }
+ ]
+}
