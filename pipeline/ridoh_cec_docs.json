@@ -1773,6 +1773,7 @@
     "CEC-133",
     "CEC-134",
     "CEC-135",
+    "CEC-136",
     "CEC-137",
     "CEC-138"
    ],
@@ -1800,6 +1801,12 @@
      "tab": "2022"
     },
     {
+     "applicant": "Kadima - South Kingstown Rehabilitation & Nursing",
+     "col": "G",
+     "row": 120,
+     "tab": "2022"
+    },
+    {
      "applicant": "Kadima - Village House Rehabilitation & Nursing LLC",
      "col": "G",
      "row": 121,
@@ -1817,6 +1824,7 @@
     "CEC-133": "8/9/2022; 8/30/2022 Kadima CEC Health Services Council Report Adopted",
     "CEC-134": "8/9/2022; 8/30/2022 Kadima CEC Health Services Council Report Adopted",
     "CEC-135": "8/9/2022; 8/30/2022 Kadima CEC Health Services Council Report Adopted",
+    "CEC-136": "8/9/2022; 8/30/2022 Kadima CEC Health Services Council Report Adopted",
     "CEC-137": "8/9/2022; 8/30/2022 Kadima CEC Health Services Council Report Adopted",
     "CEC-138": "8/9/2022; 8/30/2022 Kadima CEC Health Services Council Report Adopted"
    },
@@ -2599,6 +2607,7 @@
     "CEC-133",
     "CEC-134",
     "CEC-135",
+    "CEC-136",
     "CEC-137",
     "CEC-138"
    ],
@@ -2626,6 +2635,12 @@
      "tab": "2022"
     },
     {
+     "applicant": "Kadima - South Kingstown Rehabilitation & Nursing",
+     "col": "H",
+     "row": 120,
+     "tab": "2022"
+    },
+    {
      "applicant": "Kadima - Village House Rehabilitation & Nursing LLC",
      "col": "H",
      "row": 121,
@@ -2643,6 +2658,7 @@
     "CEC-133": "Kadima Amended Decision w/ Conditions 2022 10 07 FINAL",
     "CEC-134": "Kadima Amended Decision w/ Conditions 2022 10 07 FINAL",
     "CEC-135": "Kadima Amended Decision w/ Conditions 2022 10 07 FINAL",
+    "CEC-136": "Kadima Amended Decision w/ Conditions 2022 10 07 FINAL",
     "CEC-137": "Kadima Amended Decision w/ Conditions 2022 10 07 FINAL",
     "CEC-138": "Kadima Amended Decision w/ Conditions 2022 10 07 FINAL"
    },
@@ -4022,6 +4038,7 @@
     "CEC-133",
     "CEC-134",
     "CEC-135",
+    "CEC-136",
     "CEC-137",
     "CEC-138"
    ],
@@ -4049,6 +4066,12 @@
      "tab": "2022"
     },
     {
+     "applicant": "Kadima - South Kingstown Rehabilitation & Nursing",
+     "col": "A",
+     "row": 120,
+     "tab": "2022"
+    },
+    {
      "applicant": "Kadima - Village House Rehabilitation & Nursing LLC",
      "col": "A",
      "row": 121,
@@ -4066,6 +4089,7 @@
     "CEC-133": "Kadima - Bayberry Rehabilitation & Nursing LLC",
     "CEC-134": "Kadima - Eastgate Rehabilitation & Nursing LLC",
     "CEC-135": "Kadima - Elmwood Rehabilitation & Nursing LLC",
+    "CEC-136": "Kadima - South Kingstown Rehabilitation & Nursing",
     "CEC-137": "Kadima - Village House Rehabilitation & Nursing LLC",
     "CEC-138": "Kadima - West Shore Rehabilitation & Nursing LLC"
    },
@@ -5197,12 +5221,7 @@
    "cec": "CEC-046",
    "reason": "no row matched its description or applicant",
    "tab": "2014"
-  },
-  {
-   "cec": "CEC-136",
-   "reason": "no row matched its description or applicant",
-   "tab": "2022"
   }
  ],
- "updated": "2026-11-11T17:14Z"
+ "updated": "2026-11-11T17:16Z"
 }
