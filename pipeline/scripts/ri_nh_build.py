@@ -306,7 +306,7 @@ def _cell_link(c):
     hl = getattr(c, 'hyperlink', None)
     if hl is not None and getattr(hl, 'target', None) and nz(v) is not None and not (isinstance(v, str) and v.startswith('=')): return (hl.target, str(v).strip())
     return None
-CEC_DOC_COLS = [('application', 'Application', 'Application'), ('application2', 'Application (earlier filing)', 'Earlier application filing'), ('notice', 'Initiation of review notice', 'Notice that review began'), ('report', 'HSC report', 'Council report'), ('decision', 'Decision letter', 'RIDOH decision letter'), ('comments', 'Public comments', 'Public comments and AG letter'), ('responses', 'Applicant responses', 'Applicant responses'),
+CEC_DOC_COLS = [('application', 'Application', 'Application'), ('application2', 'Application (earlier filing)', 'Earlier application filing'), ('notice', 'Initiation of review notice', 'Notice that review began'), ('report', 'HSC report', 'Council report'), ('decision', 'Decision letter', 'RIDOH decision letter'), ('video', 'HSC meeting video', 'Council meeting video'), ('video2', 'HSC meeting video (2nd)', 'Council meeting video'), ('comments', 'Public comments', 'Public comments and AG letter'), ('responses', 'Applicant responses', 'Applicant responses'),
                 ('presentation', 'Applicant presentation', 'Applicant presentation'), ('transcript', 'Meeting transcript', 'Meeting transcript'), ('other', 'Other document linked', 'Other document')]
 def _cec_docs(ws, h, idcol):
     """Per CEC ID: linked documents (Council report, decision letter, comments, responses, presentation, transcript), conditions and whether they were triggered. All optional."""
@@ -319,10 +319,41 @@ def _cec_docs(ws, h, idcol):
             if not cc[k]: continue
             c = ws.cell(row=r, column=cc[k]); lk = _cell_link(c)
             if lk: links.append(dict(kind=k, role=lab, label=lk[1], url=lk[0]))
-            elif k not in ('report', 'decision') and nz(c.value) is not None and not str(c.value).startswith('='): notes.append(str(c.value).strip())
+            elif k not in ('report', 'decision', 'video', 'video2') and nz(c.value) is not None and not str(c.value).startswith('='): notes.append(str(c.value).strip())
         cv = nz(ws.cell(row=r, column=cond).value) if cond else None; tv = nz(ws.cell(row=r, column=trig).value) if trig else None; xv = nz(ws.cell(row=r, column=extra).value) if extra else None
         if links or notes or cv or tv or xv: out[str(cid).strip()] = dict(links=links, notes=notes, cond=(str(cv).strip() if cv else None), extra=(str(xv).strip() if xv else None), trig=(str(tv).strip() if tv else None))
+    return _add_ridoh_docs(out)
+
+RIDOH_DOCS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'ridoh_cec_docs.json')
+_RIDOH_KIND = {'application': 'application', 'notice': 'notice', 'report': 'report', 'decision': 'decision', 'video': 'video', 'audio': 'video'}
+def _drive_key(u):
+    m_ = re.search(r'(?:/file/d/|/folders/|/d/|[?&]id=)([\w-]{15,})', str(u or ''))
+    return m_.group(1) if m_ else str(u or '').strip()
+def _add_ridoh_docs(out, path=None):
+    """Add the documents RIDOH links from its list of reviews (pipeline/ridoh_cec_docs.json, kept up to date by the
+    "Watch RIDOH's list of reviews" workflow) to each CEC ID's list. The CEC Log's own links come first; a file the log already
+    links is not repeated. When RIDOH now links a different application than the log does (it replaced a file with a folder,
+    say), both are listed."""
+    path = path or RIDOH_DOCS
+    if not os.path.exists(path): return out
+    try: docs = json.load(open(path, encoding='utf-8')).get('docs', {})
+    except Exception as e: print('  RIDOH documents list could not be read:', e); return out
+    order = {k: i for i, (k, _s, _l) in enumerate(CEC_DOC_COLS)}; added = 0
+    for d in sorted(docs.values(), key=lambda d: (d.get('date') or '', d.get('url') or '')):
+        kind = _RIDOH_KIND.get(d.get('type'))
+        if not kind or not d.get('url'): continue
+        for cid in d.get('cec', []):
+            e = out.setdefault(cid, dict(links=[], notes=[], cond=None, extra=None, trig=None))
+            if _drive_key(d['url']) in {_drive_key(l['url']) for l in e['links']}: continue
+            role = dict(CEC_DOC_COLS_ROLE)[kind]
+            if kind == 'application' and any(l['kind'] in ('application', 'application2') for l in e['links']): role = 'Application (as RIDOH now links it)'
+            if kind == 'video' and d.get('type') == 'audio': role = 'Council meeting audio'
+            e['links'].append(dict(kind=kind, role=role, label=(d.get('text_by_cec') or {}).get(cid) or d.get('text') or role, url=d['url'], date=d.get('date') or '')); added += 1
+    for e in out.values():   # keep the page's order: application, notice, report, decision, videos (by date), then the rest
+        e['links'].sort(key=lambda l: (order.get(l['kind'], 99) if l['kind'] != 'video2' else order['video'], l.get('date') or ''))
+    print(f'  RIDOH documents list: {added} links added from RIDOH that the CEC Log does not have')
     return out
+CEC_DOC_COLS_ROLE = [(k, lab) for k, _s, lab in CEC_DOC_COLS]
 
 def _flag_partial_years(df):
     """Mark cost-report years that cover only part of a year: a home that changed hands mid-year files a stub report
@@ -3097,7 +3128,7 @@ function toProfile(smooth) { const box = $('#profile'), nav = document.querySele
 /* ---------- about + downloads ---------- */
 const ab = $('#about-body');
 [['Where the numbers come from', 'CMS Nursing Home Care Compare monthly files (star ratings, staffing, turnover, inspection citations, fines, ownership fields), Rhode Island homes only, and the Rhode Island Department of Health\u2019s annual reports of Change in Effective Control (CEC) reviews.'],
- ['CEC documents and conditions', 'Under each sale in the sales table, on each owner\u2019s block on a home\u2019s page, and on its timeline, "CEC documents and conditions" lists what the Health Services Council recommended and the Health Department decided: the conditions beyond the standard set of statutory conditions, whether any were triggered, and links to the Council\u2019s report and decision letter and to the public comments, applicant responses, presentations and meeting transcripts that report links. Most approvals carry the same standard set of statutory conditions: carry out the project as approved, become accredited within 2 years, run national background checks, give the state data on request, no discrimination by payment source, a good-faith search for another payor before discharging a resident, and individualized resident-centered care. Those are not repeated under each sale, only anything added to them (a few 2022 approvals, for example, dropped the accreditation condition). "No public record found" under triggered means the page found nothing public showing a condition was tested, not that it was met. Some approvals were never completed; those are marked on the home\u2019s timeline and not counted as sales.'],
+ ['CEC documents and conditions', 'Under each sale in the sales table, on each owner\u2019s block on a home\u2019s page, and on its timeline, "CEC documents and conditions" lists what the Health Services Council recommended and the Health Department decided: the conditions beyond the standard set of statutory conditions, whether any were triggered, and links to the application, the notice that review began, the Council\u2019s report, the decision letter, and the videos of the Health Services Council meetings, and to the public comments, applicant responses, presentations and meeting transcripts that report links. Documents the Health Department links from its Annual Report of Reviews are added here within about four hours of being posted. Most approvals carry the same standard set of statutory conditions: carry out the project as approved, become accredited within 2 years, run national background checks, give the state data on request, no discrimination by payment source, a good-faith search for another payor before discharging a resident, and individualized resident-centered care. Those are not repeated under each sale, only anything added to them (a few 2022 approvals, for example, dropped the accreditation condition). "No public record found" under triggered means the page found nothing public showing a condition was tested, not that it was met. Some approvals were never completed; those are marked on the home\u2019s timeline and not counted as sales.'],
  ['What "sold" means here', 'A change of control approved by the state, most often a sale to a new operator. "Chain reorganizations" are the records the state log marks as a corporate parent change rather than a sale to a different buyer; since April 2019 that is only the 2022 Tryko-to-Marquis reorganization of four homes. Every other change of control on this page is a sale to a new owner or operator. Estate and internal restructurings and real-estate-only deals are shown on a home\u2019s timeline but not counted as sales.'],
  ['Dates', 'The sale date is CMS\u2019s takeover date when CMS lists one, otherwise the state\u2019s decision date. CMS files usually show a new operator several months later. The date shown in the CMS-data timeline entries is when CMS\u2019s files first showed the change.'],
  ['Star ratings', 'CMS revised how star ratings are calculated in April 2019 (the statewide average fell from 3.8 to 3.35 in a single month) and has adjusted its methods since. Charts start after that change. Ratings are one measure of a home, not a full picture of care.'],
