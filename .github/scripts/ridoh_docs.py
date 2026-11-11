@@ -180,11 +180,15 @@ def match(c, rows):
         hits = [e for e in rows if any(l["type"] == "application" and l["key"] in mine for l in e["links"])]
         if len(hits) == 1: return hits[0], ""
     a1 = norm(c["applicant"].split("→")[0])
+    llc = norm(re.split(r"\s+d/?b/?a\s+", c["applicant"].split("→")[0], flags=re.I)[0])
     scored = []
     for e in rows:
         ds = 0.0 if generic(c["desc"]) or generic(e["desc"]) else difflib.SequenceMatcher(None, norm(c["desc"]), norm(e["desc"])).ratio()
         a2 = norm(e["applicant"])
         ap = 0.9 if a1 and a2 and len(min(a1, a2, key=len)) >= 8 and (a2.startswith(a1) or a1.startswith(a2)) else 0.0
+        # RIDOH sometimes puts the buyer group first ("Kadima - Bayberry Rehabilitation & Nursing LLC"), so also accept its
+        # name containing the log's LLC name (the part before "d/b/a").
+        if not ap and len(llc) >= 15 and llc in a2: ap = 0.85
         tie = difflib.SequenceMatcher(None, a1, a2).ratio()   # only used to break ties
         scored.append((max(ds, ap), tie, e))
     if not scored: return None, "no Change in Effective Control rows on that tab"
