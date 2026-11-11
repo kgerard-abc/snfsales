@@ -2,7 +2,10 @@
 """Copy the documents linked from RIDOH's Annual Report of Reviews (Change in Effective Control rows) to the Internet Archive.
 
 Usage:
-  archive_cec.py [--xlsx path] [--dry-run] [--limit N] [--years 2025,2026] [--only text] [--max-mb 3000] [--all-cec]
+  archive_cec.py [--xlsx path] [--dry-run] [--limit N] [--years 2025,2026] [--only text] [--ids ID1,ID2] [--max-mb 3000] [--all-cec]
+
+--ids limits the run to those Drive file or folder ids. The "Watch RIDOH's list of reviews" workflow uses it to copy new
+documents as soon as RIDOH links them.
 
 Only nursing home applications are archived unless --all-cec is given. RIDOH's sheet has no facility type column, so a row
 counts as a nursing home when its applicant or description matches a facility or applicant in the CEC Log
@@ -404,6 +407,7 @@ def main():
     ap.add_argument("--xlsx"); ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--limit", type=int, default=0); ap.add_argument("--years", default="")
     ap.add_argument("--only", default=""); ap.add_argument("--max-mb", type=int, default=3000)
+    ap.add_argument("--ids", default="")
     ap.add_argument("--all-cec", action="store_true"); ap.add_argument("--verify", action="store_true")
     a = ap.parse_args()
     if a.verify: verify(); return
@@ -418,6 +422,10 @@ def main():
     assign_applications(recs, load_manifest_for_apps())   # before the year and name filters, so the grouping is the same on every run
     if a.years: recs = [r for r in recs if r["year"] in {y.strip() for y in a.years.split(",")}]
     if a.only: recs = [r for r in recs if a.only.lower() in r["applicant"].lower()]
+    if a.ids:
+        want = {x.strip() for x in a.ids.split(",") if x.strip()}
+        recs = [r for r in recs if r["id"] in want]
+        log(f"Limited to {len(want)} document ids; {len(recs)} links in RIDOH's list use them.")
     log(f"Found {len(recs)} links in Change in Effective Control rows of all kinds. Tabs with no such section: {', '.join(skipped) or 'none'}.")
     if not a.all_cec:
         recs, dropped, why = nursing_home_filter(recs)

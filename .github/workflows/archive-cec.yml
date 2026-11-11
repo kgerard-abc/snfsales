@@ -1,6 +1,6 @@
 name: Archive CEC documents to the Internet Archive
 
-# Run by hand from the Actions tab. It reads the links in RIDOH's Annual Report of Reviews (Change in Effective Control
+# Run by hand from the Actions tab, or started by the RIDOH watcher for documents RIDOH has just linked. It reads the links in RIDOH's Annual Report of Reviews (Change in Effective Control
 # rows), downloads each Drive file, and uploads it to archive.org, one item per applicant per year.
 # Needs the repository secrets IA_ACCESS and IA_SECRET.
 # Start with "dry_run", then "test_3", then "full". Re-running "full" skips files that are already archived.
@@ -24,6 +24,10 @@ on:
         default: ''
       only:
         description: 'Optional. Only applicants whose name contains this text, like AdviniaCare.'
+        required: false
+        default: ''
+      ids:
+        description: 'Optional. Only these Drive file or folder ids, separated by commas. Filled in by the RIDOH watcher.'
         required: false
         default: ''
 
@@ -51,6 +55,7 @@ jobs:
           MODE: ${{ inputs.mode || 'full' }}
           YEARS: ${{ inputs.years }}
           ONLY: ${{ inputs.only }}
+          IDS: ${{ inputs.ids }}
         run: |
           ARGS=()
           if [ "$MODE" = "dry_run" ]; then ARGS+=(--dry-run); fi
@@ -58,6 +63,7 @@ jobs:
           if [ "$MODE" = "verify" ]; then ARGS+=(--verify); fi
           if [ -n "$YEARS" ]; then ARGS+=(--years "$YEARS"); fi
           if [ -n "$ONLY" ]; then ARGS+=(--only "$ONLY"); fi
+          if [ -n "$IDS" ]; then ARGS+=(--ids "$IDS"); fi
           python3 .github/scripts/archive_cec.py "${ARGS[@]}"
       - name: Save the progress list
         if: always() && inputs.mode != 'dry_run' && github.ref == 'refs/heads/main'
