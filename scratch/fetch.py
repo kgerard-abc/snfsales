@@ -65,7 +65,7 @@ def pdf_text(path):
     pages = []
     for p in range(1, n + 1):
         t = subprocess.run(['pdftotext', '-layout', '-f', str(p), '-l', str(p), path, '-'], capture_output=True, text=True).stdout
-        if len(t.strip()) < 40:
+        if len(t.strip()) < 40 and n <= 60:
             subprocess.run(['pdftoppm', '-r', '200', '-f', str(p), '-l', str(p), '-png', path, '/tmp/pg'], check=False)
             imgs = sorted(f for f in os.listdir('/tmp') if f.startswith('pg') and f.endswith('.png'))
             if imgs:
