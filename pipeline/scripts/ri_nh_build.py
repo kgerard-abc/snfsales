@@ -1966,6 +1966,7 @@ details.cecdetail{margin-top:6px;font-size:.86rem;max-width:62ch}details.cecdeta
 @media (max-width:860px){.grid-rent{grid-template-columns:1fr}}
 .finding{color:var(--fg);font-size:1.15rem;line-height:1.45;max-width:820px}
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:14px 0 6px}
+#proj-tbl,#proj-caps{font-size:.84rem}#proj-tbl th,#proj-tbl td{padding-left:6px;padding-right:6px}#proj-tbl td:first-child{min-width:10rem}
 .tile{display:block;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;color:inherit}
 .tile .src a{white-space:nowrap}
 .tile .big{display:block;font-size:1.45rem;font-weight:800;line-height:1.1;letter-spacing:-.01em;color:var(--sold)}
@@ -2664,7 +2665,7 @@ function pjCell(r, y, k) {
   const rentNA = (k === 'rent' || k === 'mgmt') && a == null && p != null;
   const td = el('td', { class: 'num', 'data-label': PJ_COLS.find(c => c[0] === k)[1] });
   if (staffOff) { td.append(el('span', { class: 'small', text: 'Not compared (see note)' })); return td; }
-  if (p == null && a == null) { td.textContent = '–'; return td; }
+  if (p == null && (a == null || a === 0)) { td.textContent = '–'; return td; }
   td.append(el('div', {}, pjFmt(k, p), ' → ', el('b', { text: rentNA ? 'not reported' : pjFmt(k, a) })));
   const c = pjChange(k, p, a); if (c) td.append(el('div', { class: 'small', text: c }));
   if (k === 'nurse_fte' && y.actual.staff_quarters === 3) td.append(el('div', { class: 'small', text: '3 of 4 quarters on file' }));
@@ -2692,7 +2693,8 @@ function pjSaleText(r) { return (r.buyer || 'The buyer') + (r.via === 'managemen
   const pts = $('#proj-points');
   const cal = PJ.filter(r => r.staffing_ok !== false && r.past && r.past.payroll != null).map(r => r.past.payroll / r.past.nurse_fte).sort((a, b) => a - b);
   const calTxt = cal.length >= 3 ? ` As a check, for a year when the seller still ran each home, CMS\u2019s payroll records came to ${Math.round(cal[0] * 100)}% to ${Math.round(cal[cal.length - 1] * 100)}% of the application\u2019s own staff count (median ${Math.round(cal[Math.floor(cal.length / 2)] * 100)}%), mostly because payroll records count hours worked, not vacation or sick time.` : ' Payroll records count hours worked, not vacation or sick time, so a home staffed exactly as planned would show somewhat fewer here.';
-  if (S.st.length) pts.append(el('li', { text: `Nurse staff: the payroll records show fewer full-time-equivalent nurse staff than the application projected in ${S.stDown.length} of ${yrs(S.st.length)} compared.` + calTxt }));
+  const stFar = S.st.filter(x => x.y.actual.nurse_fte < 0.9 * x.y.projected.nurse_fte).length;
+  if (S.st.length) pts.append(el('li', { text: `Nurse staff: the payroll records show fewer full-time-equivalent nurse staff than the application projected in ${S.stDown.length} of ${yrs(S.st.length)} compared, and more than 10% fewer in ${stFar}.` + calTxt }));
   if (S.rev.length) pts.append(el('li', { text: `Revenue was below the buyer’s projection in ${S.revDown.length} of ${yrs(S.rev.length)}.` }));
   const off = PJ.filter(r => r.staffing_ok === false && r.years.length);
   if (off.length) pts.append(el('li', { text: `Staffing is not compared for ${off.length} homes (${off.map(r => r.name).join(', ')}): their applications\u2019 staff counts do not fit the application\u2019s own payroll figures, or do not match CMS\u2019s payroll records for a year the seller ran the home. Each home\u2019s page says which. RIDOH staff found these applications "acceptable in form."` }));

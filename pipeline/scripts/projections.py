@@ -84,6 +84,14 @@ def build(D, proj_path, pbj_path):
         t = ten.get((ccn, cec))
         m = money.get(ccn) or {}
         yrs_m = {y: i for i, y in enumerate(m.get('years', []))}
+        staffing_ok, staffing_note, past = s.get('staffing_ok', True), s.get('staffing_note'), s.get('past')
+        if past:
+            pp = pbj.get((ccn, int(past['year'])))
+            past = dict(past, payroll=pp['nurse_fte'] if pp else None)
+            if pp and staffing_ok and not (0.8 <= pp['nurse_fte'] / past['nurse_fte'] <= 1.25):
+                staffing_ok = False
+                staffing_note = (f"The application's own count for a year the seller ran the home ({past['nurse_fte']:g} nurse staff in {past['year']}, page {past['page']}) "
+                                 f"does not match CMS's payroll records for that year ({pp['nurse_fte']:g}), so its staff counts do not measure the same thing and are not compared.")
         years = []
         for y in sorted(s.get('years', {}), key=int):
             pr = s['years'][y]; yi = int(y)
@@ -95,18 +103,10 @@ def build(D, proj_path, pbj_path):
             if i is not None and _mixed(m, i, t): i = None   # the year adds a report from before the buyer took charge
             if i is not None and not (m.get('partial') or [False] * 99)[i]:
                 act.update(revenue=m['rev'][i], margin=m['margin'][i], rent=m['rent'][i], mgmt=m['mgmt'][i], expenses=(m.get('exp') or [None] * 999)[i])
-            if not any(act.get(k) is not None and pr.get(k) is not None for k in FIELDS): continue
+            if not any(act.get(k) is not None and pr.get(k) is not None for k in FIELDS if staffing_ok or not k.endswith('_fte')): continue
             pm = pr.get('margin')
             if pm is None and pr.get('profit') is not None and pr.get('revenue'): pm = round(pr['profit'] / pr['revenue'], 4)
             years.append(dict(year=yi, projected={**{k: pr.get(k) for k in FIELDS}, 'margin': pm}, actual=act))
-        staffing_ok, staffing_note, past = s.get('staffing_ok', True), s.get('staffing_note'), s.get('past')
-        if past:
-            pp = pbj.get((ccn, int(past['year'])))
-            past = dict(past, payroll=pp['nurse_fte'] if pp else None)
-            if pp and staffing_ok and not (0.8 <= pp['nurse_fte'] / past['nurse_fte'] <= 1.25):
-                staffing_ok = False
-                staffing_note = (f"The application's own count for a year the seller ran the home ({past['nurse_fte']:g} nurse staff in {past['year']}, page {past['page']}) "
-                                 f"does not match CMS's payroll records for that year ({pp['nurse_fte']:g}), so its staff counts do not measure the same thing and are not compared.")
         cap = None
         if s.get('cost_cap'):
             first = next((y for y in years if y['actual'].get('expenses') is not None), None)
