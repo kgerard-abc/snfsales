@@ -1768,6 +1768,61 @@
    "type": "video",
    "url": "https://drive.google.com/file/d/1IKUtKiJExY7AzC30oQ1cuXrytOnnS-iQ/view"
   },
+  "1IOCBkkf0N12cbJ-IqT9wVyNYtV2WATH9": {
+   "cec": [
+    "CEC-133",
+    "CEC-134",
+    "CEC-135",
+    "CEC-137",
+    "CEC-138"
+   ],
+   "date": "2022-08-30",
+   "drive_kind": "file",
+   "first_seen": "2026-11-11",
+   "label": "Council report",
+   "rows": [
+    {
+     "applicant": "Kadima - Bayberry Rehabilitation & Nursing LLC",
+     "col": "G",
+     "row": 117,
+     "tab": "2022"
+    },
+    {
+     "applicant": "Kadima - Eastgate Rehabilitation & Nursing LLC",
+     "col": "G",
+     "row": 118,
+     "tab": "2022"
+    },
+    {
+     "applicant": "Kadima - Elmwood Rehabilitation & Nursing LLC",
+     "col": "G",
+     "row": 119,
+     "tab": "2022"
+    },
+    {
+     "applicant": "Kadima - Village House Rehabilitation & Nursing LLC",
+     "col": "G",
+     "row": 121,
+     "tab": "2022"
+    },
+    {
+     "applicant": "Kadima - West Shore Rehabilitation & Nursing LLC",
+     "col": "G",
+     "row": 122,
+     "tab": "2022"
+    }
+   ],
+   "text": "8/9/2022; 8/30/2022 Kadima CEC Health Services Council Report Adopted",
+   "text_by_cec": {
+    "CEC-133": "8/9/2022; 8/30/2022 Kadima CEC Health Services Council Report Adopted",
+    "CEC-134": "8/9/2022; 8/30/2022 Kadima CEC Health Services Council Report Adopted",
+    "CEC-135": "8/9/2022; 8/30/2022 Kadima CEC Health Services Council Report Adopted",
+    "CEC-137": "8/9/2022; 8/30/2022 Kadima CEC Health Services Council Report Adopted",
+    "CEC-138": "8/9/2022; 8/30/2022 Kadima CEC Health Services Council Report Adopted"
+   },
+   "type": "report",
+   "url": "https://drive.google.com/file/d/1IOCBkkf0N12cbJ-IqT9wVyNYtV2WATH9/view"
+  },
   "1IU5qA78LPYgTBXO3bI9yVIApFmAhO1jq": {
    "cec": [
     "CEC-108",
@@ -2538,6 +2593,61 @@
    },
    "type": "report",
    "url": "https://drive.google.com/file/d/1QweyyyXqmdNc0_D23Eq8TCacZ-dDX7DM/view"
+  },
+  "1RNhIgVYFbTWmVC00fqgd09Ka0aMyec5K": {
+   "cec": [
+    "CEC-133",
+    "CEC-134",
+    "CEC-135",
+    "CEC-137",
+    "CEC-138"
+   ],
+   "date": "",
+   "drive_kind": "file",
+   "first_seen": "2026-11-11",
+   "label": "RIDOH decision letter",
+   "rows": [
+    {
+     "applicant": "Kadima - Bayberry Rehabilitation & Nursing LLC",
+     "col": "H",
+     "row": 117,
+     "tab": "2022"
+    },
+    {
+     "applicant": "Kadima - Eastgate Rehabilitation & Nursing LLC",
+     "col": "H",
+     "row": 118,
+     "tab": "2022"
+    },
+    {
+     "applicant": "Kadima - Elmwood Rehabilitation & Nursing LLC",
+     "col": "H",
+     "row": 119,
+     "tab": "2022"
+    },
+    {
+     "applicant": "Kadima - Village House Rehabilitation & Nursing LLC",
+     "col": "H",
+     "row": 121,
+     "tab": "2022"
+    },
+    {
+     "applicant": "Kadima - West Shore Rehabilitation & Nursing LLC",
+     "col": "H",
+     "row": 122,
+     "tab": "2022"
+    }
+   ],
+   "text": "Kadima Amended Decision w/ Conditions 2022 10 07 FINAL",
+   "text_by_cec": {
+    "CEC-133": "Kadima Amended Decision w/ Conditions 2022 10 07 FINAL",
+    "CEC-134": "Kadima Amended Decision w/ Conditions 2022 10 07 FINAL",
+    "CEC-135": "Kadima Amended Decision w/ Conditions 2022 10 07 FINAL",
+    "CEC-137": "Kadima Amended Decision w/ Conditions 2022 10 07 FINAL",
+    "CEC-138": "Kadima Amended Decision w/ Conditions 2022 10 07 FINAL"
+   },
+   "type": "decision",
+   "url": "https://drive.google.com/file/d/1RNhIgVYFbTWmVC00fqgd09Ka0aMyec5K/view"
   },
   "1RS_sGHI3isEUkhQN_KMvIEoXqSUAplWc": {
    "cec": [
@@ -3907,6 +4017,61 @@
    "type": "decision",
    "url": "https://drive.google.com/file/d/1k1iW5GEN5_DIxqEmJRF4HFUuwUZmP7KG/view"
   },
+  "1k5XpKZfU5xSIOS5qWCKCt38LubzJ8LI9": {
+   "cec": [
+    "CEC-133",
+    "CEC-134",
+    "CEC-135",
+    "CEC-137",
+    "CEC-138"
+   ],
+   "date": "2021-11-08",
+   "drive_kind": "file",
+   "first_seen": "2026-11-11",
+   "label": "Application",
+   "rows": [
+    {
+     "applicant": "Kadima - Bayberry Rehabilitation & Nursing LLC",
+     "col": "A",
+     "row": 117,
+     "tab": "2022"
+    },
+    {
+     "applicant": "Kadima - Eastgate Rehabilitation & Nursing LLC",
+     "col": "A",
+     "row": 118,
+     "tab": "2022"
+    },
+    {
+     "applicant": "Kadima - Elmwood Rehabilitation & Nursing LLC",
+     "col": "A",
+     "row": 119,
+     "tab": "2022"
+    },
+    {
+     "applicant": "Kadima - Village House Rehabilitation & Nursing LLC",
+     "col": "A",
+     "row": 121,
+     "tab": "2022"
+    },
+    {
+     "applicant": "Kadima - West Shore Rehabilitation & Nursing LLC",
+     "col": "A",
+     "row": 122,
+     "tab": "2022"
+    }
+   ],
+   "text": "Kadima - West Shore Rehabilitation & Nursing LLC",
+   "text_by_cec": {
+    "CEC-133": "Kadima - Bayberry Rehabilitation & Nursing LLC",
+    "CEC-134": "Kadima - Eastgate Rehabilitation & Nursing LLC",
+    "CEC-135": "Kadima - Elmwood Rehabilitation & Nursing LLC",
+    "CEC-137": "Kadima - Village House Rehabilitation & Nursing LLC",
+    "CEC-138": "Kadima - West Shore Rehabilitation & Nursing LLC"
+   },
+   "type": "application",
+   "url": "https://drive.google.com/file/d/1k5XpKZfU5xSIOS5qWCKCt38LubzJ8LI9/view"
+  },
   "1k6hOHZSbb_lX3Svsxy5yFEzSJGxEWzx2": {
    "cec": [
     "CEC-083"
@@ -5034,35 +5199,10 @@
    "tab": "2014"
   },
   {
-   "cec": "CEC-133",
-   "reason": "no row matched its description or applicant",
-   "tab": "2022"
-  },
-  {
-   "cec": "CEC-134",
-   "reason": "no row matched its description or applicant",
-   "tab": "2022"
-  },
-  {
-   "cec": "CEC-135",
-   "reason": "no row matched its description or applicant",
-   "tab": "2022"
-  },
-  {
    "cec": "CEC-136",
-   "reason": "no row matched its description or applicant",
-   "tab": "2022"
-  },
-  {
-   "cec": "CEC-137",
-   "reason": "no row matched its description or applicant",
-   "tab": "2022"
-  },
-  {
-   "cec": "CEC-138",
    "reason": "no row matched its description or applicant",
    "tab": "2022"
   }
  ],
- "updated": "2026-11-11T17:10Z"
+ "updated": "2026-11-11T17:14Z"
 }
