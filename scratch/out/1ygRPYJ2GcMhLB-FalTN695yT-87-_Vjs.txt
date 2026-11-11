@@ -1,0 +1,481 @@
+
+===== PAGE 1 =====
+April 18, 2025
+
+Via Electronic Mail Only
+
+Health Services Council
+3 Capitol Hill
+Providence, RI 02908
+
+Re: The application of Coventry Operations RI LLC [Mayflower Healthcare LLC - sole
+member Zev Schwartz] for a Change in Effective Control of Respiratory and Rehab Center of
+Rhode Island [LTC00789], a 210-bed skilled nursing facility, located in Coventry; the
+application of Greenville Operations RI LLC [Mayflower Healthcare LLC - sole member Zev
+Schwartz] for a Change in Effective Control of Greenville Skilled Nursing and Rehabilitation
+[LTC00792], a 131-bed skilled nursing facility, located in Greenville; and the application of
+Warren Operations RI LLC [Mayflower Healthcare LLC - sole member Zev Schwartz] for a
+Change in Effective Control of Warren Skilled Nursing and Rehabilitation [LTC00796], a 63-
+bed skilled nursing facility, located in Warren.
+
+To the Health Services Council:
+
+On behalf of the Office of the Health Care Advocate at the Rhode Island Office of the Attorney
+General, we submit this letter in response to the Change in Effective Control (CEC) applications filed
+by Mayflower Healthcare LLC for the acquisition of three Rhode Island nursing homes: Respiratory
+and Rehab Center of Rhode Island [LTC00789], Greenville Skilled Nursing and Rehabilitation
+[LTC00792], and Warren Skilled Nursing and Rehabilitation [LTC00796].
+
+Nursing homes play a critical role in Rhode Island’s health care ecosystem. As you know, skilled
+nursing facilities operate with limited financial resources and are primarily funded by public insurance,
+e.g. Medicaid and Medicare. The health and well-being of Rhode Island residents in skilled nursing
+facilities is often directly tethered to the financial health of these facilities.
+
+The Office of the Attorney General submits this comment letter with respect to certain disclosures
+made in these CEC applications as to Mayflower Healthcare LLC’s use of “related entities.” We raise
+these questions to the Health Services Council to recommend further investigation and consideration
+of related entities with respect to all nursing home CEC applications, including the applications at
+hand, and to recommend instituting safeguards to ensure that the resources of our nursing homes are
+protected for the benefit of their residents.
+
+
+
+                                                   1
+
+===== PAGE 2 =====
+Background: Related Entities
+
+Related entities are companies under common ownership or control with whom the nursing home
+contracts. While nursing home operators are permitted to be reimbursed for expenses incurred by
+related entities, these expenses must typically be billed at cost or, in certain circumstances, at fair
+market rates. 42 C.F.R. § 413.17.
+
+A key concern – particularly if related entities are undisclosed – is that they may be used to siphon
+profits away from patient care, leaving regulators in the dark as to potential risks to health and safety. 1
+A working paper published by the National Bureau of Economic Research suggests 68% of profits in
+the skilled nursing care industry were hidden through related entity transactions in 2019. 2 Price
+increases were especially prevalent in real estate and management services, with costs increasing by
+42.4% and 24.6%, respectively, when the operator transacted with a related entity. If these profits had
+been spent on registered nurses, staffing could have increased by 35.7%.
+
+Lack of disclosure also compromises the accuracy of operators’ cost reporting to Medicare and
+Medicaid and may lead to distorted financial reporting, permitting nursing home operators to list these
+expenses as “costs” billed through arms-length transactions, when they are in fact profits shifted to
+common owners of related entities. 3 These transactions have a direct bearing on facility resources,
+thereby implicating patient care.
+
+Mayflower Healthcare LLC CEC Applications
+
+The CEC applications before the Health Services Council seeks a change in effective control for three
+newly-formed entities—Coventry Operations RI LLC, Greenville Operations RI LLC, and Warren
+Operations RI LLC—operating under common ownership by Mayflower Healthcare LLC, a newly-
+formed LLC owned by Zev Schwartz. The applications disclose two key contractual relationships: a
+consulting relationship with RGW Consulting LLC and a leasing arrangement with Gentech RGW
+LLC. The primary landlord, OHI Asset (CT) Lender LLC, currently leases to these nursing homes
+and will continue to do so.
+
+
+1
+ C. Harrington et al., United States’ Nursing Home Finances: Spending, Profitability, and Capital
+Structure, Intl. J. of Soc. Determinants of Health and Health Servs. 2024, Vol. 54(2) 131-142, 138,
+https://journals.sagepub.com/doi/10.1177/27551938231221509.
+2
+ A. Gandhi and A. Olenski, Tunnelling and Hidden Profits in Health Care, NBER Working Paper
+32258 at 2 (March 2024, rev. Sept. 2024), https://www.nber.org/papers/w32258.
+3
+ J. Rau, “Care Suffers as More Nursing Homes Feed Money Into Corporate Webs,” NY Times (Jan
+2, 2018), https://www.nytimes.com/2018/01/02/business/nursing-homes-care-corporate.html.
+                                                     2
+
+===== PAGE 3 =====
+The applications do not name these contractual partners as related entities of the proposed operators,
+but certain aspects of Mayflower Healthcare LLC’s agreements RGW Consulting LLC (its consultant)
+and Gentech RGW RI LLC (its guarantor and intermediary leaseholder), suggest that these entities
+may be related, if not under common ownership or control.
+
+RGW Consulting LLC
+
+RGW Consulting LLC is a domestic LLC that was formed on October 23, 2023. It is not disclosed
+as a subsidiary, parent, or sister entity in response to Question 15 or included in the Post Transaction
+Organizational Chart at Tab 15. However, the Office of the Attorney General understands that RGW
+Consulting LLC may be a related entity of the new operators and mutually owned by Zev Schwartz.
+Zev Schwartz – the sole member of Mayflower LLC – is listed as both the “manager” of the operating
+LLCs and the “sole member” of RGW Consulting LLC and is the authorized signer for both entities.
+See Tab 1 – Consulting Agreements, Signature Page.
+
+According to the consulting agreements attached to this application, Mayflower plans to engage RGW
+Consulting LLC (“Consultant”) as its consulting firm for each of the three LLC operators and will pay
+a consulting fee of 5% of all “project income” (defined as all revenue from each operating LLC, with
+certain exclusions). The agreements include a stipulation that this 5% fee is “fair market value” for
+services rendered. See Tab 1 – Consulting Agreements, Article I. Definitions, Section 1.5; Article VI,
+Section 6.1. The application does not offer any further justification as to whether and to what extent
+such a percentage-based fee is reasonable or prudent.
+
+Further, the indemnification provisions of the agreements raise concerns that the agreements favor
+the Consultant at the expense of the operating LLC, by providing for one-sided indemnification
+provisions that would leave the operating LLCs liable for claims arising out of the Consultant's work,
+or the work of their subcontractors. See Tab 1 – Consulting Agreements, Article II, Sections 2.2, 2.5.
+None of the provisions listed above appear to include reciprocal provisions to protect the operating
+LLCs. Rather, these provisions appear to generally accrue benefit to RGW Consulting LLC at the
+expense of the operator LLCs, insulating the latter’s assets.
+
+We also note—notwithstanding the representation in Question 8 that the facility will not be under a
+management agreement—that the agreements appear to grant RGW Consulting LLC effective control
+over a wide range of operational responsibilities that go to the core of the management of a nursing
+home, including:
+
+   •   Administration of a resident relations program;
+   •   Advising on employment decisions;
+   •   Locating and recommending a licensed nursing home administrator (including authority to
+       recommend interim administrators / directors of nursing employed by the Consultant);
+   •   Recommending service contracts, including companies and affiliates of the Consultant
+                                                   3
+
+===== PAGE 4 =====
+    •   Assisting operators with maintenance and repair;
+    •   Assisting operators with debt collection;
+    •   Assisting operators with project expenses, including mortgage payments;
+    •   Preparing monthly income and expense reports;
+    •   Implementing a system for keeping books and records;
+    •   Making recommendations as to legal proceedings, including eviction proceedings against
+        residents; signing and serving in the name of the operators and advising on settlement;
+    •   Processing insurance claims;
+    •   Maintaining licenses and third-party payor contracts;
+    •   Developing price and rate schedules;
+    •   Assisting in the maintenance of billing and resident records;
+    •   Preparing cost reports
+    •   Assisting operators with legal compliance;
+    •   Recommending rate structures.
+
+See Tab I – Consulting Agreements, Article III, Section 3.1. The agreement further grants RGW
+Consulting LLC the authority to assist the operator LLCs in obtaining insurance and establishing bank
+accounts, permits RGW Consultant to designate authorized signatories, and authorizes RGW
+Consulting LLC to assist in paying itself from these accounts. These terms are construed throughout
+as “assistance,” but confer considerable management and financial control to RGW Consulting LLC.
+
+Gentech RGW RI LLC
+
+The Office of the Attorney General also raises the possibility of a relationship between the new
+operators and Gentech RGW RI, LLC. Gentech RGW RI LLC is newly formed on October 13, 2023.
+It is not disclosed as a subsidiary, parent, or sister entity in response to Question 15 or included in the
+Post Transaction Organizational Chart at Tab 15.
+
+RGW Consulting LLC and Gentech RGW RI, LLC were both formed in October 2023, share a
+resident agent and authorized signers with the operator LLCs, and list “G8 Financial” as the contact
+person in their annual reports filed with the Rhode Island Secretary of State. The annual reports of
+both entities are attached as Exhibit A. As such, we raise the question as to whether Gentech RGW
+LLC is affiliated with RGW Consulting LLC. Gentech RGW RI LLC also appears to be directly
+affiliated with the operator LLCs, serving as their guarantor. See Tab 14 – Operations Transfer
+Agreements. Appendix C, Question 3 requires the operator LLCs are required to show proof of their
+ability to operate for thirty days. Mayflower Healthcare LLC provided a letter of assurance from
+Gentech’s certified public accountants, which states Gentech’s affiliates have been in the nursing
+home industry for many years and have the necessary experience and track record to complete the
+transaction and operate the nursing facility.”
+
+                                                    4
+
+===== PAGE 5 =====
+Gentech RGW RI LLC’s primary role seems to be holding the master lease with OHI Asset (CT)
+Lender and serving as a guarantor for the applicants/operator LLCs. Under the terms of the Master
+Lease and associated Subleases, the applicants, through Gentech, pay OHI Asset (CT) Lender LLC a
+base rent of $1.2 million per year. In lieu of a security deposit, Gentech extends OHI a $1.8 million
+line of credit.
+
+All of the entities discussed above – the three operator LLCs, Mayflower Healthcare LLC, RGW
+Consulting LLC, and Gentech RGW RI LLC – are new entities with no history to speak of. 4 To the
+extent that Gentech RGW RI LLC is a related entity, either to RGW Consulting LLC, to Mayflower
+LLC, or to the operator LLCs, we believe this warrants further review by the Council.
+
+Future of the Facilities
+
+The Master Lease includes a provision that appears to confer, under certain circumstances, the
+certificate of need/license from the operator LLCs to the landlord, OHI Asset (CT) Lender, LLC. 5
+See Tab 24 – Master Lease, Article XXX Section 30.2 (describing certificates of need/licenses as
+being “appurtenant” to the Leased Properties).
+
+       30.2.1 Tenant acknowledges and agrees that, subject to applicable law, the
+       certificates of need and licenses necessary to operate the Leased Properties for the
+       Primary Intended Use are appurtenant to the Leased Properties, both during and
+       following the expiration or earlier termination of the Term. If the certificates of need
+       or licenses to operate the Leased Properties for the Primary Intended Use are issued
+       to Tenant, the Subtenants or the Manager, Tenant agrees that it will cooperate with
+       Landlord to turn over to Landlord or its designee, upon the expiration or earlier
+       termination of the Term, all of Tenant’s rights in connection with the certificate of
+       need and/or licenses in accordance with applicable law.
+
+Because we do not understand such a transfer to be permissible without subsequent review
+by the Health Services Council, we wanted to draw attention to that part of the contract for
+further consideration.
+
+
+
+4
+ While the application includes a limited disclosure of Gentech’s parent companies (see Question 1,
+Real Estate Ownership), they are not disclosed in response to Question 15 or Tab 15, and no
+substantive information is provided as to their qualifications in the field of skilled nursing care.
+5
+ OHI Asset (CT) Lender owns the properties and does not appear to be related to RGW
+Consulting LLC, Gentech RGW RI LLC, or the three operator LLCs which are the subject of this
+application.
+                                                  5
+
+===== PAGE 6 =====
+Recommendations
+
+We encourage the Health Services Council to require additional information from the operating
+LLCs prior to approving the CEC application to determine if this application involves related
+entities, including specific inquiry as to the following issues:
+
+    •   The nature of the relationship between Mayflower Healthcare LLC, Zev Schwartz, RGW
+        Consulting LLC, and Gentech RGW LLC, including whether Zev Schwartz has an
+        ownership interest in or is otherwise affiliated with RGW Consulting LLC and/or Gentech
+        RGW RI LLC.
+
+    •   Information about RGW Consulting LLC and Gentech RGW LLC's ultimate parent
+        companies and affiliates, including G8 Financial. For Gentech RGW RI LLC, RGW
+        Consulting LLC, and G8 Financial, we recommend requesting, to the extent not already
+        provided, members and/or managers associated with these entities, parent entities, and
+        copies of certificates of organization and operating agreements for each entity.
+
+    •   The applicant LLCs plan to sublease the Leased Properties from Gentech RGW RI LLC,
+        which in turn leases the properties from OHI Asset (CT) Lender, LLC. We recommend that
+        the Health Services Council inquire further into the purpose and value to the nursing homes
+        of this tiered lease arrangement.
+
+    •   Further information about the proposed benefit of the consulting services provided by
+        RGW Consulting LLC, specifying the value that the operating LLCs will expect gain under
+        those agreements and clarifying why those functions are not able to be performed by the
+        operating LLCs at cost.
+
+    •   Information explaining why RGW Consulting LLC is not a “management company” subject
+        to disclosure under 216 R.I. Code R. 40-10-1.7.2. 6
+
+We encourage the Health Services Council to require this additional information from the applicants
+and consider the use of and payment to related entities by the applicants. Following such an inquiry,
+if the Health Services Council determines that a recommendation in favor of this transaction is
+proper, we recommend that the Health Services Council and the Rhode Island Department of
+Health consider imposing conditions on the transaction requiring operators to: (1) disclose and
+identify any related entities contracted with the applicants, now and in the future; (2) require
+reporting of all agreements between the operator and any mutually-owned or controlled related
+entities, including security agreements, and any subsequent changes to those agreements; and (3)
+
+6
+ 216 R.I. Code R. 40-10-1.3 defines a “management company” as a company that provides “limited,
+defined administrative services for a nursing facility owner, operator or lessee.”
+                                                  6
+
+===== PAGE 7 =====
+require that payment rates to any related entities reflect the true cost for of the relevant good or
+services, or are otherwise in line with market rates for the services offered under those agreements.
+Additionally, if the Health Services Counsel determines that RGW Consulting LLC is a
+“management company” as defined in 216 R.I. Code R. 40-10-1.3, we suggest that they are evaluated
+according to those provisions.
+
+Finally, we recommend that the Health Services Council condition any approval upon a commitment
+by the operators to comply with all state and federal law requiring transparent reporting of related
+entities, including but not limited to disclosure of affiliated private equity firms and real estate
+investment trusts as required under 88 FR 80141-01 and relevant disclosure in accordance with
+Medicare and Medicaid cost reporting procedures. We recommend that the Health Service Council
+incorporate compliance with any such disclosure requirements as a condition of licensure.
+
+We hope that future reviews can incorporate a standing review of related entities held by the applicant
+and any plans to utilize related entities in the administration of Rhode Island facilities following CEC
+approval. Please let us know if there are any questions we can answer to assist in your review.
+
+Sincerely,
+
+
+
+
+Julia Harvey                                                   Katie Gradowski
+Health Care Advocate                                           Special Assistant Attorney General
+Special Assistants Attorney General                            (401) 274-4400 Ext. 2810
+(401) 274-4400 Ext. 2103                                       kgradowski@riag.ri.gov
+jharvey@riag.ri.gov
+
+
+
+
+                                                   7
+
+===== PAGE 8 =====
+[OCR]
+Exhibit A
+
+===== PAGE 9 =====
+    RI SOS Filing Number: 202445732610                 Date: 2/6/2024 1:51:00 PM
+
+
+
+                                          State of Rhode Island                                  Fee: $50.00
+                                     Office of the Secretary of State
+                                        Division Of Business Services
+                                             148 W. River Street
+                                         Providence RI 02904-2615
+                                               (401) 222-3040
+Limited Liability Company
+Annual Report
+Filing Period: February 1 - May 1
+
+In accordance with R.I.G.L. 7-16-66(d), each limited liability company failing or
+refusing to file its annual report within thirty (30) days after the time prescribed by
+law (R.I.G.L. 7-16-66(b&c)) is subject to a penalty fee of $25.00.
+
+ ANNUAL REPORT YEAR - ENTER THE CURRENT YEAR 2024: 2024
+
+
+ 1. ID No.       001764227
+
+ 2. Exact Name of the Limited Liability Company RGW Consulting LLC
+
+ 3. State of Formation
+
+   State: RI
+
+                                               NAICS CODE
+
+ Enter the six digit NAICS Code that best describes the primary business conducted by the entity.
+ Download the list of codes here. More information on NAICS can be found online.
+
+
+    541618
+
+ 4. Brief Description of the Character of the Business Which is Actually Conducted in Rhode
+ Island
+
+
+
+ HEALTHCARE CONSULTING AND MANAGEMENT SERVICES.
+
+ 5. Principal Office Address
+
+ No. and Street:    2318 SHERWOOD FOREST DRIVE
+ City or Town:      TOMS RIVER                                   State: NJ Zip: 08755 Country: USA
+
+ 6. Mailing Address of Limited Liability Company and Name or Title of Contact Person:
+
+ Contact Name: G8 FINANCIAL Contact Title:
+ No. and Street:  4 FRANKLIN PLACE
+                      SUITE 107
+ City or Town:        WOODMERE                         State: NY       Zip: 11598         Country: USA
+
+ 7. RESIDENT AGENT IN RHODE ISLAND - DO NOT ALTER
+   Changes Require Filing of Form 642 - R.I.G.L. 7-16-11
+
+===== PAGE 10 =====
+ VCORP AGENT SERVICES, INC. 450 VETERANS MEMORIAL PARKWAY, SUITE 7A EAST
+PROVIDENCE , RI 02914
+
+8. This report must be executed by an authorized person pursuant to R.I.G.L. 7-16-66 (b).
+
+
+
+Signed this 6 Day of February, 2024 at 1:53:18 PM by the authorized person. This electronic
+signature of the individual or individuals signing this instrument constitutes the affirmation or
+acknowledgement of the signatory, under penalties of perjury, that this instrument is that
+individual's act and deed or the act and deed of the company, and that the facts stated herein are
+true, as of the date of the electronic filing, in compliance with R.I. Gen. Laws § 7-16.
+
+By MICHAL LEBOWITZ
+   Signature of Authorized Person
+
+
+
+Form No. 632
+Revised 09/07
+
+
+
+
+© 2007 - 2024 State of Rhode Island
+All Rights Reserved
+
+===== PAGE 11 =====
+    RI SOS Filing Number: 202445731820                 Date: 2/6/2024 1:46:00 PM
+
+
+
+                                          State of Rhode Island                                   Fee: $50.00
+                                     Office of the Secretary of State
+                                        Division Of Business Services
+                                             148 W. River Street
+                                         Providence RI 02904-2615
+                                               (401) 222-3040
+Limited Liability Company
+Annual Report
+Filing Period: February 1 - May 1
+
+In accordance with R.I.G.L. 7-16-66(d), each limited liability company failing or
+refusing to file its annual report within thirty (30) days after the time prescribed by
+law (R.I.G.L. 7-16-66(b&c)) is subject to a penalty fee of $25.00.
+
+ ANNUAL REPORT YEAR - ENTER THE CURRENT YEAR 2024: 2024
+
+
+ 1. ID No.       001764232
+
+ 2. Exact Name of the Limited Liability Company Gentech RGW RI LLC
+
+ 3. State of Formation
+
+   State: RI
+
+                                               NAICS CODE
+
+ Enter the six digit NAICS Code that best describes the primary business conducted by the entity.
+ Download the list of codes here. More information on NAICS can be found online.
+
+
+    531120
+
+ 4. Brief Description of the Character of the Business Which is Actually Conducted in Rhode
+ Island
+
+
+
+ ASSET MANAGEMENT OF REAL ESTATE.
+
+ 5. Principal Office Address
+
+ No. and Street:       4 FRANKLIN PLACE
+                       SUITE 107
+ City or Town:         WOODMERE                         State: NY       Zip: 11598        Country: USA
+
+ 6. Mailing Address of Limited Liability Company and Name or Title of Contact Person:
+
+ Contact Name: G8 FINANCIAL Contact Title:
+ No. and Street:  4 FRANKLIN PLACE
+                      SUITE 107
+ City or Town:        WOODMERE                         State: NY       Zip: 11598         Country: USA
+
+===== PAGE 12 =====
+7. RESIDENT AGENT IN RHODE ISLAND - DO NOT ALTER
+  Changes Require Filing of Form 642 - R.I.G.L. 7-16-11
+
+ VCORP AGENT SERVICES, INC. 450 VETERANS MEMORIAL PARKWAY, SUITE 7A EAST
+PROVIDENCE , RI 02914
+
+8. This report must be executed by an authorized person pursuant to R.I.G.L. 7-16-66 (b).
+
+
+
+Signed this 6 Day of February, 2024 at 1:48:19 PM by the authorized person. This electronic
+signature of the individual or individuals signing this instrument constitutes the affirmation or
+acknowledgement of the signatory, under penalties of perjury, that this instrument is that
+individual's act and deed or the act and deed of the company, and that the facts stated herein are
+true, as of the date of the electronic filing, in compliance with R.I. Gen. Laws § 7-16.
+
+By MICHAL LEBOWITZ
+   Signature of Authorized Person
+
+
+
+Form No. 632
+Revised 09/07
+
+
+
+
+© 2007 - 2024 State of Rhode Island
+All Rights Reserved
+

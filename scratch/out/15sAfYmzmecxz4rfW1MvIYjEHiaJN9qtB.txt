@@ -1,0 +1,298 @@
+
+===== PAGE 1 =====
+April 17, 2026
+
+Via Electronic Mail Only
+
+Health Services Council
+3 Capitol Hill
+Providence, RI 02908
+
+Re: Change in Effective Control Application for AdviniaCare Scallop Shell, LLC (Operator)
+and 55 Scallop Shell, LLC (Property Owner), owned by Yosef Meystel Delta Trust (30.75%),
+David A. Berkowitz Delta Trust (30.75%), Benjamin Berkowitz Revocable Trust (18.5%),
+Shraga Braun (10%), Leah Braun Trust (5%) Brian Goldfarb (2%), Moriel H amui (1%),
+Frederick S. Frankel Trust (1%), and H adassa Spector (1%)
+
+To the Health Services Council:
+
+On behalf of the Office of the Health Care Advocate at the Rhode Island Office of the Attorney
+General (the “Office”), we submit this letter in response to Change in Effective Control Application
+(2026 CEC Application) for newly-formed operating and real estate entities affiliated with
+AdviniaCare, LLC. This transaction will result in the acquisition of Elderwood of Scallop Shell at
+Wakefield, an 80-bed skilled nursing facility in South Kingstown, Rhode Island by entities associated
+with AdviniaCare LLC.
+
+This Office has commented previously on the use of related entities in skilled nursing transactions,
+both generally and as to prior AdviniaCare transactions. These facilities provide lifesaving care to some
+of Rhode Island’s most vulnerable residents. As you know, skilled nursing facilities operate with
+limited financial resources and are primarily funded by public insurance, e.g. Medicaid and Medicare. 1
+If resources are not used prudently in the service of resident care, quality of care is likely to suffer.
+
+Given AdviniaCare’s extensive use of related entities, the Office recommends that the Health Services
+Council require additional information from the applicants, including review of contract terms,
+payments, and allocation of responsibility between the licensed entities and their parent companies, in
+order to better understand the financial impact of this transaction on the facilities and potential
+impacts on quality of care for residents in these facilities.
+
+
+
+1
+ The current payor mix is 46% Medicaid, 21% Medicare, and 33% private pay. See 2026 CEC
+Application, Appendix C.
+                                                   1
+
+===== PAGE 2 =====
+Background
+
+Related entities are companies under common ownership with a nursing home administrator with
+whom the nursing home contracts. The risk to the nursing home is that, if related entities are charging
+above-market rates for the contracted services, the precious resources of these facilities will be diverted
+away from patient care as profit. Transactions involving related entities may be linked to asset shielding
+(where single-use LLCs serve to insulate parent companies from liability) and profit tunnelling (where
+LLCs under common ownership migrate profits away from patient care through inflated fees). The
+use of related entities may also lead to distorted financial reporting to Medicare and Medicaid,
+permitting nursing home operators to list expenses as “costs” billed through arms-length transactions,
+when they are in fact profits shifted to common owners.
+
+A working paper published by the National Bureau of Economic Research suggests 68% of profits in
+the skilled nursing care industry were hidden through related entity transactions in 2019. 2 Price
+increases were especially prevalent in real estate and management services, with costs increasing by
+42.4% and 24.6%, respectively, when the operator transacted with a related entity.
+
+Related Entities in this Transaction
+
+Under the terms of this transaction, Elderwood of Scallop Shell at Wakefield will be sold to two related
+entities—AdviniaCare Scallop Shell, LLC (“Scallop Shell Operator”) and 55 Scallop Shell, LLC
+(“Scallop Shell Property”). The principals are Yosef Meystel, Ben Berkowitz, and David Berkowitz,
+who appear to have an 80% indirect ownership interest in both entities through related trusts. 3 See
+2026 CEC Application, Question 1. Yosef Meystel, Ben Berkowitz, and David Berkowitz also own
+AdviniaCare LLC (corporate manager of Scallop Shell Operator) and Advinia Properties, LLC
+(corporate manager of Scallop Shell Property), either directly or through related trusts. Id. Tab 15.
+
+In addition to owning the corporate managers, Yosef Meystel and David Berkowitz have ownership
+interests in the following subcontractors who intend to provide services to the applicant:
+
+    •   Curis Services LLC (providing bookkeeping and accounting services)
+    •   Global Distributors USA LLC (providing purchasing services)
+    •   Kesser Group, LLC (providing administrative support services)
+    •   As noted above, AdviniaCare, LLC (providing operational and administrative support)
+Id. Appendix F, Disclosure of Ownership and Control Interest. Mark Braun, the CEO of Scallop Shell
+Operator, is the regional director of the Kesser Group in Massachusetts and Rhode Island. Id.
+
+
+2
+ A. Gandhi and A. Olenski, Tunnelling and Hidden Profits in Health Care, NBER Working Paper
+32258 at 2 (March 2024, rev. Sept. 2024), https://www.nber.org/papers/w32258.
+3
+ The Yosef Meystel and David A Berkowitz Delta Trusts each own a 30.75% share and the Benjamin
+Berkowitz Revocable Trust owns an 18.5% share. The entities are additionally owned by Shraga Braun
+(10%), the Leah Braun Trust (5%), Brian Goldfarb (2%), Moriel Hamui (1%), the Frederick S. Frankel
+Trust (1%), and Hadassa Spector (1%). See 2026 CEC Application, Question 1.
+
+
+                                                    2
+
+===== PAGE 3 =====
+Question 1. Ben Berkowitz, David Berkowitz, and Yosef Meystel are also affiliated with Pointe Group
+Care, LLC and Aperion Care, which are subsidiaries of the Kesser Group; it is unclear from the
+application whether these entities intend to provide services of any kind.
+Key Issues and Recommendations
+
+To ensure a diligent review of the application and to guard against potential risks to patient care created
+by the transacting parties’ relationships with related entities, the Office recommends that the Health
+Services Council review for and address the following issues raised by the application:
+
+    1. Who Retains Effective Control Over Management of the Facilities?
+
+        There is genuine ambiguity as to whether effective control—in terms of duties, responsibility,
+        and liability—lies with Scallop Shell Operator or AdviniaCare, LLC. The Operating
+        Agreement of Scallop Shell Operator indicates that “the business and affairs of [Scallop Shell
+        Operator] shall be managed under the sole discretion and control of the Managers,” i.e.
+        AdviniaCare LLC, which has “the sole and exclusive right to manage the day-to-day operations
+        of the Company.” See 2026 CEC Application, Tab 26, Operating Agreement for AdviniaCare
+        Scallop Shell LLC, Article 5.1, Management by Managers.
+
+        Under the terms of the Operating Agreement, AdviniaCare LLC has authority to:
+
+        (i)      Supervise operations and management
+        (ii)     Authorize acquisitions, leases, and purchase options
+        (iii)    Acquire insurance for the Company
+        (iv)     Determine appropriate reserves for future expenses
+        (v)      Determine operating and capital expenditures, budgets, and annual marketing plans
+        (vi)     Borrow money, enter into financing / refinancing transactions
+        (vii)    Acquire personal, tangible, and intangible property
+        (viii)   Contract on behalf of the Company with non-affiliates
+        (ix)     Request additional capital contributions from members
+        (x)      Authorize additional interests and admit new members
+        (xi)     Obtain licenses, approvals, and permits
+        (xii)    Make decisions on behalf of the company relating to compliance with government
+                 agencies or programs and/or licensure requirements
+        (xiii)   Hire and fire all employees, officers, and directors
+        (xiv)    Execute contracts 4
+
+        Id. There is no management agreement in place, but AdviniaCare LLC is expressly authorized
+        “without limitation” to enter into management or consultant contracts on behalf of Scallop
+        Shell Operator. The Operating Agreement thus appears to grant AdviniaCare LLC broad
+
+4
+ The Operating Agreement for Scallop Shell Property includes similar terms authorizing pass-through
+management by Advinia Properties, LLC, a related entity owned by Mssrs. Meystel and Berkowitz.
+
+
+                                                    3
+
+===== PAGE 4 =====
+        authority to manage the affairs of Scallop Shell Operator, including hiring and firing, the ability
+        to obtain permits, and engagement of outside managers. 5 Id.
+
+        This authority appears to be at odds with other parts of the application, which suggest that
+        AdviniaCare LLC’s role is limited to “operational and administrative support services.” In
+        Appendix F, for instance, AdviniaCare LLC is characterized as a related-entity subcontractor,
+        whereas in Tab 15, they appear to be a parent, injecting further ambiguity into the question of
+        who is operating whom. See Appendix F, Disclosure of Ownership and Control Interest; Tab
+        15, Organizational Chart. In exchange for the services listed above, AdviniaCare LLC collects
+        a management fee of 5% of gross revenue (see Tab 26, Operating Agreement for AdviniaCare
+        Scallop Shell LLC, Article 5.6, Compensation) and is indemnified against all losses for actions
+        on behalf of Scallop Shell Operator (id. Article 5.4, Indemnification).
+
+        The Office recommends that the Health Services Council seek clarity on who is managing this
+        facility and/or exercising effective control, as well as inquiring further as to the basis of the
+        fee and the indemnification provisions. If AdviniaCare LLC is managing the facility on behalf
+        of Scallop Shell Operator, should there be a management agreement in place for the Health
+        Services Council to review? And if AdviniaCare LLC is going further—stepping into the shoes
+        of Scallop Shell Operator and operating its subsidiary outright—is it appropriate for Scallop
+        Shell Operator to be the licensed entity, if AdviniaCare LLC is in effective control?
+
+    2. Term of Lease Agreement
+
+        The application suggests that starting in 2026, Scallop Shell Operator will begin paying
+        $800,000 annually to Scallop Shell Property in “lease/rent expenses,” despite these being
+        related entities under common ownership. See Appendix A, Question 3, Profit and Loss
+        Statement; cf. Tab 24, Lease Agreement, Exhibit B, Base Rent Schedule. The Lease Agreement
+        indicates that it is a ten-year term but the Base Rent Schedule only estimates base rent going
+        out five years. Id. Tab 24, Article 3.1, Term (ten years); cf. Tab 24, Exhibit B, Base Rent
+        Schedule (five years). 6
+
+        The Office requests that the Health Services Council inquire into the basis for this rental fee
+        and further recommends that the Council seek clarity on the lease term. Is it a five-year term,
+        a ten-year term, or an indefinite lease term? Is there a provision that will permit Scallop Shell
+        Operator to continue utilizing the premises after the term has expired? 7 Are there any
+5
+ AdviniaCare LLC is in turn managed by Shraga Braun, while Advinia Properties, LLC is managed by
+Pointe Property, LLC. In the present application, Shraga Braun has signed the Lease Agreement on
+behalf of Scallop Shell Operator and Scallop Shell Property. See Tab 24.
+6
+ The lease is a triple-net lease, and Scallop Shell Operator will be responsible for all costs, expenses,
+and obligations for the duration of the lease term.
+7
+  The term of the lease agreement matters, in part, because Scallop Shell Property has assigned all
+rights under the Lease Agreement—including collection of rent—as security for a $500,000
+promissory note in favor of 981 Kings Town Road, LLC (the seller) as part of the financing for this
+transaction. Id. Tab 14, Purchase and Sale Agreement, Article 3.1(a)(ii); Exhibit C.
+
+
+                                                    4
+
+===== PAGE 5 =====
+       provisions or constraints placed upon the amount of base rent charged after five years? The
+       lease agreement indicates that the lease has been modified (see Tab 24, Rider), but the terms of
+       the rider have not been included in the application. In addition to seeking clarity on the term,
+       the Council should request that the Applicant produce this rider so it can review the most
+       current version.
+
+    3. What is the Relationship between the Lease and the Mortgage?
+
+       The application indicates that the transaction will be financed in part by a $6.8 million
+       mortgage—but anticipates that the mortgage will be paid off in three years at a rate that far
+       exceeds the base rent payments. 8 See Appendix E3-1, Payment Calculator. The Office
+       recommends that the Health Services Council inquire generally as to the relationship between
+       the lease payments and the underlying mortgage. Is rent intended to cover the mortgage—and
+       if not, what does the rent go toward, and who pays the mortgage?
+
+    4. What is the Basis for the 5% Management Fee?
+
+       The Operating Agreement for Scallop Shell Operator indicates AdviniaCare LLC will collect
+       a management fee of 5% of gross revenue in exchange for corporate management services,
+       estimated at $600,000 per year starting in 2026. See Tab 26, Operating Agreement for
+       AdviniaCare Scallop Shell LLC, Article 5.6; Appendix A Question 3. The Operating
+       Agreement does not appear to be construed as a “management agreement” (the application
+       indicates that there is no such agreement is in place at this time) but does indicate that
+       AdviniaCare LLC is authorized to act broadly on behalf of the operator.
+
+       The Office recommends that the Council inquire as to the basis of this management fee and
+       what services Scallop Shell Operator obtains through this arrangement. As noted above,
+       AdviniaCare LLC does not appear to be directly offering management services, despite
+       collecting a management fee—but is expressly authorized to enter into consulting and
+       management agreements with other entities. If AdviniaCare LLC decides to contract with a
+       further management or a consultant firm on behalf of Scallop Shell Operator, will it continue
+       to collect a 5% management fee? The Health Services Council should consider whether it
+       would be appropriate to establish a condition limiting further downstream management fees
+       to avoid duplicative or cumulative fees being charged to the operator.
+
+    5. Are the Indemnification Provisions in the Best Interest of Residents?
+
+       The Lease Agreement includes an indemnification provision shielding the Scallop Shell
+       Property from liability for “any and all claims,” and requires Scallop Shell Operator to pay
+       attorney’s fees in the event of a lawsuit. See Tab 24, Lease Agreement, Article 25.1. The
+       Operating Agreement with AdviniaCare LLC includes a similar provision indemnifying
+       AdviniaCare LLC (including officers, members, operating directors, employees and agents)
+       from “all losses” in connection with its activities on behalf of Scallop Shell Operator and
+
+8
+ The Lease Agreement sets base rent at $800,000 a year, but the amortization schedule suggests that
+the mortgage payment is roughly $2.5 million per year. The mortgage is referenced in the Lease
+Agreement but not provided in the application.
+
+                                                  5
+
+===== PAGE 6 =====
+        requiring Scallop Shell Operator to pay attorney’s fees in the event of a lawsuit. See Tab 26,
+        AdviniaCare Scallop Shell LCC Operating Agreement, Article 5.4.
+
+        Given that all three entities are commonly owned, these provisions seem to serve little purpose
+        other than shifting liability—and therefore potential risk—onto a single entity even though
+        the performance of all three entities has the potential to affect patient care. The Office
+        recommends that the Health Services Council inquire as to the effect of these provisions and
+        consider whether they are in the best interests of patient care. Furthermore, if Scallop Shell
+        Operator is to bear the burden of any potential lawsuit, the Council should require it to provide
+        evidence of adequate malpractice insurance or otherwise demonstrate that it has cash on hand
+        to cover the cost of litigation so that the Council can be assured that these potential risks do
+        not render the Applicant insolvent or leave injured parties without a remedy.
+
+    6. Within the past three years, has the Applicant and/or any of its affiliates been a party
+       to any civil proceedings?
+
+        In response to Question 20, the Applicant has stated there are no lawsuits against its affiliates,
+        “other than day to day business disputes, i.e. workers compensation, employment, and
+        personal injury.” This is a partial response, at best, and does not provide a full picture of
+        patient risk. The Office suggests that the applicant be required to answer in full so the Health
+        Services Council can make a fair assessment of the history of the applicant.
+
+Conclusion
+
+The Office recommends that the Health Services Council make a full inquiry as to these and any other
+relevant terms prior to approval of this CEC application. We hope that future reviews can incorporate
+a standing review of related entities held by the applicant and any plans to utilize related entities in the
+administration of Rhode Island facilities following CEC approval.
+
+Please let us know if there are any questions we can answer to assist in your review.
+
+Sincerely,
+
+PETER F. NERONHA
+Attorney General of Rhode Island
+
+
+
+
+Katie Gradowski
+Special Assistant Attorney General
+(401) 274-4400 Ext 2810
+kgradowski@riag.ri.gov
+
+
+
+
+                                                     6
+
