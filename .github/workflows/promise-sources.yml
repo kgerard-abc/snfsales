@@ -1,0 +1,31 @@
+name: Temporary - fetch promise sources
+
+# Lives only on the promise-sources branch. Runs when scratch/targets.json is pushed there.
+# Saves page text of Council reports, decision letters, and the transcripts and presentations they link.
+# Delete the branch when done.
+
+on:
+  push:
+    branches: [promise-sources]
+    paths: ['scratch/targets.json', 'scratch/fetch.py']
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils tesseract-ocr
+      - run: pip install -q requests pypdf
+      - run: python3 scratch/fetch.py
+      - name: Save
+        if: always()
+        run: |
+          git config user.name "abc-ri-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add scratch/out
+          git commit -q -m "Promise sources: page text" || echo nothing
+          git push
