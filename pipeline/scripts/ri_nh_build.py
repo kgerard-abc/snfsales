@@ -2085,7 +2085,7 @@ footer a{color:var(--fg)}
 <span class="asof" id="asof"></span>
 </div></header>
 <nav class="jump" aria-label="Sections"><div class="wrap">
-<a href="#sold">When homes were sold</a><a href="#lookup">Look up a home</a><a href="#groups">Owner groups</a><a href="#related">Money to owners’ companies</a><a href="#about">About the data</a>
+<a href="#sold">When homes were sold</a><a href="#allsales">Every sale since 2007</a><a href="#lookup">Look up a home</a><a href="#groups">Owner groups</a><a href="#related">Money to owners’ companies</a><a href="#about">About the data</a>
 </div></nav>
 <main class="wrap">
 <section id="sold"><h2>What happened when homes were sold</h2>
@@ -2111,7 +2111,7 @@ footer a{color:var(--fg)}
 
 
 
-<h3>Every sale, one row each</h3>
+<h3 id="allsales" style="scroll-margin-top:64px">Every sale since 2007</h3>
 <div class="row"><input type="search" id="sale-q" placeholder="Search by home, town or owner" aria-label="Search sales"><label class="chk"><input type="checkbox" id="sale-parent" checked> Include chain reorganizations</label><label class="chk"><input type="checkbox" id="sale-cms"> Only homes with CMS data</label><label class="phone-only" for="sale-sort">Sort by <select id="sale-sort"><option value="date:-1">Newest first</option><option value="date:1">Oldest first</option><option value="name:1">Home, A to Z</option><option value="buyer:1">New owner, A to Z</option></select></label><button class="btn" id="dl-sales">Download this table (CSV)</button></div>
 <div class="tblwrap stack"><table id="sales-tbl"><caption>Dates are the CMS takeover date where CMS lists one, otherwise the state's decision date. Stars are CMS overall ratings (5 is best). Nurse hours are what homes report to CMS, per resident per day. The line under them is CMS's case-mix adjusted figure, which accounts for how much care the residents need. A note under the hours marks a figure that changed by more than 1 hour in one CMS update, which is rare and can mean a payroll reporting problem.</caption><thead></thead><tbody></tbody></table></div><div class="phone-only" id="sales-more"></div><p class="small" id="date-legend"></p>
 <p class="small">Blank cells mean CMS data is not available for that period: the sale was before CMS data starts in April 2019, is too recent for a year to have passed, or the home left the CMS files.</p>
@@ -2454,14 +2454,19 @@ drawMoney();
 
 /* state review details: conditions, whether they were triggered, and the linked documents */
 const CD = D.cecdocs || {};
-function cecDetail(id, label) {
+function cecDetail(id, what) {
   const d = CD[id]; if (!d) return null;
   const parts = [];
-  const cx = d.extra || d.cond; if (cx) parts.push(el('p', {}, el('b', { text: d.extra ? 'Conditions beyond the standard set of statutory conditions: ' : 'Conditions: ' }), cx));
-  if (d.trig) parts.push(el('p', {}, el('b', { text: 'Triggered? ' }), d.trig));
+  const pend = d.extra === 'Pending';
+  if (pend) parts.push(el('p', {}, el('b', { text: 'Conditions: ' }), 'none yet. The state has not decided this application.'));
+  else { const cx = d.extra || d.cond; if (cx) parts.push(el('p', {}, el('b', { text: d.extra ? 'Conditions beyond the standard set of statutory conditions: ' : 'Conditions: ' }), cx));
+    if (d.trig) parts.push(el('p', {}, el('b', { text: 'Triggered? ' }), d.trig)); }
   const items = d.links.map(l => el('li', {}, el('a', { href: l.url, target: '_blank', rel: 'noopener' }, l.role + ': ' + l.label))).concat(d.notes.map(n => el('li', { class: 'small', text: n })));
   if (items.length) parts.push(el('ul', { class: 'docs' }, items));
-  return parts.length ? el('details', { class: 'cecdetail' }, el('summary', { text: label || 'Conditions and documents' }), parts) : null;
+  if (!parts.length) return null;
+  // "and conditions" only when there are conditions to show (a pending application has none yet).
+  const hasCond = !pend && !!(d.extra || d.cond || d.trig);
+  return el('details', { class: 'cecdetail' }, el('summary', { text: 'CEC documents' + (hasCond ? ' and conditions' : '') + ' for ' + (what || 'this sale') }), parts);
 }
 /* a buyer's record: every Rhode Island home it has run, counted only while it ran each one, and CMS's national figures */
 const money0 = v => '$' + Math.round(v || 0).toLocaleString('en-US');
@@ -2580,7 +2585,7 @@ function drawSales() {
       ...(r.hj ? [['before', 'Before'], ['y1', '1 yr']].filter(([k]) => r.hj[k]).map(([k, w]) => el('div', { class: 'small', text: w + ' figure: big change in one CMS update (' + f2(r.hj[k].prev) + ' to ' + f2(r.hj[k].now) + '). May be a payroll reporting problem.' })) : [])] : '\u2013');
     const ser = el('td', { class: 'num sm', 'data-label': 'Serious citations: year before, year after' }, r.ser.before != null ? [String(r.ser.before), el('span', { class: 'arrow', text: '\u2192' }), r.ser.y1 == null ? '\u2013' : String(r.ser.y1)] : '\u2013');
     const fin = el('td', { class: 'num sm', 'data-label': 'Fines: year before, year after' }, r.fines.before != null ? [money(r.fines.before), el('span', { class: 'arrow', text: '\u2192' }), r.fines.y1 == null ? '\u2013' : money(r.fines.y1)] : '\u2013');
-    tb.append(el('tr', { class: 'srow' }, el('td', { class: 'num sd', 'data-label': 'Date', title: r.date_note }, r.outcome === 'Pending' ? 'Pending, application submitted ' + fmtDay(r.date) : [fmtDay(r.date), dateMark(r.date_note)], notClosed(r) ? el('div', { class: 'small', text: 'Approved, not yet closed' }) : null, r.date_note === 'Approximate date' ? el('div', { class: 'small', text: 'Approximate. The state record does not give an exact date.' }) : null, r.mgmt_start ? el('div', { class: 'small', text: 'Buyer managing from ' + fmtMon(r.mgmt_start) }) : null, r.cms_op ? el('div', { class: 'small', text: 'CMS records updated ' + fmtMon(r.cms_op) }) : null), el('td', { class: 'sh' }, D.facilities.some(f => f.id === r.fid) ? el('button', { class: 'linkbtn', text: r.name, onclick: () => showFacility(r.fid, true) }) : r.name, r.town ? el('div', { class: 'small', text: r.town }) : null), el('td', { class: 'st', 'data-label': 'Type' }, r.label, r.outcome === 'Pending' ? el('div', { class: 'small', text: 'Pending' }) : null), newOwner, stars, hrs, ser, fin)); const cd = cecDetail(r.cec, 'Conditions and documents for this sale'); if (cd) tb.append(el('tr', { class: 'cecrow' }, el('td', { colspan: 8 }, cd))); });
+    tb.append(el('tr', { class: 'srow' }, el('td', { class: 'num sd', 'data-label': 'Date', title: r.date_note }, r.outcome === 'Pending' ? 'Pending, application submitted ' + fmtDay(r.date) : [fmtDay(r.date), dateMark(r.date_note)], notClosed(r) ? el('div', { class: 'small', text: 'Approved, not yet closed' }) : null, r.date_note === 'Approximate date' ? el('div', { class: 'small', text: 'Approximate. The state record does not give an exact date.' }) : null, r.mgmt_start ? el('div', { class: 'small', text: 'Buyer managing from ' + fmtMon(r.mgmt_start) }) : null, r.cms_op ? el('div', { class: 'small', text: 'CMS records updated ' + fmtMon(r.cms_op) }) : null), el('td', { class: 'sh' }, D.facilities.some(f => f.id === r.fid) ? el('button', { class: 'linkbtn', text: r.name, onclick: () => showFacility(r.fid, true) }) : r.name, r.town ? el('div', { class: 'small', text: r.town }) : null), el('td', { class: 'st', 'data-label': 'Type' }, r.label, r.outcome === 'Pending' ? el('div', { class: 'small', text: 'Pending' }) : null), newOwner, stars, hrs, ser, fin)); const cd = cecDetail(r.cec, r.outcome === 'Pending' ? 'this pending sale' : r.kind === 'parent' ? 'this chain reorganization' : 'this sale'); if (cd) tb.append(el('tr', { class: 'cecrow' }, el('td', { colspan: 8 }, cd))); });
   if (!rows.length) tb.append(el('tr', {}, el('td', { colspan: 8, text: 'No sales match.' })));
 }
 $('#date-legend').textContent = dateLegend();
@@ -2737,7 +2742,7 @@ function eraPanel(f) {
   const nApproved = f.events.filter(e => ['sale', 'parent', 'internal'].includes(e.kind) && e.outcome !== 'Pending').length + (f.undated || []).filter(u => ['sale', 'parent', 'internal'].includes(u.kind) && !u.pending).length;
   if (nApproved) wrap.append(el('p', { style: 'margin:6px 0', text: 'The state has approved ' + nApproved + (nApproved === 1 ? ' change' : ' changes') + ' of control for this home since 2007.' }));
   const pend = f.events.filter(e => e.outcome === 'Pending').concat((f.undated || []).filter(u => u.pending));
-  pend.forEach(p => wrap.append(el('div', { class: 'note', text: 'Pending with the state: ' + ([p.buyer, p.who].filter(Boolean).join(', ') || 'application not yet decided') + '. Not included in the history below until it is decided.' })));
+  pend.forEach(p => wrap.append(el('div', { class: 'note' }, 'Pending with the state: ' + ([p.buyer, p.who].filter(Boolean).join(', ') || 'application not yet decided') + '. Not included in the history below until it is decided.', p.cec ? cecDetail(p.cec, 'this pending sale') : null)));
   const list = el('div', { class: 'eras' }); wrap.append(list);
   eras.forEach(r => {
     const first = r.evs[0] || {}, names = r.kind === 'earlier' ? 'Earlier owner' : (first.buyer || first.who || 'New owner');
@@ -2773,6 +2778,7 @@ function eraPanel(f) {
     else if (r.startApprox || r.endApprox) card.append(el('p', { class: 'small', style: 'margin:8px 0 0', text: 'The state record does not give an exact date, so no rating change is shown for this period.' }));
     else card.append(el('p', { class: 'small', style: 'margin:8px 0 0', text: 'Too short, or too long ago, for CMS ratings on this page to show a change (CMS files here start in ' + fmtMon(D.dates[0]) + ').' }));
     if (r.notes && r.notes.length) card.append(el('ul', { class: 'notes' }, r.notes.map(n => el('li', { text: fmtDay(n.date) + ': ' + (KIND_LBL[n.kind] || n.label) + (n.who ? ' (' + [n.buyer, n.who].filter(Boolean).join(', ') + ')' : '') }))));
+    r.evs.filter(e => e.cec).forEach(e => card.append(cecDetail(e.cec, e.kind === 'parent' ? 'this chain reorganization' : 'this sale')));
     list.append(card);
   });
   return wrap;
@@ -2794,7 +2800,7 @@ function showFacility(id, scroll) {
   box.append(head);
   const eraP = eraPanel(f); if (eraP) box.append(eraP);
   const rpP = rpPanel(f); if (rpP) box.append(rpP);
-  if (f.events.length) { const ol = el('ol', { class: 'timeline' }); f.events.forEach(e => ol.append(el('li', {}, el('div', { class: 'small', title: e.date_note || '' }, fmtDay(e.date), dateMark(e.date_note)), el('div', {}, el('span', { class: 'kind ' + (e.kind === 'cms' ? 'cms' : e.kind === 'sale' ? 'sale' : e.kind === 'parent' ? 'parent' : (e.kind === 'closed' || e.kind === 'unclosed') ? 'closed' : e.kind === 'mgmt' ? 'mgmt' : ''), text: KIND_LBL[e.kind] || e.label }), (e.kind === 'closed' || e.kind === 'unclosed') ? el('span', { text: e.label }) : e.label && e.kind !== 'cms' ? el('span', { text: [e.buyer, e.who].filter(Boolean).join(' \u2014 ') }) : el('span', { text: e.label + (e.who ? ': ' + e.who : '') }), e.outcome ? el('span', { class: 'small', text: ' \u00B7 ' + e.outcome }) : null, el('div', { class: 'small', text: e.src }), cecDetail(e.cec, 'Conditions and documents for this state review'))))); box.append(el('details', { class: 'panel', open: eraP ? null : '' }, el('summary', { text: 'Every record behind this, in date order' }), el('p', { class: 'small', text: 'State-reviewed changes and changes visible in CMS data, newest first.' }), ol, el('p', { class: 'small', text: dateLegend() }))); }
+  if (f.events.length) { const ol = el('ol', { class: 'timeline' }); f.events.forEach(e => ol.append(el('li', {}, el('div', { class: 'small', title: e.date_note || '' }, fmtDay(e.date), dateMark(e.date_note)), el('div', {}, el('span', { class: 'kind ' + (e.kind === 'cms' ? 'cms' : e.kind === 'sale' ? 'sale' : e.kind === 'parent' ? 'parent' : (e.kind === 'closed' || e.kind === 'unclosed') ? 'closed' : e.kind === 'mgmt' ? 'mgmt' : ''), text: KIND_LBL[e.kind] || e.label }), (e.kind === 'closed' || e.kind === 'unclosed') ? el('span', { text: e.label }) : e.label && e.kind !== 'cms' ? el('span', { text: [e.buyer, e.who].filter(Boolean).join(' \u2014 ') }) : el('span', { text: e.label + (e.who ? ': ' + e.who : '') }), e.outcome ? el('span', { class: 'small', text: ' \u00B7 ' + e.outcome }) : null, el('div', { class: 'small', text: e.src }), cecDetail(e.cec, 'this state review'))))); box.append(el('details', { class: 'panel', open: eraP ? null : '' }, el('summary', { text: 'Every record behind this, in date order' }), el('p', { class: 'small', text: 'State-reviewed changes and changes visible in CMS data, newest first.' }), ol, el('p', { class: 'small', text: dateLegend() }))); }
   else box.append(el('div', { class: 'panel' }, el('p', { text: 'No ownership changes on record for this home.' })));
   if (f.has_cms) {
     const mk = []; f.events.forEach(e => { if (e.kind === 'cms' || e.kind === 'realestate' || e.kind === 'unclosed') return; const x = MS(e.date); mk.push({ x, color: e.kind === 'sale' ? css('--sold') : (e.kind === 'closed' ? css('--fg') : css('--accent')), dash: e.kind === 'internal' ? '3 3' : '', title: KIND_LBL[e.kind] + ', ' + fmtDay(e.date) }); });
@@ -2957,7 +2963,7 @@ function showFacility(id, scroll) {
 /* ---------- about + downloads ---------- */
 const ab = $('#about-body');
 [['Where the numbers come from', 'CMS Nursing Home Care Compare monthly files (star ratings, staffing, turnover, inspection citations, fines, ownership fields), Rhode Island homes only, and the Rhode Island Department of Health\u2019s annual reports of Change in Effective Control (CEC) reviews.'],
- ['Conditions and documents', 'Under each home in the sales table and on its timeline, "Conditions and documents" lists what the Health Services Council recommended and the Health Department decided: the conditions beyond the standard set of statutory conditions, whether any were triggered, and links to the Council\u2019s report and decision letter and to the public comments, applicant responses, presentations and meeting transcripts that report links. Most approvals carry the same standard set of statutory conditions: carry out the project as approved, become accredited within 2 years, run national background checks, give the state data on request, no discrimination by payment source, a good-faith search for another payor before discharging a resident, and individualized resident-centered care. Those are not repeated under each sale, only anything added to them (a few 2022 approvals, for example, dropped the accreditation condition). "No public record found" under triggered means the page found nothing public showing a condition was tested, not that it was met. Some approvals were never completed; those are marked on the home\u2019s timeline and not counted as sales.'],
+ ['CEC documents and conditions', 'Under each sale in the sales table, on each owner\u2019s block on a home\u2019s page, and on its timeline, "CEC documents and conditions" lists what the Health Services Council recommended and the Health Department decided: the conditions beyond the standard set of statutory conditions, whether any were triggered, and links to the Council\u2019s report and decision letter and to the public comments, applicant responses, presentations and meeting transcripts that report links. Most approvals carry the same standard set of statutory conditions: carry out the project as approved, become accredited within 2 years, run national background checks, give the state data on request, no discrimination by payment source, a good-faith search for another payor before discharging a resident, and individualized resident-centered care. Those are not repeated under each sale, only anything added to them (a few 2022 approvals, for example, dropped the accreditation condition). "No public record found" under triggered means the page found nothing public showing a condition was tested, not that it was met. Some approvals were never completed; those are marked on the home\u2019s timeline and not counted as sales.'],
  ['What "sold" means here', 'A change of control approved by the state, most often a sale to a new operator. "Chain reorganizations" are the records the state log marks as a corporate parent change rather than a sale to a different buyer; since April 2019 that is only the 2022 Tryko-to-Marquis reorganization of four homes. Every other change of control on this page is a sale to a new owner or operator. Estate and internal restructurings and real-estate-only deals are shown on a home\u2019s timeline but not counted as sales.'],
  ['Dates', 'The sale date is CMS\u2019s takeover date when CMS lists one, otherwise the state\u2019s decision date. CMS files usually show a new operator several months later. The date shown in the CMS-data timeline entries is when CMS\u2019s files first showed the change.'],
  ['Star ratings', 'CMS revised how star ratings are calculated in April 2019 (the statewide average fell from 3.8 to 3.35 in a single month) and has adjusted its methods since. Charts start after that change. Ratings are one measure of a home, not a full picture of care.'],
