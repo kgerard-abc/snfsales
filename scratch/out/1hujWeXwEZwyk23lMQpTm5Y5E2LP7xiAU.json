@@ -1,0 +1,43 @@
+{
+ "id": "1hujWeXwEZwyk23lMQpTm5Y5E2LP7xiAU",
+ "kind": "file",
+ "class": "linked",
+ "label": "linked from 3/9/2021; 3/23/2021 Silver Creek Manor SNF, LLC Health Services Council Report A (page 4)",
+ "rows": [
+  "Silver Creek Manor SNF, LLC"
+ ],
+ "from": "1NHvQiLz6AmK65ae1H1GTMObvC0I70z8L",
+ "uri": "https://drive.google.com/file/d/1hujWeXwEZwyk23lMQpTm5Y5E2LP7xiAU/view?usp=sharing",
+ "status": "ok",
+ "pages": 338,
+ "links": [
+  {
+   "page": 6,
+   "uri": "mailto:procha@apslaw.com"
+  },
+  {
+   "page": 16,
+   "uri": "mailto:Paula.Pullano@health.ri.gov"
+  },
+  {
+   "page": 16,
+   "uri": "mailto:Paula.Pullano@health.ri.gov"
+  },
+  {
+   "page": 33,
+   "uri": "http://www.preferredcarehc.com/"
+  },
+  {
+   "page": 34,
+   "uri": "http://www.preferredcarehc.com/"
+  },
+  {
+   "page": 35,
+   "uri": "http://www.preferredcarehc.com/"
+  },
+  {
+   "page": 36,
+   "uri": "http://www.preferredcarehc.com/"
+  }
+ ]
+}

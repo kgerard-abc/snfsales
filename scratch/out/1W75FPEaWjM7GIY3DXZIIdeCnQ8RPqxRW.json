@@ -1,0 +1,23 @@
+{
+ "id": "1W75FPEaWjM7GIY3DXZIIdeCnQ8RPqxRW",
+ "kind": "file",
+ "class": "linked",
+ "label": "linked from 10/4/2022; 10/18/2022 Lincolnwood Operator LLC, Health Services Council Report A (page 4)",
+ "rows": [
+  "Lincolnwood Operator LLC dba Lincolnwood Rehabilitation and "
+ ],
+ "from": "1uGTuLkPvyhoib1ecCx3qiSa5phnlEWOd",
+ "uri": "https://drive.google.com/file/d/1W75FPEaWjM7GIY3DXZIIdeCnQ8RPqxRW/view",
+ "status": "ok",
+ "pages": 300,
+ "links": [
+  {
+   "page": 101,
+   "uri": "http://go.cms.gov/Nhqapi"
+  },
+  {
+   "page": 109,
+   "uri": "http://go.cms.gov/Nhqapi"
+  }
+ ]
+}
