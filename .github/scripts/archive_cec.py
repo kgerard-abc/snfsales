@@ -282,6 +282,8 @@ def has_extension(name):
     """True for a real file ending like .pdf or .docx. Dates such as 2025.09.26 are not endings."""
     return re.fullmatch(r"\.[A-Za-z][A-Za-z0-9]{1,4}", Path(name).suffix) is not None
 
+GIVE_UP = 8
+
 def with_extension(path):
     """Drive sometimes hands back a file whose name has no ending. Work out the type from the file and add it."""
     path = Path(path)
@@ -449,6 +451,10 @@ def main():
                 if canon(u) in seen: continue
                 seen.add(canon(u)); c = child_rec(r, u)
                 if not done(c): queue.append(c)
+    tries = lambda q: int((manifest["links"].get(q["url"]) or {}).get("attempts", 0))
+    gave_up = [q for q in queue if tries(q) >= GIVE_UP]
+    queue = sorted([q for q in queue if tries(q) < GIVE_UP], key=tries)
+    if gave_up: log(f"{len(gave_up)} links failed {GIVE_UP} or more times and are skipped. They are listed in the manifest for a person to check.")
     log(f"{len(uniq) - len([q for q in queue if not q.get('linked_from')])} already archived. {len(queue)} to do. Links found inside HSC reports (public comments) are added as the run goes.")
 
     if a.dry_run:
@@ -481,6 +487,9 @@ def main():
         stored = []
         if status == "ok":
             paths = [with_extension(p) for p in paths]
+            if any(p.read_bytes()[:200].lstrip().lower().startswith((b"<!doctype html", b"<html")) for p in paths):
+                status, note, paths = "blocked", "Drive sent a web page instead of the file (usually its large-file warning). Tried again on the next run.", []
+        if status == "ok":
             # Public comments: the HSC report links to a Drive folder of them. Add any Drive links found in the report.
             if r["label"].lower().startswith("hsc recommendation") and r["kind"] != "folder":
                 found, every = [], []
@@ -517,7 +526,16 @@ def main():
                     stored.append({"file": fname, "status": "too_large", "bytes": size}); continue
                 digest = sha256(p); ok, err = False, ""
                 try: ok = upload(ident, p, fname, md, access, secret)
-                except Exception as e: err = str(e)[:200]
+                except Exception as e:
+                    err = str(e)[:200]
+                    if "syntax error detected in pdf" in str(e).lower():
+                        import zipfile
+                        zp = p.with_name(p.name + ".zip")
+                        with zipfile.ZipFile(zp, "w", zipfile.ZIP_DEFLATED) as z: z.write(p, fname)
+                        fname = fname + ".zip"
+                        try: ok = upload(ident, zp, fname, md, access, secret); err = "" if ok else err
+                        except Exception as e2: err = str(e2)[:200]
+                        if ok: note = "archive.org would not take this PDF as is (it says the file is damaged), so it is stored inside a zip file"
                 stored.append({"file": fname, "status": "archived" if ok else "failed", "bytes": size, "sha256": digest,
                                "archive_url": f"https://archive.org/download/{ident}/{fname.replace(' ', '%20')}",
                                **({"error": err} if err else {})})
