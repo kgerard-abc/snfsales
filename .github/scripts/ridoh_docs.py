@@ -70,8 +70,12 @@ def drive_ref(url):
     return ("other", None)
 
 def canon(url):
+    """One standard address per file or folder. Older Drive links carry a resourcekey that is needed to open them, so it is kept."""
     kind, fid = drive_ref(url)
-    if kind == "file": return f"https://drive.google.com/file/d/{fid}/view"
+    rk = re.search(r"[?&]resourcekey=([\w-]+)", url)
+    rk = f"?resourcekey={rk.group(1)}" if rk else ""
+    if kind == "file": return f"https://drive.google.com/file/d/{fid}/view{rk}"
+    if kind == "folder": return f"https://drive.google.com/drive/folders/{fid}{rk}"
     if kind == "folder": return f"https://drive.google.com/drive/folders/{fid}"
     if kind.startswith("gdoc:"): return f"https://docs.google.com/{kind.split(':', 1)[1]}/d/{fid}"
     return url.strip()
