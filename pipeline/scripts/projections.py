@@ -20,7 +20,7 @@ import csv, json, os
 from collections import defaultdict
 
 HOURS_PER_FTE = 2080
-MIN_DAYS = 300          # payroll records must cover at least this many usable days of the year
+MIN_DAYS = 270          # payroll records must cover at least this many usable days of the year (three quarters)
 FIELDS = ('nurse_fte', 'rn_fte', 'revenue', 'margin', 'rent', 'mgmt')
 
 
@@ -34,13 +34,13 @@ def _pbj(path):
         for k in ('rn_hours', 'lpn_hours', 'aide_hours', 'resident_days', 'contract_hours'): a[k] += float(r[k] or 0)
     out = {}
     for k, a in acc.items():
-        if a['quarters'] < 4 or a['days'] < MIN_DAYS: continue
+        if a['quarters'] < 3 or a['days'] < MIN_DAYS: continue   # a quarter with no file at all means the home did not submit it (CMS footnote 12)
         per_year = 365.0 / a['days'] / HOURS_PER_FTE
         tot = a['rn_hours'] + a['lpn_hours'] + a['aide_hours']
         out[k] = dict(nurse_fte=round(tot * per_year, 1), rn_fte=round(a['rn_hours'] * per_year, 1),
                       residents=round(a['resident_days'] / a['days'], 1) if a['days'] else None,
                       hprd=round(tot / a['resident_days'], 2) if a['resident_days'] else None,
-                      contract_pct=round(a['contract_hours'] / tot * 100, 1) if tot else None)
+                      contract_pct=round(a['contract_hours'] / tot * 100, 1) if tot else None, quarters=int(a['quarters']))
     return out
 
 
@@ -90,7 +90,7 @@ def build(D, proj_path, pbj_path):
             if t is None or not _in_charge(t, yi): continue
             act = {}
             st = pbj.get((ccn, yi))
-            if st: act.update(nurse_fte=st['nurse_fte'], rn_fte=st['rn_fte'], hprd=st['hprd'], contract_pct=st['contract_pct'])
+            if st: act.update(nurse_fte=st['nurse_fte'], rn_fte=st['rn_fte'], hprd=st['hprd'], contract_pct=st['contract_pct'], staff_quarters=st['quarters'])
             i = yrs_m.get(yi)
             if i is not None and _mixed(m, i, t): i = None   # the year adds a report from before the buyer took charge
             if i is not None and not (m.get('partial') or [False] * 99)[i]:
@@ -99,6 +99,14 @@ def build(D, proj_path, pbj_path):
             pm = pr.get('margin')
             if pm is None and pr.get('profit') is not None and pr.get('revenue'): pm = round(pr['profit'] / pr['revenue'], 4)
             years.append(dict(year=yi, projected={**{k: pr.get(k) for k in FIELDS}, 'margin': pm}, actual=act))
+        staffing_ok, staffing_note, past = s.get('staffing_ok', True), s.get('staffing_note'), s.get('past')
+        if past:
+            pp = pbj.get((ccn, int(past['year'])))
+            past = dict(past, payroll=pp['nurse_fte'] if pp else None)
+            if pp and staffing_ok and not (0.8 <= pp['nurse_fte'] / past['nurse_fte'] <= 1.25):
+                staffing_ok = False
+                staffing_note = (f"The application's own count for a year the seller ran the home ({past['nurse_fte']:g} nurse staff in {past['year']}, page {past['page']}) "
+                                 f"does not match CMS's payroll records for that year ({pp['nurse_fte']:g}), so its staff counts do not measure the same thing and are not compared.")
         cap = None
         if s.get('cost_cap'):
             first = next((y for y in years if y['actual'].get('expenses') is not None), None)
@@ -107,7 +115,7 @@ def build(D, proj_path, pbj_path):
         rows.append(dict(cec=cec, fid=ccn, name=f.get('name') or s.get('home'), town=f.get('town'), buyer=s.get('buyer') or (t or {}).get('group'),
                          start=(t or {}).get('counted_from'), via=(t or {}).get('via'), document=s.get('document'), link=s.get('link'), archive=s.get('archive'),
                          staff_page=s.get('staff_page'), budget_page=s.get('budget_page'), filed=s.get('filed'), note=s.get('note'),
-                         staffing_ok=s.get('staffing_ok', True), staffing_note=s.get('staffing_note'), cost_cap=cap,
+                         staffing_ok=staffing_ok, staffing_note=staffing_note, past=past, cost_cap=cap,
                          first_year=min(map(int, s.get('years', {}) or [0])), years=years,
                          waiting=(not years), landlord=m.get('landlord')))
     rows.sort(key=lambda r: (r['start'] or '9999'))

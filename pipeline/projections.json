@@ -1,5 +1,5 @@
 {
- "about": "What each buyer projected for its first years, from Appendix A of its change in effective control application (Table 2, staff; Table 3, revenue and expenses). Every figure was copied from the page named here and checked by eye on November 10, 2026. Pages are PDF page numbers. nurse_fte = director of nursing + RNs + LPNs + nursing aides (and nursing administrators or medication aides when the table lists them); rn_fte = director of nursing + RNs (+ an RN nursing administrator). revenue = net patient revenue. profit = operating profit or loss. rent = the Leasehold Expenses or rent line, left out when the application labels it as mortgage, taxes, or property costs. mgmt = management or consulting fees, given only when the line is fees alone. staffing_ok false means the table's own payroll does not fit its staff counts, so the counts are not compared. Edit here to correct a figure; the page rebuilds from this file. cost_cap is the condition of approval in the adopted Health Services Council report that limits operating costs in the first full operating year; it is compared with the operating expenses on the cost report for the first whole year the buyer ran the home.",
+ "about": "What each buyer projected for its first years, from Appendix A of its change in effective control application (Table 2, staff; Table 3, revenue and expenses). Every figure was copied from the page named here and checked by eye on November 10, 2026. Pages are PDF page numbers. nurse_fte = director of nursing + RNs + LPNs + nursing aides (and nursing administrators or medication aides when the table lists them); rn_fte = director of nursing + RNs (+ an RN nursing administrator). revenue = net patient revenue. profit = operating profit or loss. rent = the Leasehold Expenses or rent line, left out when the application labels it as mortgage, taxes, or property costs. mgmt = management or consulting fees, given only when the line is fees alone. staffing_ok false means the table's own payroll does not fit its staff counts, so the counts are not compared. Edit here to correct a figure; the page rebuilds from this file. cost_cap is the condition of approval in the adopted Health Services Council report that limits operating costs in the first full operating year; it is compared with the operating expenses on the cost report for the first whole year the buyer ran the home. past is the application's own nurse staff count for a year when the seller ran the home (on the page before the projections); the build compares it with the payroll records for that year, and if the two differ by more than 20% (payroll below 80% or above 125% of it) the application's staff counts are not compared, because they are not measuring the same thing.",
  "sales": [
   {
    "cec": "CEC-070",
@@ -23,6 +23,11 @@
      "revenue": 6214511,
      "profit": 319147
     }
+   },
+   "past": {
+    "year": 2017,
+    "nurse_fte": 31.5,
+    "page": 14
    }
   },
   {
@@ -62,6 +67,11 @@
     "amount": 18191423.0,
     "report": "https://drive.google.com/file/d/1SFr9JKGGd0rtuvB9ZY0l1Wg0jGBznCC9/view",
     "words": "that the operating costs for the first full operating year not exceed $18,191,423.00"
+   },
+   "past": {
+    "year": 2019,
+    "nurse_fte": 107,
+    "page": 12
    }
   },
   {
@@ -95,6 +105,11 @@
     "amount": 16834615.1,
     "report": "https://drive.google.com/file/d/1tpPk6o9a0yml6ijyU2tKX0P7TY3uXIDJ/view",
     "words": "that the operating costs for the first full operating year not exceed $16,834,615.10"
+   },
+   "past": {
+    "year": 2019,
+    "nurse_fte": 105,
+    "page": 12
    }
   },
   {
@@ -128,6 +143,11 @@
     "amount": 11419378.8,
     "report": "https://drive.google.com/file/d/1NHvQiLz6AmK65ae1H1GTMObvC0I70z8L/view",
     "words": "that the operating costs for the first full operating year not exceed $11,419,378.80"
+   },
+   "past": {
+    "year": 2019,
+    "nurse_fte": 95,
+    "page": 12
    }
   },
   {
@@ -161,6 +181,11 @@
     "amount": 14493524.1,
     "report": "https://drive.google.com/file/d/1GuAGulY-yixo5LmJsShnDLZB-3yeFLJf/view",
     "words": "that the operating costs for the first full operating year not exceed $14,493,524.10"
+   },
+   "past": {
+    "year": 2019,
+    "nurse_fte": 140,
+    "page": 12
    }
   },
   {
@@ -190,6 +215,11 @@
      "rent": 1837729,
      "mgmt": 720127
     }
+   },
+   "past": {
+    "year": 2019,
+    "nurse_fte": 54,
+    "page": 12
    }
   },
   {
@@ -208,6 +238,11 @@
      "profit": 78040,
      "rent": 1872720
     }
+   },
+   "past": {
+    "year": 2019,
+    "nurse_fte": 43.4,
+    "page": 12
    }
   },
   {
@@ -234,6 +269,11 @@
      "profit": 302976,
      "rent": 493462
     }
+   },
+   "past": {
+    "year": 2020,
+    "nurse_fte": 55,
+    "page": 12
    }
   },
   {
@@ -260,6 +300,11 @@
      "profit": 413871,
      "rent": 191017
     }
+   },
+   "past": {
+    "year": 2020,
+    "nurse_fte": 41,
+    "page": 12
    }
   },
   {
@@ -310,6 +355,11 @@
      "profit": 106679,
      "rent": 728079
     }
+   },
+   "past": {
+    "year": 2022,
+    "nurse_fte": 65,
+    "page": 12
    }
   },
   {
@@ -335,6 +385,11 @@
      "revenue": 23166325,
      "profit": 1700025
     }
+   },
+   "past": {
+    "year": 2022,
+    "nurse_fte": 72.5,
+    "page": 11
    }
   },
   {
@@ -360,6 +415,11 @@
      "revenue": 13149684,
      "profit": 634693
     }
+   },
+   "past": {
+    "year": 2022,
+    "nurse_fte": 60.6,
+    "page": 37
    }
   },
   {
