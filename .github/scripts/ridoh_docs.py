@@ -172,7 +172,13 @@ def generic(desc):
     return len(n) < 30 or n in ("change in effective control", "cec", "change in effective control application")
 
 def match(c, rows):
-    """The RIDOH row on one tab that goes with a CEC Log row, or (None, reason)."""
+    """The RIDOH row on one tab that goes with a CEC Log row, or (None, reason).
+    First by link: when the log's application link (column O or P) is linked from exactly one row on the tab, that is the row.
+    Otherwise by RIDOH's description (the log keeps RIDOH's wording) or the applicant's name."""
+    mine = {doc_key(v["url"]) for k, v in c["links"].items() if k in ("application", "application_earlier") and v["url"]}
+    if mine:
+        hits = [e for e in rows if any(l["type"] == "application" and l["key"] in mine for l in e["links"])]
+        if len(hits) == 1: return hits[0], ""
     a1 = norm(c["applicant"].split("→")[0])
     scored = []
     for e in rows:
