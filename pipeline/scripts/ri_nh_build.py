@@ -2949,8 +2949,10 @@ function showFacility(id, scroll) {
     drawChart($('#fc3'), { x: X, ymin: 0, bands: runs(f.s.tf, 'Payroll data problem: CMS assigns its worst turnover score; left out'), extra: bi => f.s.tf[bi] ? [el('div', { class: 'small', text: 'CMS published an implausible figure this month (payroll data problem); left out here.' })] : [], yfmt: v => Math.round(v) + '%', tfmt: v => Math.round(v) + '%', xlabel: xf, markers: mk, height: 260, aria: f.name + ' nursing staff turnover', series: [{ name: 'This home', color: css('--sold'), values: f.s.turnover, width: 3 }, { name: 'Statewide avg', color: css('--ctrl'), values: st.avg_turnover, dash: '5 4', width: 1.6 }] });
     barChart($('#fc4'), yl, f.yr.serious, css('--s1'), v => String(Math.round(v)), 'Serious citations per year', true); barChart($('#fc5'), yl, f.yr.fines, css('--sold'), v => v >= 1e6 ? '$' + (v / 1e6).toFixed(1) + 'M' : '$' + Math.round(v / 1e3) + 'K', 'Fines per year');
   } else box.append(el('div', { class: 'note', text: 'This home does not appear in the CMS files used here (April 2019 onward), so only the state review record is shown.' }));
-  if (scroll) box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (scroll) toProfile(true);
 }
+// Scroll so the home's name sits just under the sticky menu bar (scrollIntoView alone tucks it under the bar).
+function toProfile(smooth) { const box = $('#profile'), nav = document.querySelector('nav.jump'); if (!box || !box.firstChild) return; const top = box.getBoundingClientRect().top + window.scrollY - (nav ? nav.getBoundingClientRect().height : 0) - 8; window.scrollTo({ top: Math.max(0, top), behavior: smooth ? 'smooth' : 'auto' }); }
 
 /* ---------- owner groups: one table at a time; the viewer picks what it shows and which groups ---------- */
 (function () {
@@ -3123,7 +3125,21 @@ $('#dl-sales').addEventListener('click', () => download('ri_nursing_home_sales.c
 $('#dl-monthly').addEventListener('click', () => { const rows = [['ccn', 'home', 'file_date', 'overall_stars', 'health_inspection_stars', 'staffing_stars', 'quality_measure_stars', 'nurse_hours_per_resident_day', 'rn_hours_per_resident_day', 'nursing_staff_turnover_pct']]; D.facilities.filter(f => f.has_cms).forEach(f => D.dates.forEach((d, i) => { if (f.s.overall[i] != null || f.s.hours[i] != null) rows.push([f.ccn, f.name, d, f.s.overall[i], f.s.hi[i], f.s.staffing[i], f.s.qm[i], f.s.hours[i], f.s.rn[i], f.s.turnover[i]]); })); download('ri_nursing_home_monthly.csv', rows); });
 let lastW = window.innerWidth; let rz = null;
 window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (Math.abs(window.innerWidth - lastW) < 30) return; lastW = window.innerWidth; drawStudy(); drawMoney(); if (curFac) showFacility(curFac, false); }, 200); });
-if (location.hash.startsWith('#home=')) { showFacility(decodeURIComponent(location.hash.slice(6))); }
+// A link to one home (#home=ID, from a shared link, the owner groups page, or the dashboard) opens that home and goes straight to it,
+// instead of leaving the reader at the top of a long page. If images or fonts shift the layout while the page finishes loading,
+// it goes there again, unless the reader has already started scrolling.
+function openHomeFromHash() {
+  if (!location.hash.startsWith('#home=')) return false;
+  const id = decodeURIComponent(location.hash.slice(6)); if (!D.facilities.some(x => x.id === id)) return false;
+  showFacility(id, false); toProfile(false); return true;
+}
+if (openHomeFromHash()) {
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  let moved = false; const stop = () => { moved = true; };
+  ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach(t => window.addEventListener(t, stop, { once: true, passive: true }));
+  window.addEventListener('load', () => { if (!moved) toProfile(false); });
+}
+window.addEventListener('hashchange', openHomeFromHash);
 </script>
 <script data-goatcounter="https://abc-ri-snfsales.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 <script>function gcEvent(n){try{var g=window.goatcounter;if(g&&g.count)g.count({path:'home/'+n,title:n,event:true});}catch(e){}}</script>
