@@ -1,12 +1,15 @@
 """Temporary: transcribe a Council meeting recording with timestamps.
 usage: transcribe.py AUDIO OUT_PREFIX"""
-import sys, json, time
+import sys, json, time, wave
+import numpy as np
 from faster_whisper import WhisperModel
 
 audio, out = sys.argv[1], sys.argv[2]
 model = WhisperModel('small.en', device='cpu', compute_type='int8', cpu_threads=4)
+with wave.open(audio) as w:
+    pcm = np.frombuffer(w.readframes(w.getnframes()), dtype=np.int16).astype(np.float32) / 32768.0
 segments, info = model.transcribe(
-    audio, language='en', beam_size=2, vad_filter=True,
+    pcm, language='en', beam_size=2, vad_filter=True,
     vad_parameters={'min_silence_duration_ms': 700},
     initial_prompt=('Rhode Island Health Services Council meeting. Change in effective control. '
                     'AdviniaCare, Mayflower, Respiratory and Rehabilitation Center of Rhode Island, Coventry, '
