@@ -1485,7 +1485,7 @@
   },
   "https://drive.google.com/file/d/0B9lx-sHDAL9qTl8wWTlRS2ZUMm8": {
    "applicant": "NSL Oak Hill",
-   "attempts": 3,
+   "attempts": 4,
    "checked": "2026-11-12",
    "item": "ri-cec-2016-nsl-oak-hill",
    "kind": "file",
@@ -1535,7 +1535,7 @@
   },
   "https://drive.google.com/file/d/0B9lx-sHDAL9qZGpPdGsyNk9YVzQ": {
    "applicant": "Genesis HealthCare Trust Change in Effective Control:",
-   "attempts": 3,
+   "attempts": 4,
    "checked": "2026-11-12",
    "item": "ri-cec-2014-genesis-healthcare-trust-change-in-effective-control",
    "kind": "file",
@@ -1549,7 +1549,7 @@
   },
   "https://drive.google.com/file/d/0B9lx-sHDAL9qajhSdEt0WHM0UTg": {
    "applicant": "Bannister Operations Associates d/b/a Bannister Center",
-   "attempts": 3,
+   "attempts": 4,
    "checked": "2026-11-12",
    "item": "ri-cec-2015-bannister-operations-associates-d-b-a-bannister-center",
    "kind": "file",
@@ -1653,7 +1653,7 @@
   },
   "https://drive.google.com/file/d/10tVWuCA0qIiorgdrK5HeSIyVuFDbOlxQ": {
    "applicant": "Warwick Health Center, Inc.",
-   "attempts": 4,
+   "attempts": 5,
    "checked": "2026-11-12",
    "item": "ri-cec-2024-warwick-health-center-inc",
    "kind": "file",
@@ -2400,7 +2400,7 @@
   },
   "https://drive.google.com/file/d/1BDACJqIu9NvIsJBK27-BqabGfxUygdiY": {
    "applicant": "Friendly Eden Operations, LLC",
-   "attempts": 4,
+   "attempts": 5,
    "checked": "2026-11-12",
    "item": "ri-cec-2023-friendly-eden-operations-llc",
    "kind": "file",
@@ -5955,5 +5955,5 @@
    "years": "2025-2026"
   }
  },
- "updated": "2026-11-12T13:08Z"
+ "updated": "2026-11-12T22:14Z"
 }
