@@ -550,8 +550,8 @@
   "https://drive.google.com/drive/folders/10vfcZOQfrjAAPlAK1zpgnoO9eOCnq0He": {
    "applicant": "AdviniaCare Providence Dodge Rehab Center, LLC (Bannister Center for Rehabilitation & Health Care)",
    "archive_url": "https://archive.org/details/ri-cec-2023-adviniacare-providence-dodge-rehab-center-llc-bannister-center-for-reh",
-   "archived_on": "2026-11-12",
-   "checked": "2026-11-12",
+   "archived_on": "2026-11-13",
+   "checked": "2026-11-13",
    "files": [
     {
      "archive_url": "https://archive.org/download/ri-cec-2023-adviniacare-providence-dodge-rehab-center-llc-bannister-center-for-reh/AdviniaCare%20Bannister%20-%20AdviniaCare%20Bannister%20CEC%20Report%20of%20the%20HSC_adopted.pdf",
@@ -1116,8 +1116,8 @@
   "https://drive.google.com/drive/folders/1a9ZsbdH0eEOY-iftch4ECLpford0NZCy": {
    "applicant": "239 Legris Avenue Operations",
    "archive_url": "https://archive.org/details/ri-cec-2017-239-legris-avenue-operations",
-   "archived_on": "2026-11-12",
-   "checked": "2026-11-12",
+   "archived_on": "2026-11-13",
+   "checked": "2026-11-13",
    "files": [
     {
      "archive_url": "https://archive.org/download/ri-cec-2017-239-legris-avenue-operations/1_30_2018%20State%20agency%20decision%20and%20Report%20of%20HSC%20adopted%20-%202018.01.30%20West%20View%20CEC%20Approval.pdf",
@@ -1185,8 +1185,8 @@
   "https://drive.google.com/drive/folders/1hmlJIM7owtdtd_rxkYt4_vS_2wog0GwX": {
    "applicant": "AdviniaCare Pawtucket Pleasant Rehab Center, LLC (Oak Hill Center for Rehabilitation and Health Care)",
    "archive_url": "https://archive.org/details/ri-cec-2023-adviniacare-pawtucket-pleasant-rehab-center-llc-oak-hill-center-for-re",
-   "archived_on": "2026-11-12",
-   "checked": "2026-11-12",
+   "archived_on": "2026-11-13",
+   "checked": "2026-11-13",
    "files": [
     {
      "archive_url": "https://archive.org/download/ri-cec-2023-adviniacare-pawtucket-pleasant-rehab-center-llc-oak-hill-center-for-re/AdviniaCare%20Oak%20Hill%20-%20AdviniaCare%20Oak%20HIll%20CEC%20Report%20of%20the%20HSC_adopted.pdf",
@@ -1485,8 +1485,8 @@
   },
   "https://drive.google.com/file/d/0B9lx-sHDAL9qTl8wWTlRS2ZUMm8": {
    "applicant": "NSL Oak Hill",
-   "attempts": 4,
-   "checked": "2026-11-12",
+   "attempts": 5,
+   "checked": "2026-11-13",
    "item": "ri-cec-2016-nsl-oak-hill",
    "kind": "file",
    "label": "Applicant",
@@ -1535,8 +1535,8 @@
   },
   "https://drive.google.com/file/d/0B9lx-sHDAL9qZGpPdGsyNk9YVzQ": {
    "applicant": "Genesis HealthCare Trust Change in Effective Control:",
-   "attempts": 4,
-   "checked": "2026-11-12",
+   "attempts": 5,
+   "checked": "2026-11-13",
    "item": "ri-cec-2014-genesis-healthcare-trust-change-in-effective-control",
    "kind": "file",
    "label": "Applicant",
@@ -1549,8 +1549,8 @@
   },
   "https://drive.google.com/file/d/0B9lx-sHDAL9qajhSdEt0WHM0UTg": {
    "applicant": "Bannister Operations Associates d/b/a Bannister Center",
-   "attempts": 4,
-   "checked": "2026-11-12",
+   "attempts": 5,
+   "checked": "2026-11-13",
    "item": "ri-cec-2015-bannister-operations-associates-d-b-a-bannister-center",
    "kind": "file",
    "label": "Applicant",
@@ -1653,8 +1653,8 @@
   },
   "https://drive.google.com/file/d/10tVWuCA0qIiorgdrK5HeSIyVuFDbOlxQ": {
    "applicant": "Warwick Health Center, Inc.",
-   "attempts": 5,
-   "checked": "2026-11-12",
+   "attempts": 6,
+   "checked": "2026-11-13",
    "item": "ri-cec-2024-warwick-health-center-inc",
    "kind": "file",
    "label": "Review Commenced",
@@ -2400,8 +2400,8 @@
   },
   "https://drive.google.com/file/d/1BDACJqIu9NvIsJBK27-BqabGfxUygdiY": {
    "applicant": "Friendly Eden Operations, LLC",
-   "attempts": 5,
-   "checked": "2026-11-12",
+   "attempts": 6,
+   "checked": "2026-11-13",
    "item": "ri-cec-2023-friendly-eden-operations-llc",
    "kind": "file",
    "label": "HSC Recommendation***",
@@ -5955,5 +5955,5 @@
    "years": "2025-2026"
   }
  },
- "updated": "2026-11-12T22:14Z"
+ "updated": "2026-11-13T06:42Z"
 }
