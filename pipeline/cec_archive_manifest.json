@@ -1198,9 +1198,10 @@
     {
      "archive_url": "https://archive.org/download/ri-cec-2023-adviniacare-pawtucket-pleasant-rehab-center-llc-oak-hill-center-for-re/AdviniaCare%20Oak%20Hill%20-%20AdviniaCare%20Oak%20Hill%20decision%20letter_signed.pdf",
      "bytes": 53528,
+     "error": "(ReadTimeoutError(\"HTTPSConnectionPool(host='s3.us.archive.org', port=443): Read timed out. (read timeout=120)\"), 'https://s3.us.archive.org/ri-cec-2023-adviniacare-pawtucket-pleasant-rehab-center-llc",
      "file": "AdviniaCare Oak Hill - AdviniaCare Oak Hill decision letter_signed.pdf",
      "sha256": "4f33943e830ae2d7768dffbf5c17cdac618575eddfc8f9ab6709f645c59c2227",
-     "status": "archived"
+     "status": "failed"
     }
    ],
    "item": "ri-cec-2023-adviniacare-pawtucket-pleasant-rehab-center-llc-oak-hill-center-for-re",
@@ -1209,7 +1210,7 @@
    "link_text": "12/10/2024; 1/28/2025 Oak Hill State Agency Decision Letter and Adopted Report of the Health Services Council",
    "note": "",
    "sheet_row": 205,
-   "status": "archived",
+   "status": "partial",
    "year": "2025",
    "years": "2023-2025"
   },
@@ -1485,7 +1486,7 @@
   },
   "https://drive.google.com/file/d/0B9lx-sHDAL9qTl8wWTlRS2ZUMm8": {
    "applicant": "NSL Oak Hill",
-   "attempts": 5,
+   "attempts": 6,
    "checked": "2026-11-13",
    "item": "ri-cec-2016-nsl-oak-hill",
    "kind": "file",
@@ -1535,7 +1536,7 @@
   },
   "https://drive.google.com/file/d/0B9lx-sHDAL9qZGpPdGsyNk9YVzQ": {
    "applicant": "Genesis HealthCare Trust Change in Effective Control:",
-   "attempts": 5,
+   "attempts": 6,
    "checked": "2026-11-13",
    "item": "ri-cec-2014-genesis-healthcare-trust-change-in-effective-control",
    "kind": "file",
@@ -1549,7 +1550,7 @@
   },
   "https://drive.google.com/file/d/0B9lx-sHDAL9qajhSdEt0WHM0UTg": {
    "applicant": "Bannister Operations Associates d/b/a Bannister Center",
-   "attempts": 5,
+   "attempts": 6,
    "checked": "2026-11-13",
    "item": "ri-cec-2015-bannister-operations-associates-d-b-a-bannister-center",
    "kind": "file",
@@ -1653,7 +1654,7 @@
   },
   "https://drive.google.com/file/d/10tVWuCA0qIiorgdrK5HeSIyVuFDbOlxQ": {
    "applicant": "Warwick Health Center, Inc.",
-   "attempts": 6,
+   "attempts": 7,
    "checked": "2026-11-13",
    "item": "ri-cec-2024-warwick-health-center-inc",
    "kind": "file",
@@ -2400,7 +2401,7 @@
   },
   "https://drive.google.com/file/d/1BDACJqIu9NvIsJBK27-BqabGfxUygdiY": {
    "applicant": "Friendly Eden Operations, LLC",
-   "attempts": 6,
+   "attempts": 7,
    "checked": "2026-11-13",
    "item": "ri-cec-2023-friendly-eden-operations-llc",
    "kind": "file",
@@ -5955,5 +5956,5 @@
    "years": "2025-2026"
   }
  },
- "updated": "2026-11-13T06:42Z"
+ "updated": "2026-11-13T16:24Z"
 }
