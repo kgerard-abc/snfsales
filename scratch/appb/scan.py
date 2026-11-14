@@ -12,6 +12,13 @@ UA = {"User-Agent": "abc-ri-appendix-b/1.0"}
 CAND = re.compile(r"compliance\s+report|to\s+be\s+completed\s+by\s+the\s+appropriate|reviewer.{0,3}s\s+(name|signature)|appendix\s*b\b|no\s+records?\s+(were\s+)?found|change\s+in\s+effective\s+control\s+application", re.I)
 
 def log(*a): print(*a, flush=True)
+def curl(url, dest):
+    for a in range(4):
+        r = subprocess.run(["curl", "-sSL", "--fail", "--retry", "3", "--connect-timeout", "30", "--max-time", "1800", "-A", UA["User-Agent"], "-o", str(dest), url], capture_output=True, text=True)
+        if r.returncode == 0: return True
+        log("  curl", r.returncode, r.stderr[:200]); time.sleep(10 * (a + 1))
+    return None
+
 def get(url, dest=None, tries=4):
     for a in range(tries):
         try:
@@ -47,10 +54,10 @@ def ocr(args):
 def _ocr(args):
     pdf, p = args
     base = TMP / f"o{os.getpid()}_{abs(hash((str(pdf), p)))}"
-    subprocess.run(["pdftoppm", "-r", "150", "-scale-to", "1800", "-gray", "-f", str(p), "-l", str(p), str(pdf), str(base)], capture_output=True, timeout=300)
+    subprocess.run(["pdftoppm", "-r", "150", "-scale-to", "1800", "-gray", "-f", str(p), "-l", str(p), str(pdf), str(base)], capture_output=True, timeout=120)
     imgs = list(TMP.glob(base.name + "*"))
     if not imgs: return p, ""
-    r = subprocess.run(["tesseract", str(imgs[0]), "stdout", "--psm", "3"], capture_output=True, timeout=300)
+    r = subprocess.run(["tesseract", str(imgs[0]), "stdout", "--psm", "3"], capture_output=True, timeout=120, env={**os.environ, "OMP_THREAD_LIMIT": "1"})
     for i in imgs: i.unlink()
     return p, r.stdout.decode("utf-8", "replace")
 
@@ -79,18 +86,21 @@ def main():
             pdf = TMP / "doc.pdf"
             url = f"https://archive.org/download/{item}/{urllib.parse.quote(name)}"
             log("==", key, f.get("size"))
-            if not get(url, pdf): report.append({"item": item, "file": name, "error": "download failed"}); continue
+            t0 = time.time()
+            if not curl(url, pdf): report.append({"item": item, "file": name, "error": "download failed"}); continue
             try:
                 n = npages(pdf); texts = pages_text(pdf)
             except Exception as e:
                 report.append({"item": item, "file": name, "error": str(e)}); continue
             texts += [""] * (n - len(texts))
+            log(f"   downloaded and read text in {time.time()-t0:.0f}s, {n} pages")
             need = [i + 1 for i, t in enumerate(texts) if len(re.sub(r"\s", "", t)) < 60]
             ocred = set()
             if need:
                 with ThreadPoolExecutor(4) as ex:
-                    for p, t in ex.map(ocr, [(pdf, p) for p in need]):
+                    for k, (p, t) in enumerate(ex.map(ocr, [(pdf, p) for p in need])):
                         texts[p - 1] = t; ocred.add(p)
+                        if k % 25 == 0: log(f"   OCR {k}/{len(need)} at {time.time()-t0:.0f}s")
             cands = []
             for i, t in enumerate(texts):
                 p = i + 1
