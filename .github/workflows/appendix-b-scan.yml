@@ -1,0 +1,26 @@
+name: Temporary - find completed Appendix B forms
+# Scratch workflow for one chat (November 2026). Runs only on the appendix-b-scan branch. Delete the branch when done.
+on:
+  push:
+    branches: [appendix-b-scan]
+    paths: ['scratch/appb/run.txt']
+permissions:
+  contents: write
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils tesseract-ocr qpdf
+      - run: python3 scratch/appb/scan.py
+      - name: Save
+        if: always()
+        run: |
+          git config user.name "abc-ri-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add scratch/appb/out
+          git diff --cached --quiet && exit 0
+          git commit -q -m "Appendix B scan results"
+          git pull -q --rebase origin appendix-b-scan
+          git push -q origin HEAD:appendix-b-scan
