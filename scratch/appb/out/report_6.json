@@ -1,0 +1,68 @@
+[
+ {
+  "item": "ri-cec-2023-violet-snf-holdco-llc",
+  "file": "Violet SNF Holdco LLC CEC - Associated CEC Documents Violet SNF Holdco LLC (Pawtucket Falls) - 04. Assignment of Leases and Rents (Recorded).pdf",
+  "tag": "2023_violet_snf_holdco_llc_Violet_SNF_Holdco_LLC_CEC_Associated_CEC_Documents_Violet_ba3e35",
+  "md5": "ba3e3563fca4ce15d00d8d23ea2e7114",
+  "pages": 17,
+  "ocr_pages": 17,
+  "candidates": [],
+  "kept": []
+ },
+ {
+  "item": "ri-cec-2024-warwick-health-center-inc",
+  "file": "2024.11.19 CEC Application Presentation 2024 CEC Applications_Bigney Health Concepts (2).pdf",
+  "tag": "2024_warwick_health_center_inc_2024_11_19_CEC_Application_Presentation_2024_CEC_Application_eda766",
+  "md5": "eda766f5617bd7642e0085501b283d62",
+  "pages": 23,
+  "ocr_pages": 12,
+  "candidates": [
+   {
+    "page": 1,
+    "ocr": false,
+    "blank_template": false,
+    "received_stamp": false,
+    "head": " Change in Effective Control Applications 198 Waterman Avenue LLC for the Acquisition of Eastgate Nursing & Rehabilitation Center Allen\u2019s Health Center Inc. for the Acquisition of South Kingstown Nursing & Rehabilitation Center Warwick Health Center, Inc. for the Acquisition of West Shore Health Center Burrillville Health Center Associates Limited for the Acquisition of Bayberry Commons Village House Convalescent Home, Inc. for the Acquisition of Village House Nursing & Rehabilitation Center Elmwood Health Center, Inc. for the Acquisition of Elmwood Nursing & Rehabilitation Center November 19,"
+   }
+  ],
+  "kept": []
+ },
+ {
+  "item": "ri-cec-2024-warwick-health-center-inc",
+  "file": "2024.11.19 HSC Meeting Transcript_Bigney Health Concepts (1).pdf",
+  "tag": "2024_warwick_health_center_inc_2024_11_19_HSC_Meeting_Transcript_Bigney_Health_Concepts_1_efb896",
+  "md5": "efb8967b28d2b6f7d4e48b0cea57056f",
+  "pages": 21,
+  "ocr_pages": 0,
+  "candidates": [
+   {
+    "page": 6,
+    "ocr": false,
+    "blank_template": false,
+    "received_stamp": false,
+    "head": " MEETING PART 2 November 19, 2024 HEALTH SERVICES COUNCIL MEETING 6 \u00b71\u00b7 \u00b7she's been with Health Concepts about 25 years. \u00b72\u00b7 \u00b7 \u00b7 \u00b7 \u00b7 \u00b7 To my left is Chris Ryan.\u00b7 Chris has his MBA. \u00b73\u00b7 \u00b7He's also a licensed nursing home administrator, and \u00b74\u00b7 \u00b7he's the Director of Strategic Panning for Health \u00b75\u00b7 \u00b7Concepts and has been with Health Concepts -- \u00b76\u00b7 \u00b7 \u00b7 \u00b7 \u00b7 \u00b7 MR. RYAN:\u00b7 21 years. \u00b77\u00b7 \u00b7 \u00b7 \u00b7 \u00b7 \u00b7 MS. ROCHA:\u00b7 And last but not least, Stephanie \u00b78\u00b7 \u00b7Ryan.\u00b7 Stephanie is -- has her MS and RN.\u00b7 She is the \u00b79\u00b7 \u00b7co-owner with Michael Bigney of Home Nursing 10\u00b7 \u00b7Placement, Inc., the licensed home nursing car"
+   }
+  ],
+  "kept": []
+ },
+ {
+  "item": "ri-cec-2024-warwick-health-center-inc",
+  "file": "2024.12.10 Health Concepts Report of the HSC_adopted.pdf",
+  "tag": "2024_warwick_health_center_inc_2024_12_10_Health_Concepts_Report_of_the_HSC_adopted_pdf_557e45",
+  "md5": "557e459a695c8e95417a3270d2245e5d",
+  "pages": 16,
+  "ocr_pages": 0,
+  "candidates": [],
+  "kept": []
+ },
+ {
+  "item": "ri-cec-2024-warwick-health-center-inc",
+  "file": "Health Concepts 6 CECs decision letter_signed.pdf",
+  "tag": "2024_warwick_health_center_inc_Health_Concepts_6_CECs_decision_letter_signed_pdf_a4b34d",
+  "md5": "a4b34de1393f1a0417f16a8b4fa12272",
+  "pages": 2,
+  "ocr_pages": 2,
+  "candidates": [],
+  "kept": []
+ }
+]
