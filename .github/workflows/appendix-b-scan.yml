@@ -8,12 +8,19 @@ permissions:
   contents: write
 jobs:
   scan:
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7]
     runs-on: ubuntu-latest
     timeout-minutes: 340
     steps:
       - uses: actions/checkout@v4
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils tesseract-ocr qpdf
       - run: python3 scratch/appb/scan.py
+        env:
+          SHARD: ${{ matrix.shard }}
+          NSHARDS: 8
       - name: Save
         if: always()
         run: |
@@ -22,5 +29,7 @@ jobs:
           git add scratch/appb/out
           git diff --cached --quiet && exit 0
           git commit -q -m "Appendix B scan results"
-          git pull -q --rebase origin appendix-b-scan
-          git push -q origin HEAD:appendix-b-scan
+          for i in 1 2 3 4 5 6 7 8; do
+            git pull -q --rebase origin appendix-b-scan && git push -q origin HEAD:appendix-b-scan && break
+            sleep $((RANDOM % 20 + 5))
+          done

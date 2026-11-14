@@ -41,9 +41,13 @@ def npages(pdf):
     m = re.search(r"Pages:\s+(\d+)", r.stdout); return int(m.group(1)) if m else 0
 
 def ocr(args):
+    try: return _ocr(args)
+    except Exception as e: return args[1], f"(OCR failed: {e})"
+
+def _ocr(args):
     pdf, p = args
     base = TMP / f"o{os.getpid()}_{abs(hash((str(pdf), p)))}"
-    subprocess.run(["pdftoppm", "-r", "150", "-gray", "-f", str(p), "-l", str(p), str(pdf), str(base)], capture_output=True, timeout=300)
+    subprocess.run(["pdftoppm", "-r", "150", "-scale-to", "1800", "-gray", "-f", str(p), "-l", str(p), str(pdf), str(base)], capture_output=True, timeout=300)
     imgs = list(TMP.glob(base.name + "*"))
     if not imgs: return p, ""
     r = subprocess.run(["tesseract", str(imgs[0]), "stdout", "--psm", "3"], capture_output=True, timeout=300)
@@ -51,8 +55,14 @@ def ocr(args):
     return p, r.stdout.decode("utf-8", "replace")
 
 def main():
-    items = json.load(open(HERE / "items.json"))
+    shard, nsh = int(os.environ.get("SHARD", "0")), int(os.environ.get("NSHARDS", "1"))
+    items = [it for i, it in enumerate(json.load(open(HERE / "items.json"))) if i % nsh == shard]
+    done = set()
+    for rp in OUT.glob("report*.json"):
+        for r in json.load(open(rp)):
+            if r.get("pages") is not None: done.add((r["item"], r.get("file")))
     seen, report = {}, []
+    RPT = OUT / f"report_{shard}.json"
     for item in items:
         meta = get(f"https://archive.org/metadata/{item}")
         if not meta: log("no item", item); report.append({"item": item, "error": "no item"}); continue
@@ -61,6 +71,7 @@ def main():
             name = f["name"]
             if not name.lower().endswith(".pdf"): continue
             md5 = f.get("md5")
+            if (item, name) in done: continue
             if md5 in seen:
                 report.append({"item": item, "file": name, "same_as": seen[md5]}); continue
             key = f"{item}/{name}"; seen[md5] = key
@@ -69,7 +80,10 @@ def main():
             url = f"https://archive.org/download/{item}/{urllib.parse.quote(name)}"
             log("==", key, f.get("size"))
             if not get(url, pdf): report.append({"item": item, "file": name, "error": "download failed"}); continue
-            n = npages(pdf); texts = pages_text(pdf)
+            try:
+                n = npages(pdf); texts = pages_text(pdf)
+            except Exception as e:
+                report.append({"item": item, "file": name, "error": str(e)}); continue
             texts += [""] * (n - len(texts))
             need = [i + 1 for i, t in enumerate(texts) if len(re.sub(r"\s", "", t)) < 60]
             ocred = set()
@@ -98,7 +112,7 @@ def main():
                 subprocess.run(["qpdf", str(pdf), "--pages", ".", str(p), "--", str(OUT / "pdf" / f"{tag}_p{p}.pdf")], capture_output=True)
             report.append({"item": item, "file": name, "tag": tag, "md5": md5, "pages": n, "ocr_pages": len(ocred), "candidates": cands, "kept": sorted(keep)})
             log(f"   {n} pages, {len(ocred)} OCR, {len(cands)} candidate pages, kept {sorted(keep)[:20]}")
-            json.dump(report, open(OUT / "report.json", "w"), indent=1)
-    json.dump(report, open(OUT / "report.json", "w"), indent=1)
+            json.dump(report, open(RPT, "w"), indent=1)
+    json.dump(report, open(RPT, "w"), indent=1)
 
 if __name__ == "__main__": main()
