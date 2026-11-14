@@ -64,6 +64,10 @@ def _ocr(args):
 def main():
     shard, nsh = int(os.environ.get("SHARD", "0")), int(os.environ.get("NSHARDS", "1"))
     items = [it for i, it in enumerate(json.load(open(HERE / "items.json"))) if i % nsh == shard]
+    only = None
+    if (HERE / "only.json").exists():
+        only = {tuple(x) for x in json.load(open(HERE / "only.json"))}
+        items = sorted({i for i, _ in only}) if shard == 0 else []
     done = set()
     for rp in OUT.glob("report*.json"):
         for r in json.load(open(rp)):
@@ -78,7 +82,9 @@ def main():
             name = f["name"]
             if not name.lower().endswith(".pdf"): continue
             md5 = f.get("md5")
-            if (item, name) in done: continue
+            if only is not None:
+                if (item, name) not in only: continue
+            elif (item, name) in done: continue
             if md5 in seen:
                 report.append({"item": item, "file": name, "same_as": seen[md5]}); continue
             key = f"{item}/{name}"; seen[md5] = key
