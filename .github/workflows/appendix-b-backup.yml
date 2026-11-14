@@ -1,0 +1,28 @@
+name: Temporary - back up the October 9, 2025 AdviniaCare application
+# Scratch workflow for one chat (November 2026). Runs only on the appendix-b-scan branch.
+on:
+  push:
+    branches: [appendix-b-scan]
+    paths: ['scratch/appb/backup.txt']
+permissions:
+  contents: write
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils tesseract-ocr qpdf && pip install -q internetarchive
+      - run: python3 scratch/appb/backup.py
+        env:
+          IA_ACCESS: ${{ secrets.IA_ACCESS }}
+          IA_SECRET: ${{ secrets.IA_SECRET }}
+      - name: Save
+        if: always()
+        run: |
+          git config user.name "abc-ri-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add scratch/appb/out
+          git diff --cached --quiet && exit 0
+          git commit -q -m "Backup of the October 9, 2025 AdviniaCare application"
+          for i in 1 2 3 4; do git pull -q --rebase origin appendix-b-scan && git push -q origin HEAD:appendix-b-scan && break; sleep 10; done
