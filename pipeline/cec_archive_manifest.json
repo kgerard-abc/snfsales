@@ -173,28 +173,7 @@
   "westerly nursing and rehab and 79 beach street|0|2026": "ri-cec-2026-westerly-nursing-and-rehab-llc-and-79-beach-street-llc",
   "westerly opco|0|2022": "ri-cec-2022-westerly-opco-llc"
  },
- "cleanup": [
-  {
-   "file": "AdviniaCare CEC Application_ Exhibits_ and Supplemental Correspondence - Supplemental AdviniaCare CEC Application Correspondence - 1 - Pointe Gro.pdf",
-   "item": "ri-cec-2023-adviniacare-kingston-rehab-center-llc-kingston-center-for-rehabilitati"
-  },
-  {
-   "file": "AdviniaCare CEC Application_ Exhibits_ and Supplemental Correspondence - Supplemental AdviniaCare CEC Application Correspondence - 3 - DBSB Agree.pdf",
-   "item": "ri-cec-2023-adviniacare-kingston-rehab-center-llc-kingston-center-for-rehabilitati"
-  },
-  {
-   "file": "AdviniaCare CEC Application_ Exhibits_ and Supplemental Correspondence - 2024.05.23 AdviniaCare CEC Applications _ Exhibits_ALL_FINAL.pdf",
-   "item": "ri-cec-2023-adviniacare-kingston-rehab-center-llc-kingston-center-for-rehabilitati"
-  },
-  {
-   "file": "AdviniaCare Initiation of Review Notification_Fv.pdf",
-   "item": "ri-cec-2023-adviniacare-kingston-rehab-center-llc-kingston-center-for-rehabilitati"
-  },
-  {
-   "file": "2023.03.27 CEC Applications _ Exhibits_FINAL.pdf",
-   "item": "ri-cec-2023-adviniacare-kingston-rehab-center-llc-kingston-center-for-rehabilitati"
-  }
- ],
+ "cleanup": [],
  "items": {
   "2014|Genesis HealthCare Trust Change in Effective Control:": "ri-cec-2014-genesis-healthcare-trust-change-in-effective-control",
   "2015|Bannister Operations Associates d/b/a Bannister Center": "ri-cec-2015-bannister-operations-associates-d-b-a-bannister-center",
@@ -654,10 +633,9 @@
     {
      "archive_url": "https://archive.org/download/ri-cec-2023-adviniacare-pawtucket-pleasant-rehab-center-llc-oak-hill-center-for-re/AdviniaCare%20CEC%20Application_%20Exhibits_%20and%20Supplemental%20Correspondence%20-%202024.05.23%20AdviniaCare%20CEC%20Applications%20_%20Exhibits_ALL_FINAL.pdf",
      "bytes": 35255889,
-     "error": " error uploading AdviniaCare CEC Application_ Exhibits_ and Supplemental Correspondence - 2024.05.23 AdviniaCare CEC Applications _ Exhibits_ALL_FINAL.pdf to ri-cec-2023-adviniacare-pawtucket-pleasant",
      "file": "AdviniaCare CEC Application_ Exhibits_ and Supplemental Correspondence - 2024.05.23 AdviniaCare CEC Applications _ Exhibits_ALL_FINAL.pdf",
      "sha256": "b3b6c3bfb14d28077bbf938a2dd2a5d262faa3c60c7ba25c81288dc565adaf60",
-     "status": "failed"
+     "status": "archived"
     }
    ],
    "item": "ri-cec-2023-adviniacare-pawtucket-pleasant-rehab-center-llc-oak-hill-center-for-re",
@@ -666,7 +644,7 @@
    "link_text": "AdviniaCare Pawtucket Pleasant Rehab Center, LLC (Oak Hill Center for Rehabilitation and Health Care)",
    "note": "",
    "sheet_row": 205,
-   "status": "partial",
+   "status": "archived",
    "year": "2025",
    "years": "2023-2025"
   },
@@ -5981,5 +5959,5 @@
    "years": "2025-2026"
   }
  },
- "updated": "2026-11-16T20:37Z"
+ "updated": "2026-11-16T20:40Z"
 }
