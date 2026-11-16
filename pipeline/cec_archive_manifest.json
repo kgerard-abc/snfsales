@@ -173,7 +173,28 @@
   "westerly nursing and rehab and 79 beach street|0|2026": "ri-cec-2026-westerly-nursing-and-rehab-llc-and-79-beach-street-llc",
   "westerly opco|0|2022": "ri-cec-2022-westerly-opco-llc"
  },
- "cleanup": [],
+ "cleanup": [
+  {
+   "file": "AdviniaCare CEC Application_ Exhibits_ and Supplemental Correspondence - Supplemental AdviniaCare CEC Application Correspondence - 1 - Pointe Gro.pdf",
+   "item": "ri-cec-2023-adviniacare-kingston-rehab-center-llc-kingston-center-for-rehabilitati"
+  },
+  {
+   "file": "AdviniaCare CEC Application_ Exhibits_ and Supplemental Correspondence - Supplemental AdviniaCare CEC Application Correspondence - 3 - DBSB Agree.pdf",
+   "item": "ri-cec-2023-adviniacare-kingston-rehab-center-llc-kingston-center-for-rehabilitati"
+  },
+  {
+   "file": "AdviniaCare CEC Application_ Exhibits_ and Supplemental Correspondence - 2024.05.23 AdviniaCare CEC Applications _ Exhibits_ALL_FINAL.pdf",
+   "item": "ri-cec-2023-adviniacare-kingston-rehab-center-llc-kingston-center-for-rehabilitati"
+  },
+  {
+   "file": "AdviniaCare Initiation of Review Notification_Fv.pdf",
+   "item": "ri-cec-2023-adviniacare-kingston-rehab-center-llc-kingston-center-for-rehabilitati"
+  },
+  {
+   "file": "2023.03.27 CEC Applications _ Exhibits_FINAL.pdf",
+   "item": "ri-cec-2023-adviniacare-kingston-rehab-center-llc-kingston-center-for-rehabilitati"
+  }
+ ],
  "items": {
   "2014|Genesis HealthCare Trust Change in Effective Control:": "ri-cec-2014-genesis-healthcare-trust-change-in-effective-control",
   "2015|Bannister Operations Associates d/b/a Bannister Center": "ri-cec-2015-bannister-operations-associates-d-b-a-bannister-center",
@@ -604,47 +625,48 @@
    "years": "2022-2022"
   },
   "https://drive.google.com/drive/folders/14_3BTgrvIGHZKfUa8IdPPYBRjqTWfqkd": {
-   "applicant": "AdviniaCare Kingston Rehab Center, LLC (Kingston Center for Rehabilitation and Health Care)",
-   "archive_url": "https://archive.org/details/ri-cec-2023-adviniacare-kingston-rehab-center-llc-kingston-center-for-rehabilitati",
-   "archived_on": "2026-11-06",
-   "checked": "2026-11-06",
+   "applicant": "AdviniaCare Pawtucket Pleasant Rehab Center, LLC (Oak Hill Center for Rehabilitation and Health Care)",
+   "archive_url": "https://archive.org/details/ri-cec-2023-adviniacare-pawtucket-pleasant-rehab-center-llc-oak-hill-center-for-re",
+   "archived_on": "2026-11-16",
+   "checked": "2026-11-16",
    "files": [
     {
-     "archive_url": "https://archive.org/download/ri-cec-2023-adviniacare-kingston-rehab-center-llc-kingston-center-for-rehabilitati/AdviniaCare%20CEC%20Application_%20Exhibits_%20and%20Supplemental%20Correspondence%20-%20Supplemental%20AdviniaCare%20CEC%20Application%20Correspondence%20-%201%20-%20Pointe%20Gro.pdf",
+     "archive_url": "https://archive.org/download/ri-cec-2023-adviniacare-pawtucket-pleasant-rehab-center-llc-oak-hill-center-for-re/AdviniaCare%20CEC%20Application_%20Exhibits_%20and%20Supplemental%20Correspondence%20-%20Supplemental%20AdviniaCare%20CEC%20Application%20Correspondence%20-%201%20-%20Pointe%20Gro.pdf",
      "bytes": 24151,
      "file": "AdviniaCare CEC Application_ Exhibits_ and Supplemental Correspondence - Supplemental AdviniaCare CEC Application Correspondence - 1 - Pointe Gro.pdf",
      "sha256": "734cd6c958a1e84056be30ab2b4bec773172e09eacc680f470263ff7aea7522a",
      "status": "archived"
     },
     {
-     "archive_url": "https://archive.org/download/ri-cec-2023-adviniacare-kingston-rehab-center-llc-kingston-center-for-rehabilitati/AdviniaCare%20CEC%20Application_%20Exhibits_%20and%20Supplemental%20Correspondence%20-%20Supplemental%20AdviniaCare%20CEC%20Application%20Correspondence%20-%202%20-%20EXECUTED%20S.pdf",
+     "archive_url": "https://archive.org/download/ri-cec-2023-adviniacare-pawtucket-pleasant-rehab-center-llc-oak-hill-center-for-re/AdviniaCare%20CEC%20Application_%20Exhibits_%20and%20Supplemental%20Correspondence%20-%20Supplemental%20AdviniaCare%20CEC%20Application%20Correspondence%20-%202%20-%20EXECUTED%20S.pdf",
      "bytes": 995646,
      "file": "AdviniaCare CEC Application_ Exhibits_ and Supplemental Correspondence - Supplemental AdviniaCare CEC Application Correspondence - 2 - EXECUTED S.pdf",
      "sha256": "26695ff8ca1dfab90232bcae5299be7d6a18ae497a74e07b5a7a5e2f55557e56",
      "status": "archived"
     },
     {
-     "archive_url": "https://archive.org/download/ri-cec-2023-adviniacare-kingston-rehab-center-llc-kingston-center-for-rehabilitati/AdviniaCare%20CEC%20Application_%20Exhibits_%20and%20Supplemental%20Correspondence%20-%20Supplemental%20AdviniaCare%20CEC%20Application%20Correspondence%20-%203%20-%20DBSB%20Agree.pdf",
+     "archive_url": "https://archive.org/download/ri-cec-2023-adviniacare-pawtucket-pleasant-rehab-center-llc-oak-hill-center-for-re/AdviniaCare%20CEC%20Application_%20Exhibits_%20and%20Supplemental%20Correspondence%20-%20Supplemental%20AdviniaCare%20CEC%20Application%20Correspondence%20-%203%20-%20DBSB%20Agree.pdf",
      "bytes": 112624,
      "file": "AdviniaCare CEC Application_ Exhibits_ and Supplemental Correspondence - Supplemental AdviniaCare CEC Application Correspondence - 3 - DBSB Agree.pdf",
      "sha256": "d4d875e7cc1702cee55b58d4c0bad4b659282dfc6cf6cd502b089b97c24fc126",
      "status": "archived"
     },
     {
-     "archive_url": "https://archive.org/download/ri-cec-2023-adviniacare-kingston-rehab-center-llc-kingston-center-for-rehabilitati/AdviniaCare%20CEC%20Application_%20Exhibits_%20and%20Supplemental%20Correspondence%20-%202024.05.23%20AdviniaCare%20CEC%20Applications%20_%20Exhibits_ALL_FINAL.pdf",
+     "archive_url": "https://archive.org/download/ri-cec-2023-adviniacare-pawtucket-pleasant-rehab-center-llc-oak-hill-center-for-re/AdviniaCare%20CEC%20Application_%20Exhibits_%20and%20Supplemental%20Correspondence%20-%202024.05.23%20AdviniaCare%20CEC%20Applications%20_%20Exhibits_ALL_FINAL.pdf",
      "bytes": 35255889,
+     "error": " error uploading AdviniaCare CEC Application_ Exhibits_ and Supplemental Correspondence - 2024.05.23 AdviniaCare CEC Applications _ Exhibits_ALL_FINAL.pdf to ri-cec-2023-adviniacare-pawtucket-pleasant",
      "file": "AdviniaCare CEC Application_ Exhibits_ and Supplemental Correspondence - 2024.05.23 AdviniaCare CEC Applications _ Exhibits_ALL_FINAL.pdf",
      "sha256": "b3b6c3bfb14d28077bbf938a2dd2a5d262faa3c60c7ba25c81288dc565adaf60",
-     "status": "archived"
+     "status": "failed"
     }
    ],
-   "item": "ri-cec-2023-adviniacare-kingston-rehab-center-llc-kingston-center-for-rehabilitati",
+   "item": "ri-cec-2023-adviniacare-pawtucket-pleasant-rehab-center-llc-oak-hill-center-for-re",
    "kind": "folder",
    "label": "Applicant",
-   "link_text": "AdviniaCare Kingston Rehab Center, LLC (Kingston Center for Rehabilitation and Health Care)",
+   "link_text": "AdviniaCare Pawtucket Pleasant Rehab Center, LLC (Oak Hill Center for Rehabilitation and Health Care)",
    "note": "",
-   "sheet_row": 204,
-   "status": "archived",
+   "sheet_row": 205,
+   "status": "partial",
    "year": "2025",
    "years": "2023-2025"
   },
@@ -1485,15 +1507,19 @@
   },
   "https://drive.google.com/file/d/0B9lx-sHDAL9qTl8wWTlRS2ZUMm8": {
    "applicant": "NSL Oak Hill",
-   "attempts": 0,
-   "checked": "2026-11-14",
+   "archive_url": "https://archive.org/download/ri-cec-2016-nsl-oak-hill/2016.03.31%20NSL%20Oak%20Hill%20CEC%20Resubmission.pdf.zip",
+   "archived_on": "2026-11-16",
+   "bytes": 0,
+   "checked": "2026-11-16",
+   "file": "2016.03.31 NSL Oak Hill CEC Resubmission.pdf.zip",
    "item": "ri-cec-2016-nsl-oak-hill",
    "kind": "file",
    "label": "Applicant",
    "link_text": "NSL Oak Hill",
-   "note": " error uploading 2016.03.31 NSL Oak Hill CEC Resubmission.pdf to ri-cec-2016-nsl-oak-hill, Uploaded content is unacceptable. - error checking pdf file",
+   "note": "archive.org would not take this PDF as is (it says the file is damaged), so it is stored inside a zip file",
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
    "sheet_row": 47,
-   "status": "failed",
+   "status": "archived",
    "year": "2016",
    "years": "2016-2016"
   },
@@ -4483,19 +4509,19 @@
    "years": "2021-2021"
   },
   "https://drive.google.com/file/d/1dbxPcT31geB0rbvVc9-zmju4oFBN7Nvs": {
-   "applicant": "AdviniaCare Kingston Rehab Center, LLC (Kingston Center for Rehabilitation and Health Care)",
-   "archive_url": "https://archive.org/download/ri-cec-2023-adviniacare-kingston-rehab-center-llc-kingston-center-for-rehabilitati/2024.12.10%20Health%20Services%20Council%20Meeting%20Recording.mp4",
-   "archived_on": "2026-11-06",
+   "applicant": "AdviniaCare Pawtucket Pleasant Rehab Center, LLC (Oak Hill Center for Rehabilitation and Health Care)",
+   "archive_url": "https://archive.org/download/ri-cec-2023-adviniacare-pawtucket-pleasant-rehab-center-llc-oak-hill-center-for-re/2024.12.10%20Health%20Services%20Council%20Meeting%20Recording.mp4",
+   "archived_on": "2026-11-16",
    "bytes": 779953744,
-   "checked": "2026-11-06",
+   "checked": "2026-11-16",
    "file": "2024.12.10 Health Services Council Meeting Recording.mp4",
-   "item": "ri-cec-2023-adviniacare-kingston-rehab-center-llc-kingston-center-for-rehabilitati",
+   "item": "ri-cec-2023-adviniacare-pawtucket-pleasant-rehab-center-llc-oak-hill-center-for-re",
    "kind": "file",
    "label": "Health Services Council Meeting Audio",
    "link_text": "December 10, 2024 Health Services Council Video Recording",
    "note": "",
    "sha256": "355611fa948fe39bb2e20d6f3895f07fba030626920da3ef7cf6daecd698dd8c",
-   "sheet_row": 204,
+   "sheet_row": 205,
    "status": "archived",
    "year": "2025",
    "years": "2023-2025"
@@ -4783,19 +4809,19 @@
    "years": "2023-2025"
   },
   "https://drive.google.com/file/d/1iPV4sWTHRI-IiP9MLJKKxFxwTfBTKy-9": {
-   "applicant": "AdviniaCare Kingston Rehab Center, LLC (Kingston Center for Rehabilitation and Health Care)",
-   "archive_url": "https://archive.org/download/ri-cec-2023-adviniacare-kingston-rehab-center-llc-kingston-center-for-rehabilitati/2023.03.27%20CEC%20Applications%20_%20Exhibits_FINAL.pdf",
-   "archived_on": "2026-11-06",
+   "applicant": "AdviniaCare Pawtucket Pleasant Rehab Center, LLC (Oak Hill Center for Rehabilitation and Health Care)",
+   "archive_url": "https://archive.org/download/ri-cec-2023-adviniacare-pawtucket-pleasant-rehab-center-llc-oak-hill-center-for-re/2023.03.27%20CEC%20Applications%20_%20Exhibits_FINAL.pdf",
+   "archived_on": "2026-11-16",
    "bytes": 26078455,
-   "checked": "2026-11-06",
+   "checked": "2026-11-16",
    "file": "2023.03.27 CEC Applications _ Exhibits_FINAL.pdf",
-   "item": "ri-cec-2023-adviniacare-kingston-rehab-center-llc-kingston-center-for-rehabilitati",
+   "item": "ri-cec-2023-adviniacare-pawtucket-pleasant-rehab-center-llc-oak-hill-center-for-re",
    "kind": "file",
    "label": "Applicant",
-   "link_text": "AdviniaCare Kingston Rehab Center, LLC (Kingston Center for Rehabilitation and Health Care)",
+   "link_text": "AdviniaCare Pawtucket Pleasant Rehab Center, LLC (Oak Hill Center for Rehabilitation and Health Care)",
    "note": "",
    "sha256": "6eefe30c6a114aca9e096c330101b01f00733271118613ade58039e24aaec2ff",
-   "sheet_row": 130,
+   "sheet_row": 131,
    "status": "archived",
    "year": "2023",
    "years": "2023-2025"
@@ -4945,19 +4971,19 @@
    "years": "2026-2026"
   },
   "https://drive.google.com/file/d/1lNC9dDgP95VNyrMqrpJR5Ju3CIO3koVf": {
-   "applicant": "AdviniaCare Kingston Rehab Center, LLC (Kingston Center for Rehabilitation and Health Care)",
-   "archive_url": "https://archive.org/download/ri-cec-2023-adviniacare-kingston-rehab-center-llc-kingston-center-for-rehabilitati/AdviniaCare%20Initiation%20of%20Review%20Notification_Fv.pdf",
-   "archived_on": "2026-11-06",
+   "applicant": "AdviniaCare Pawtucket Pleasant Rehab Center, LLC (Oak Hill Center for Rehabilitation and Health Care)",
+   "archive_url": "https://archive.org/download/ri-cec-2023-adviniacare-pawtucket-pleasant-rehab-center-llc-oak-hill-center-for-re/AdviniaCare%20Initiation%20of%20Review%20Notification_Fv.pdf",
+   "archived_on": "2026-11-16",
    "bytes": 53714,
-   "checked": "2026-11-06",
+   "checked": "2026-11-16",
    "file": "AdviniaCare Initiation of Review Notification_Fv.pdf",
-   "item": "ri-cec-2023-adviniacare-kingston-rehab-center-llc-kingston-center-for-rehabilitati",
+   "item": "ri-cec-2023-adviniacare-pawtucket-pleasant-rehab-center-llc-oak-hill-center-for-re",
    "kind": "file",
    "label": "Review Commenced",
    "link_text": "Initiation of Review Notification commence effective: 9/10/2024",
    "note": "",
    "sha256": "4eb6d0c68cdc814a5c02ea0a2971cbfa1734d7b9cabaf22501888cfbf4b39698",
-   "sheet_row": 204,
+   "sheet_row": 205,
    "status": "archived",
    "year": "2025",
    "years": "2023-2025"
@@ -5607,19 +5633,19 @@
    "years": "2022-2022"
   },
   "https://drive.google.com/file/d/1vKN6ctTSnaFwXITVlwLZI7h2iwyeAWEO": {
-   "applicant": "AdviniaCare Kingston Rehab Center, LLC (Kingston Center for Rehabilitation and Health Care)",
-   "archive_url": "https://archive.org/download/ri-cec-2023-adviniacare-kingston-rehab-center-llc-kingston-center-for-rehabilitati/Health%20Services%20Council%20meeting-20250128_140321-Meeting%20Recording.mp4",
-   "archived_on": "2026-11-06",
+   "applicant": "AdviniaCare Pawtucket Pleasant Rehab Center, LLC (Oak Hill Center for Rehabilitation and Health Care)",
+   "archive_url": "https://archive.org/download/ri-cec-2023-adviniacare-pawtucket-pleasant-rehab-center-llc-oak-hill-center-for-re/Health%20Services%20Council%20meeting-20250128_140321-Meeting%20Recording.mp4",
+   "archived_on": "2026-11-16",
    "bytes": 625302707,
-   "checked": "2026-11-06",
+   "checked": "2026-11-16",
    "file": "Health Services Council meeting-20250128_140321-Meeting Recording.mp4",
-   "item": "ri-cec-2023-adviniacare-kingston-rehab-center-llc-kingston-center-for-rehabilitati",
+   "item": "ri-cec-2023-adviniacare-pawtucket-pleasant-rehab-center-llc-oak-hill-center-for-re",
    "kind": "file",
    "label": "Health Services Council Meeting Audio (more)",
    "link_text": "January 28, 2025 Health Services Council Video Recording",
    "note": "",
    "sha256": "dfac7d6815b248cd4710931915d572a233281137263b3efc30e5a1543ff0db09",
-   "sheet_row": 204,
+   "sheet_row": 205,
    "status": "archived",
    "year": "2025",
    "years": "2023-2025"
@@ -5955,5 +5981,5 @@
    "years": "2025-2026"
   }
  },
- "updated": "2026-11-16T18:32Z"
+ "updated": "2026-11-16T20:37Z"
 }
