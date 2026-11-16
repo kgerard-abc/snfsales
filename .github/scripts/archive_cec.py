@@ -536,7 +536,7 @@ def main():
                 try: ok = upload(ident, p, fname, md, access, secret)
                 except Exception as e:
                     err = str(e)[:200]
-                    if "syntax error detected in pdf" in str(e).lower():
+                    if "unacceptable" in str(e).lower() and fname.lower().endswith(".pdf"):
                         import zipfile
                         zp = p.with_name(p.name + ".zip")
                         with zipfile.ZipFile(zp, "w", zipfile.ZIP_DEFLATED) as z: z.write(p, fname)
