@@ -642,9 +642,9 @@
    "kind": "folder",
    "label": "Applicant",
    "link_text": "AdviniaCare Pawtucket Pleasant Rehab Center, LLC (Oak Hill Center for Rehabilitation and Health Care)",
-   "note": "not found on archive.org: AdviniaCare CEC Application_ Exhibits_ and Supplemental Correspondence - 2024.05.23 AdviniaCare CEC Applications _ Exhibits_ALL_FINAL.pdf",
+   "note": "",
    "sheet_row": 205,
-   "status": "not_on_archive",
+   "status": "archived",
    "year": "2025",
    "years": "2023-2025"
   },
@@ -1494,10 +1494,10 @@
    "kind": "file",
    "label": "Applicant",
    "link_text": "NSL Oak Hill",
-   "note": "not found on archive.org: 2016.03.31 NSL Oak Hill CEC Resubmission.pdf.zip",
+   "note": "",
    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
    "sheet_row": 47,
-   "status": "not_on_archive",
+   "status": "archived",
    "year": "2016",
    "years": "2016-2016"
   },
@@ -5621,10 +5621,10 @@
    "kind": "file",
    "label": "Health Services Council Meeting Audio (more)",
    "link_text": "January 28, 2025 Health Services Council Video Recording",
-   "note": "not found on archive.org: Health Services Council meeting-20250128_140321-Meeting Recording.mp4",
+   "note": "",
    "sha256": "dfac7d6815b248cd4710931915d572a233281137263b3efc30e5a1543ff0db09",
    "sheet_row": 205,
-   "status": "not_on_archive",
+   "status": "archived",
    "year": "2025",
    "years": "2023-2025"
   },
@@ -5959,5 +5959,5 @@
    "years": "2025-2026"
   }
  },
- "updated": "2026-11-16T20:42Z"
+ "updated": "2026-11-17T08:44Z"
 }
