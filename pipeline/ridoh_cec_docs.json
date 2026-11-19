@@ -1,34 +1,6 @@
 {
  "about": "Documents RIDOH links from its Annual Report of Reviews, for nursing home Change in Effective Control applications. Made by .github/scripts/ridoh_docs.py.",
- "cec_log_differs": [
-  {
-   "cec": "CEC-124",
-   "column": "O",
-   "header": "Application",
-   "ridoh_text": "AdviniaCare at Greenville, LLC and 735 Putnam Pike, LLC",
-   "ridoh_url": "https://drive.google.com/drive/folders/1idGNIGPjJFho4Ki9shUFoWrKJ-LIueDo",
-   "sheet_row": 48,
-   "sheet_url": "https://drive.google.com/file/d/1SSH79Ih3Phz4DmVgFTG9zakXHgh-n-na/view?usp=sharing"
-  },
-  {
-   "cec": "CEC-127",
-   "column": "O",
-   "header": "Application",
-   "ridoh_text": "AdviniaCare Respiratory at Coventry, LLC (Operator) and Rehabilitation and 10 Woodland Drive, LLC",
-   "ridoh_url": "https://drive.google.com/drive/folders/1idGNIGPjJFho4Ki9shUFoWrKJ-LIueDo",
-   "sheet_row": 96,
-   "sheet_url": "https://drive.google.com/file/d/1SSH79Ih3Phz4DmVgFTG9zakXHgh-n-na/view?usp=sharing"
-  },
-  {
-   "cec": "CEC-132",
-   "column": "O",
-   "header": "Application",
-   "ridoh_text": "AdviniaCare at Warren, LLC and 642 Metacom Avenue, LLC",
-   "ridoh_url": "https://drive.google.com/drive/folders/1idGNIGPjJFho4Ki9shUFoWrKJ-LIueDo",
-   "sheet_row": 126,
-   "sheet_url": "https://drive.google.com/file/d/1SSH79Ih3Phz4DmVgFTG9zakXHgh-n-na/view?usp=sharing"
-  }
- ],
+ "cec_log_differs": [],
  "cec_log_gaps": [],
  "docs": {
   "0B9lx-sHDAL9qSGdXZ0tmRm1HbFk": {
@@ -5054,5 +5026,5 @@
    "tab": "2014"
   }
  ],
- "updated": "2026-11-12T01:56Z"
+ "updated": "2026-11-19T01:55Z"
 }
