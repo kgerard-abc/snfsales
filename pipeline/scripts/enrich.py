@@ -164,7 +164,10 @@ def enrich(D, hu, pu, extras=None, chains=None, names=None):
                 end, end_via = _t(nxt["mgmt_start"]), "management"
             f = fac[fid]
             if end is None and not f.get("active", True):
-                end, end_via = _t(f.get("last_seen")), "closed"
+                # A closed home's time ends at its closure date when the state records have one; CMS can keep
+                # listing a closed home for months (Kingston closed January 2025 but stayed in CMS's files).
+                cl = min((e["date"] for e in f.get("events") or [] if e.get("kind") == "closed" and e.get("date")), default=None)
+                end, end_via = _t(cl or f.get("last_seen")), "closed"
             if end is not None and end <= floor:
                 continue   # entirely before CMS's records
             pend = s.get("outcome") == "Pending"

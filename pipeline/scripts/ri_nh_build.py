@@ -2226,6 +2226,7 @@ footer a{color:var(--fg)}
 <section id="about"><h2>About the data</h2>
 <div class="panel" id="about-body"></div>
 <div class="row"><button class="btn" id="dl-monthly">Download monthly home-level data (CSV)</button></div>
+<p><a href="/home/">Every home, A to Z</a>: one page for each home, with who has run it and what happened under each owner.</p>
 </section>
 <footer id="foot"></footer>
 </main>
