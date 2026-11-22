@@ -498,19 +498,23 @@ def ridoh_status(e, today=None):
     else: parts.append('Council recommendation: ' + e['hsc'][:80])
     return '; '.join(parts), filed
 
+# Facilities left out of everything on ABC-RI's sites (kg): Tavares Pediatric Center is a pediatric facility.
+EXCLUDE_FACILITY = re.compile(r'\bTavares\b', re.I)
+
 def read_cec(wb):
     out = {}
-    ws = wb['CEC Log']; h = _hmap(ws); rows = []
+    ws = wb['CEC Log']; h = _hmap(ws); rows = []; dropped = set()
     cols = dict(id=_col(h, 'CEC ID'), fac=_col(h, 'Facility'), town=_col(h, 'Town'), beds=_col(h, 'Beds'), applicant=_col(h, 'Applicant'), buyer=_col(h, 'Buyer group'), type=_col(h, 'Transaction type'),
                 outcome=_col(h, 'Outcome'), decision=_col(h, 'Decision or status date'), year=_col(h, 'Year'), chow=_col(h, 'CMS takeover date'), filed=_col(h, 'Date(s) filed'), seller=_col(h, 'Seller per CMS'), landlord=_col(h, 'Landlord and operator'), desc=_col(h, 'Description'))
     for r in range(2, ws.max_row + 1):
         cid = _v(ws.cell(row=r, column=cols['id']))
         if not cid: continue
+        if EXCLUDE_FACILITY.search(str(_v(ws.cell(row=r, column=cols['fac'])) or '')): dropped.add(str(cid).strip()); continue
         rows.append(dict(row=r, cec=str(cid).strip(), facility=_v(ws.cell(row=r, column=cols['fac'])), town=_v(ws.cell(row=r, column=cols['town'])), applicant=_v(ws.cell(row=r, column=cols['applicant'])),
                          buyer=_v(ws.cell(row=r, column=cols['buyer'])), type=_v(ws.cell(row=r, column=cols['type'])), outcome=_v(ws.cell(row=r, column=cols['outcome'])),
                          decision=_date(_v(ws.cell(row=r, column=cols['decision']))), decision_raw=_v(ws.cell(row=r, column=cols['decision'])), chow=_date(_v(ws.cell(row=r, column=cols['chow']))), filed_raw=(_v(ws.cell(row=r, column=cols['filed'])) if cols['filed'] else None), year=_v(ws.cell(row=r, column=cols['year'])),
                          seller=_v(ws.cell(row=r, column=cols['seller'])), landlord=(_v(ws.cell(row=r, column=cols['landlord'])) if cols.get('landlord') else None), desc=(_v(ws.cell(row=r, column=cols['desc'])) if cols.get('desc') else None)))
-    out['log'] = pd.DataFrame(rows); out['log_cols'] = cols; out['docs'] = _cec_docs(ws, h, cols['id'])
+    out['log'] = pd.DataFrame(rows); out['log_cols'] = cols; out['docs'] = {k: v for k, v in _cec_docs(ws, h, cols['id']).items() if k not in dropped}
     ws = wb['Post-Sale Tracker']; rows = []
     for r in range(3, ws.max_row + 1):
         cid = _v(ws.cell(row=r, column=1))
@@ -2140,7 +2144,7 @@ footer a{color:var(--fg)}
 <span class="asof" id="asof"></span>
 </div></header>
 <nav class="jump" aria-label="Sections"><div class="wrap">
-<a href="#sold">When homes were sold</a><a href="#allsales">Every sale since 2007</a><a href="#lookup">Look up a home</a><a href="#groups">Owner groups</a><a href="#projected">Projected and actual</a><a href="#related">Money to owners’ companies</a><a href="#about">About the data</a>
+<a href="#sold">When homes were sold</a><a href="#allsales">Every sale since 2007</a><a href="#lookup">Look up a home</a><a href="#groups">Owner groups</a><a href="#projected">Projected and actual</a><a href="#related">Money to companies the owners also control</a><a href="#about">About the data</a>
 </div></nav>
 <main class="wrap">
 <section id="sold"><h2>What happened when homes were sold</h2>
@@ -2209,15 +2213,15 @@ footer a{color:var(--fg)}
 <p class="lede">Every nursing home that takes Medicare files a yearly cost report with the federal government. One part of it, Worksheet A-8-1, lists what the home paid to "related parties": companies the home's own owners also control, such as the landlord it pays rent to, a management company, or a therapy or staffing company. This table shows those payments for each Rhode Island home, from its newest cost report on file. The reports come from CMS's <a href="https://www.cms.gov/data-research/statistics-trends-and-reports/cost-reports" target="_blank" rel="noopener">Healthcare Cost Report Information System (HCRIS)</a>, form CMS-2540-10; the public files run about two years behind.</p>
 <details class="small" style="margin:0 0 10px"><summary>How to read this table</summary>
 <ul style="margin:6px 0 0">
-<li><b>One row per home, its newest report.</b> Click the home's name to see every year it has filed, the related companies named in the reports, and its ratings and inspections.</li>
-<li><b>Dollars and shares.</b> Each dollar figure is what the home paid that year; the small percentage under it is that amount as a share of the home's net patient revenue. "All related-party" is the total; "Rent" and "Mgmt fees" (management fees) are the two biggest parts of it.</li>
+<li><b>One row per home, its newest report.</b> Click the home's name to see every year it has filed, the companies the business owners also control named in the reports, and its ratings and inspections.</li>
+<li><b>Dollars and shares.</b> Each dollar figure is what the home paid that year; the small percentage under it is that amount as a share of the home's net patient revenue. "All" is the total paid to companies the business owners also control; "Rent" and "Mgmt fees" (management fees) are the two biggest parts of it.</li>
 <li><b>Operator that year</b> is who ran the home in the year of that report: the buyer in the newest sale on this page approved by the end of that year, or the chain or owner CMS lists if the home never changed hands. If the home was sold after that report, the sale is noted under the name, so money paid before a sale is not shown under the buyer's name.</li>
 <li><b>Part of a year</b> means the report covers less than 11 months, usually because the home changed hands mid-year; its margin and shares are not comparable with a full year.</li>
-<li><b>Sold</b> is the year of the home's first sale on this page. <b>Before sale → newest</b> compares all related-party payments as a share of revenue in the year before that sale with the newest report.</li>
-<li><b>Landlord = operator?</b> asks whether the people who own the home's operator also own its building. <b>Yes</b>: the cost report itself shows rent to a related landlord. <b>Likely</b>: the state application was filed as a pair of companies, one to run the home and one to buy the building, by the same applicant, but the newest cost report predates the sale, so it does not show the rent yet. <b>No related rent</b>: no related-party rent in the cost report, so the home either owns its building or rents from an unrelated landlord; the report alone cannot tell which. <b>Partly</b>, <b>No</b>, and <b>Unknown</b> come from the state application. The answer is about whoever runs the home now. When a sale is pending, or approved but not yet closed, the buyer's plan is shown under it as "Pending sale" or "Approved sale," since the application describes what would happen, not who owns the building today.</li>
+<li><b>Sold</b> is the year of the home's first sale on this page. <b>Before sale → newest</b> compares all payments to companies the business owners also control as a share of revenue in the year before that sale with the newest report.</li>
+<li><b>Landlord = operator?</b> asks whether the people who own the home's operator also own its building. <b>Yes</b>: the cost report itself shows rent paid to a landlord the business owners also control. <b>Likely</b>: the state application was filed as a pair of companies, one to run the home and one to buy the building, by the same applicant, but the newest cost report predates the sale, so it does not show the rent yet. <b>No such rent</b>: the cost report shows no rent paid to a landlord the business owners also control, so the home either owns its building or rents from a landlord it has no ties to; the report alone cannot tell which. <b>Partly</b>, <b>No</b>, and <b>Unknown</b> come from the state application. The answer is about whoever runs the home now. When a sale is pending, or approved but not yet closed, the buyer's plan is shown under it as "Pending sale" or "Approved sale," since the application describes what would happen, not who owns the building today.</li>
 <li><b>Why it matters.</b> Rent and fees paid to companies the business owners also control are costs to the home, so a home can report a loss while its owners are paid through the landlord or management company. A share that rises after a sale means more of the home's revenue is leaving it this way.</li>
 </ul></details>
-<div class="row"><input type="search" id="rp-q" placeholder="Search by home, town, or owner" aria-label="Search related-party table"><label class="chk"><input type="checkbox" id="rp-sold"> Only homes that were sold</label><button class="btn" id="dl-rp">Download this table (CSV)</button></div>
+<div class="row"><input type="search" id="rp-q" placeholder="Search by home, town, or owner" aria-label="Search the table of money paid to companies the business owners also control"><label class="chk"><input type="checkbox" id="rp-sold"> Only homes that were sold</label><button class="btn" id="dl-rp">Download this table (CSV)</button></div>
 <div class="tblwrap"><table id="rp-tbl"><caption>Each home's newest Medicare cost report on file. Dollars are what the home paid; the percentage under each is its share of net patient revenue. Click a home for every year it has filed. "How to read this table," above, explains each column.</caption><thead></thead><tbody></tbody></table></div>
 <p class="small" id="rp-note"></p>
 </section>
@@ -2464,10 +2468,10 @@ function drawMoney() {
   const usd = t.rent_usd && t.rent_usd.sold, dollars = usd ? ' In dollars, rent at those ' + t.n_sold + ' homes went from ' + mil(usd[0]) + ' a year to ' + mil(usd[n]) + '.' : '';
   // Say the all-related-party figures too, so nobody has to find them in the CSV: the "did not" group includes homes
   // bought by chains before the window, which already paid rent and fees to their owners' companies.
-  const rp = t.rp && t.rp.sold && t.rp.other, allrp = rp ? ' Counting every related-party payment, not just rent (management fees, therapy, supplies, and the like), the ' + t.n_sold + ' homes sold went from ' + pc(t.rp.sold[0]) + ' of revenue to ' + pc(t.rp.sold[n]) + ', and the ' + t.n_other + ' not sold went from ' + pc(t.rp.other[0]) + ' to ' + pc(t.rp.other[n]) + '. Many of those ' + t.n_other + ' were bought by chains before ' + t.years[0] + ' and were already paying companies their owners also control.' : '';
+  const rp = t.rp && t.rp.sold && t.rp.other, allrp = rp ? ' Counting every payment to companies the business owners also control, not just rent (management fees, therapy, supplies, and the like), the ' + t.n_sold + ' homes sold went from ' + pc(t.rp.sold[0]) + ' of revenue to ' + pc(t.rp.sold[n]) + ', and the ' + t.n_other + ' not sold went from ' + pc(t.rp.other[0]) + ' to ' + pc(t.rp.other[n]) + '. Many of those ' + t.n_other + ' were bought by chains before ' + t.years[0] + ' and were already paying companies their owners also control.' : '';
   $('#money-note').replaceChildren(
     el('b', { text: 'At the ' + t.n_sold + ' homes sold between ' + span + ', rent paid to a landlord the business owners also control went from ' + pc(s0) + ' of patient revenue to ' + pc(s1) + (usd ? ' (' + mil(usd[0]) + ' a year to ' + mil(usd[n]) + ')' : '') + '. At the ' + t.n_other + ' homes not sold, it stayed near ' + pc(o1) + '.' + (t.rent_usd_total && t.rent_usd_total.sold ? ' Over the ' + t.years.length + ' years, the sold homes paid ' + mil(t.rent_usd_total.sold) + ' in rent to landlords the business owners also control.' : '') }),
-    el('details', { style: 'margin-top:6px' }, el('summary', { text: 'How this was measured' }), el('p', { class: 'small', style: 'margin:6px 0 0', text: 'These are the same ' + (t.n_sold + t.n_other) + ' homes in every year, so this is not a change in which homes report. Each figure is rent and building costs the home itself reported paying to a landlord the business owners also control, on Worksheet A-8-1 of its Medicare cost report; rent to an unrelated landlord is not counted.' + allrp + (t.n_left_out ? ' ' + t.n_left_out + (t.n_left_out === 1 ? ' home' : ' homes') + ' reorganized within a chain in these years (not a sale to a new operator) ' + (t.n_left_out === 1 ? 'is' : 'are') + ' left out of both groups.' : '') + ' A sale counts if the state approved it in any of these years, so some homes are measured for years before their sale. The chart ends in ' + t.years[n] + ' because cost reports are filed months after a home\u2019s year ends and CMS releases them later still: ' + t.years[n] + ' is the newest year most homes have filed. Cost reports run about two years behind the CMS ratings above.' })));
+    el('details', { style: 'margin-top:6px' }, el('summary', { text: 'How this was measured' }), el('p', { class: 'small', style: 'margin:6px 0 0', text: 'These are the same ' + (t.n_sold + t.n_other) + ' homes in every year, so this is not a change in which homes report. Each figure is rent and building costs the home itself reported paying to a landlord the business owners also control, on Worksheet A-8-1 of its Medicare cost report; rent to a landlord with no ties to the owners is not counted.' + allrp + (t.n_left_out ? ' ' + t.n_left_out + (t.n_left_out === 1 ? ' home' : ' homes') + ' reorganized within a chain in these years (not a sale to a new operator) ' + (t.n_left_out === 1 ? 'is' : 'are') + ' left out of both groups.' : '') + ' A sale counts if the state approved it in any of these years, so some homes are measured for years before their sale. The chart ends in ' + t.years[n] + ' because cost reports are filed months after a home\u2019s year ends and CMS releases them later still: ' + t.years[n] + ' is the newest year most homes have filed. Cost reports run about two years behind the CMS ratings above.' })));
 }
 drawMoney();
 
@@ -2567,15 +2571,15 @@ function trackRecord(g) {
   }
   const lines = [];
   lines.push(el('li', {}, el('b', { text: plural(t.homes, 'Rhode Island home') }), (t.before_records ? ', some since before the state\u2019s sale records begin' : ' run since ' + fmtMon(t.first)) + (t.homes_now !== t.homes ? ' (' + t.homes_now + ' still)' : '') + ', ' + t.years + ' home-years counted in all.'));
-  if (t.n_stars) lines.push(el('li', {}, 'Average overall rating: ', el('b', { text: t.stars_start.toFixed(1) }), ' stars when it took over each home (management or ownership, whichever came first), ', el('b', { text: t.stars_end.toFixed(1) }), ' now or when it left (' + plural(t.n_stars, 'home') + ').'));
-  lines.push(el('li', {}, el('b', { text: plural(t.ij, 'immediate jeopardy citation') }), ' and ' + plural(t.harm, 'harm citation') + ' in all (harm includes immediate jeopardy).'));
+  if (t.n_stars) lines.push(el('li', {}, 'Average overall rating: ', el('b', { text: t.stars_start.toFixed(1) }), ' stars when it took over management or ownership of each home, whichever came first, ', el('b', { text: t.stars_end.toFixed(1) }), ' now or when it left (' + plural(t.n_stars, 'home') + ').'));
+  lines.push(el('li', {}, el('b', { text: plural(t.ij, 'immediate jeopardy citation') }), ' and ' + plural(t.harm - t.ij, 'actual harm citation') + ' in all (each citation is counted at one level).'));
   lines.push(el('li', {}, el('b', { text: money0(t.fines) }), ' in CMS fines.'));
   wrap.append(el('ul', { class: 'small', style: 'margin:0 0 6px;padding-left:18px' }, lines));
   const tb = el('tbody');
   ten.forEach(x => tb.append(el('tr', {}, el('td', { text: x.name }), el('td', { text: ranIt(x) }),
     el('td', { class: 'num' }, x.stars_start == null ? el('span', { class: 'small', text: 'before CMS files' }) : [chip(x.stars_start), el('span', { class: 'arrow', text: '\u2192' }), chip(x.stars_end)]),
-    el('td', { class: 'num', text: String(x.ij) }), el('td', { class: 'num', text: String(x.harm) }), el('td', { class: 'num', text: money0(x.fines) }))));
-  wrap.append(el('details', {}, el('summary', { text: 'Each home it has run' }), el('div', { class: 'tblwrap' }, el('table', {}, el('thead', {}, el('tr', {}, ['Home', 'Ran it', 'Stars: took over \u2192 now or left (see Ran it)', 'Immediate jeopardy', 'Harm citations', 'Fines'].map(x => el('th', { scope: 'col', class: /Home|Ran/.test(x) ? '' : 'num', text: x })))), tb))));
+    el('td', { class: 'num', text: String(x.ij) }), el('td', { class: 'num', text: String(x.harm - x.ij) }), el('td', { class: 'num', text: money0(x.fines) }))));
+  wrap.append(el('details', {}, el('summary', { text: 'Each home it has run' }), el('div', { class: 'tblwrap' }, el('table', {}, el('thead', {}, el('tr', {}, ['Home', 'Ran it', 'Stars: start \u2192 now or when it left (see Ran it)', 'Immediate jeopardy', 'Actual harm', 'Fines'].map(x => el('th', { scope: 'col', class: /Home|Ran/.test(x) ? '' : 'num', text: x })))), tb))));
   wrap.append(el('p', { class: 'small', style: 'margin:6px 0 0', text: 'Counted from when the group took over each home: it took over management at the start of a management agreement, if there was one before the sale, otherwise it took over ownership at the sale. "Ran it" says which. Citations and fines are CMS\u2019s, counted only while the group ran the home and only as far back as CMS\u2019s files reach (about April 2016).' }));
   if (t.chain) wrap.append(nationalLine(t.chain, t.homes_now || t.homes));
   return wrap;
@@ -2690,23 +2694,23 @@ drawSales();
 const pc1 = v => v == null ? '–' : (v * 100).toFixed(1) + '%';
 const usdCell = (d, sh) => el('td', { class: 'num' }, d == null ? '\u2013' : money(d), d != null && sh != null ? el('div', { class: 'small', text: pc1(sh) }) : null);
 const LANDLORD_TXT = {
-  yes: 'Yes. The home reports rent to a related landlord on Worksheet A-8-1 of its Medicare cost report, which means the people who own the operator also own the company it pays rent to.',
-  likely: 'Likely. The state application was filed as a pair, one company to run the home and one to buy the building, by the same applicant. The newest cost report on file does not yet show rent to a related landlord, usually because it predates the sale; the answer becomes "Yes" when a cost report does.',
+  yes: 'Yes. The home reports rent paid to a landlord the business owners also control on Worksheet A-8-1 of its Medicare cost report: the people who own the operator also own the company it pays rent to.',
+  likely: 'Likely. The state application was filed as a pair, one company to run the home and one to buy the building, by the same applicant. The newest cost report on file does not yet show rent paid to a landlord the business owners also control, usually because it predates the sale; the answer becomes "Yes" when a cost report does.',
   partly: 'Partly. The application shows the same people in both the operating and the real estate company, but not the same ownership shares.',
   no: 'No. The real estate was bought by, or stays with, people other than the operator\u2019s owners.',
-  'no related rent': 'No related-party rent reported. The home either owns its own building or rents from an unrelated landlord; the cost report alone cannot tell those apart.',
-  unknown: 'Unknown. The application does not say who bought the building and the cost report shows no related-party rent.' };
+  'no related rent': 'No rent paid to a landlord the business owners also control. The home either owns its own building or rents from a landlord it has no ties to; the cost report alone cannot tell those apart.',
+  unknown: 'Unknown. The application does not say who bought the building and the cost report shows no rent paid to a landlord the business owners also control.' };
 const LANDLORD_PENDING_TXT = {
   likely: 'Likely. The application was filed as a pair, one company to run the home and one to buy the building, by the same applicant.',
   partly: 'Partly. The application shows the same people in both the operating and the real estate company, but not the same ownership shares.',
   no: 'No. The application shows the building going to, or staying with, people other than the new operator\u2019s owners.',
   unknown: 'Unknown. The application does not say who would own the building.' };
-const LANDLORD_SHORT = { yes: 'Yes', likely: 'Likely', partly: 'Partly', no: 'No', 'no related rent': 'No related rent', unknown: 'Unknown' };
+const LANDLORD_SHORT = { yes: 'Yes', likely: 'Likely', partly: 'Partly', no: 'No', 'no related rent': 'No such rent', unknown: 'Unknown' };
 const RPB = (D.money && D.money.by_facility) || {};
 function rpLatest(b) { let i = -1; b.years.forEach((y, k) => { if (b.rev[k] != null) i = k; }); return i; }
 /* ---------- what buyers projected in their applications, and what happened ---------- */
 const PJ = D.proj && D.proj.rows ? D.proj.rows : [];
-const PJ_COLS = [['nurse_fte', 'Nurse staff'], ['rn_fte', 'RNs'], ['revenue', 'Revenue'], ['rent', 'Rent to a related landlord'], ['mgmt', 'Related management fees'], ['margin', 'Margin']];
+const PJ_COLS = [['nurse_fte', 'Nurse staff'], ['rn_fte', 'RNs'], ['revenue', 'Revenue'], ['rent', 'Rent paid to a landlord the business owners also control'], ['mgmt', 'Management fees paid to companies the business owners also control'], ['margin', 'Margin']];
 const pjFmt = (k, v) => v == null ? '–' : (k === 'margin' ? pc1(v) : (k.endsWith('_fte') ? (Math.round(v * 10) / 10).toLocaleString('en-US') : money(v)));
 function pjChange(k, p, a) {
   if (p == null || a == null) return '';
@@ -2775,9 +2779,9 @@ function pjSaleText(r) { return (r.buyer || 'The buyer') + (r.via === 'managemen
     'A year is compared only if the buyer ran the home for the whole year, counted from when it took over management, if that came before the sale. Years when the buyer had already sold or handed over the home are left out.',
     'Nurse staff are full-time equivalents: hours worked by RNs (including the director of nursing and RN administrators), LPNs, and nursing aides (including aides in training and medication aides) in CMS’s daily payroll records for the year, divided by 2,080 hours. Days that look like gaps in the records (under 1.5 nurse hours per resident) are left out, and the year is scaled to 365 days. A year with one quarter missing ("3 of 4 quarters on file") means the home did not send CMS its payroll records for that quarter; it is compared on the other three. Payroll records count hours worked, not vacation or sick time, so they run somewhat below a budget of paid positions. Contract and agency staff are included. Before comparing, each application\u2019s own staff count for a year the seller ran the home is checked against the payroll records for that year; if they differ by more than about 20%, the application\u2019s counts are not measuring the same thing (often they count people, not full-time positions), and its staffing is not compared.',
     'Revenue is net patient revenue and margin is the operating margin, both from the home’s Medicare cost report for that year. The projected margin is the application’s operating profit divided by its revenue.',
-    'Rent and management fees on the cost report are what the home paid to companies the business owners also control (Worksheet A-8-1). Rent paid to an unrelated landlord is not on that worksheet, so it shows as "not reported." The projected rent is the application’s Leasehold Expenses or rent line.',
+    'Rent and management fees on the cost report are what the home paid to companies the business owners also control (Worksheet A-8-1). Rent paid to a landlord with no ties to the owners is not on that worksheet, so it shows as "not reported." The projected rent is the application’s Leasehold Expenses or rent line.',
     'The operating cost limit is the condition in the adopted Health Services Council report, in its words, for example "that the operating costs for the first full operating year not exceed $18,191,423.00." It is compared with total operating expenses on the cost report for the first whole year the buyer ran the home. The report does not define "first full operating year," so a different reading (for example the first 12 months after closing) could give a different figure. A home that takes in more revenue than it projected usually also spends more; the table above shows each home\u2019s revenue for the same year.',
-    'Cost report years that add together a report from before the buyer took over (for example a seller’s 13-month report ending in January) are left out.'
+    'Cost report years that add together a report from before the buyer took over management or ownership (for example a seller’s 13-month report ending in January) are left out.'
   ].forEach(t => how.append(el('li', { text: t })));
   $('#dl-proj').addEventListener('click', () => download('ri_nursing_home_projected_vs_actual.csv', [['ccn', 'home', 'cec_id', 'buyer', 'buyer_start', 'year', 'projected_nurse_fte', 'actual_nurse_fte', 'projected_rn_fte', 'actual_rn_fte', 'projected_net_patient_revenue', 'actual_net_patient_revenue', 'projected_rent', 'actual_rent_to_related_landlord', 'projected_management_fees', 'actual_management_fees_to_related', 'projected_margin', 'actual_margin', 'staffing_compared', 'application', 'staff_page', 'budget_page'],
     ...S.all.map(({ r, y }) => [r.fid, r.name, r.cec, r.buyer, r.start, y.year, y.projected.nurse_fte, y.actual.nurse_fte, y.projected.rn_fte, y.actual.rn_fte, y.projected.revenue, y.actual.revenue, y.projected.rent, y.actual.rent, y.projected.mgmt, y.actual.mgmt, y.projected.margin, y.actual.margin, r.staffing_ok === false ? 'no' : 'yes', r.link, r.staff_page, r.budget_page])]));
@@ -2800,19 +2804,19 @@ function projPanel(f) {
 
 function rpPanel(f) {
   if (!D.money) return null;
-  const b = RPB[f.id]; if (!b || !b.years.length) return el('div', { class: 'panel' }, el('h3', { style: 'margin-top:0', text: 'Money paid to related companies' }), el('p', { text: 'No cost report data available currently for this home.' }));
+  const b = RPB[f.id]; if (!b || !b.years.length) return el('div', { class: 'panel' }, el('h3', { style: 'margin-top:0', text: 'Money paid to companies the business owners also control' }), el('p', { text: 'No cost report data available currently for this home.' }));
   const saleYrs = new Set(f.events.filter(e => e.kind === 'sale' && e.outcome !== 'Pending').map(e => +e.date.slice(0, 4)));
   const body = el('tbody');
   b.years.forEach((y, k) => { if (b.rev[k] == null && b.rp[k] == null) return;
     const oth = b.rp[k] == null ? null : Math.max(0, b.rp[k] - (b.rent[k] || 0) - (b.mgmt[k] || 0)), othSh = oth == null || !b.rev[k] ? null : oth / b.rev[k];
     body.append(el('tr', {}, el('td', { text: String(y) + (saleYrs.has(y) ? ' (sold this year)' : '') + (b.long && b.long[k] ? ' (more than a year: two reports added together)' : (b.partial && b.partial[k] ? ' (part of a year)' : '')) }), el('td', { class: 'num', text: money(b.rev[k]) }), usdCell(b.rp[k], b.rp_sh[k]), usdCell(b.rent[k], b.rent_sh[k]), usdCell(b.mgmt[k], b.mgmt_sh[k]), usdCell(oth, othSh), el('td', { class: 'num', text: pc1(b.margin[k]) }))); });
-  const wrap = el('div', { class: 'panel' }, el('h3', { style: 'margin-top:0', text: 'Money paid to related companies' }),
-    el('p', { class: 'small' }, 'From the home’s Medicare cost reports (CMS form 2540-10, Worksheet A-8-1, from ', el('a', { href: 'https://www.cms.gov/data-research/statistics-trends-and-reports/cost-reports', target: '_blank', rel: 'noopener', text: 'CMS’s HCRIS files' }), '). "Related" means a company the home’s owners also control. Rent is paid to a related landlord and management fees to a related management company; small figures under each dollar amount are its share of net patient revenue. A year marked "sold" is a year the state approved a sale of this home.'),
-    el('div', { class: 'tblwrap' }, el('table', {}, el('thead', {}, el('tr', {}, ['Year', 'Revenue', 'All related-party', 'Rent', 'Management fees', 'Other (therapy, supplies, services)', 'Margin'].map((t, i) => el('th', { scope: 'col', class: i ? 'num' : '', text: t })))), body)));
-  if (b.from_summary) wrap.append(el('p', { class: 'small', text: 'Reports for this home start in FY2021. The dollar categories come from different lines of the cost report, so rent and management fees may not add up to the all related-party total.' }));
+  const wrap = el('div', { class: 'panel' }, el('h3', { style: 'margin-top:0', text: 'Money paid to companies the business owners also control' }),
+    el('p', { class: 'small' }, 'From the home’s Medicare cost reports (CMS form 2540-10, Worksheet A-8-1, from ', el('a', { href: 'https://www.cms.gov/data-research/statistics-trends-and-reports/cost-reports', target: '_blank', rel: 'noopener', text: 'CMS’s HCRIS files' }), '). Rent is paid to a landlord the business owners also control and management fees to a management company the business owners also control; "Other" is everything else paid to companies the business owners also control; small figures under each dollar amount are its share of net patient revenue. A year marked "sold" is a year the state approved a sale of this home.'),
+    el('div', { class: 'tblwrap' }, el('table', {}, el('thead', {}, el('tr', {}, ['Year', 'Revenue', 'All paid to companies the business owners also control', 'Rent', 'Management fees', 'Other (therapy, supplies, services)', 'Margin'].map((t, i) => el('th', { scope: 'col', class: i ? 'num' : '', text: t })))), body)));
+  if (b.from_summary) wrap.append(el('p', { class: 'small', text: 'Reports for this home start in FY2021. The dollar categories come from different lines of the cost report, so rent and management fees may not add up to the total.' }));
   if (b.landlord) wrap.append(el('p', {}, el('b', { text: 'Is the landlord the same people as the operator? ' }), LANDLORD_TXT[b.landlord.toLowerCase()] || b.landlord));
   if (b.landlord_pending) { const lp = b.landlord_pending; wrap.append(el('p', {}, el('b', { text: (lp.status === 'approved' ? 'When the approved sale' + (lp.buyer ? ' to ' + lp.buyer : '') + ' closes: ' : 'If the pending sale' + (lp.buyer ? ' to ' + lp.buyer : '') + ' goes through: ') }), LANDLORD_PENDING_TXT[lp.answer.toLowerCase()] || lp.answer, ' This describes the buyer\u2019s application, not who owns the building today.')); }
-  if (b.cos && b.cos.length) wrap.append(el('details', {}, el('summary', { text: 'Related companies named in the cost reports (' + b.cos.length + ')' }), el('ul', { class: 'docs' }, b.cos.map(c => el('li', { text: c.name + (c.role ? ' (' + c.role.toLowerCase() + ')' : '') + ', named ' + (c.y1 === c.y2 ? c.y1 : c.y1 + ' to ' + c.y2) })))));
+  if (b.cos && b.cos.length) wrap.append(el('details', {}, el('summary', { text: 'Companies the business owners also control, named in the cost reports (' + b.cos.length + ')' }), el('ul', { class: 'docs' }, b.cos.map(c => el('li', { text: c.name + (c.role ? ' (' + c.role.toLowerCase() + ')' : '') + ', named ' + (c.y1 === c.y2 ? c.y1 : c.y1 + ' to ' + c.y2) })))));
   if (b.n_people_hidden) wrap.append(el('p', { class: 'small', text: 'Individual people named in the filings are not shown here.' }));
   return wrap;
 }
@@ -2833,7 +2837,7 @@ function rpPanel(f) {
     return { id, name: f ? f.name : id, town: f ? f.town : '', owner: op.then, later: op.later, current: ownerOf(f), year: b.years[i], rev: b.rev[i], rp: b.rp[i], rpsh: b.rp_sh[i], rent: b.rent[i], rentsh: b.rent_sh[i], mgmt: b.mgmt[i], mgmtsh: b.mgmt_sh[i], margin: b.margin[i], partial: !!(b.partial && b.partial[i]), long: !!(b.long && b.long[i]), landlord: b.landlord || '', landlord_pending: b.landlord_pending || null, sold: fs ? fs.year : null, before, after }; }).filter(Boolean);
   const NONE_TXT = 'No cost report data available currently';
   D.facilities.forEach(f => { if ((!RPB[f.id] || !RPB[f.id].years.length) && !isClosed(f)) R.push({ id: f.id, name: f.name, town: f.town || '', owner: ownerOf(f), current: ownerOf(f), none: true, sold: (FS[f.id] || {}).year || null }); });
-  const RC = [['name', 'Home'], ['owner', 'Operator that year'], ['year', 'Year'], ['rev', 'Revenue'], ['rpsh', 'All related-party'], ['rentsh', 'Rent'], ['mgmtsh', 'Mgmt fees'], ['margin', 'Margin'], ['sold', 'Sold'], ['ba', 'Before sale \u2192 newest'], ['landlord', 'Landlord = operator?']];
+  const RC = [['name', 'Home'], ['owner', 'Operator that year'], ['year', 'Year'], ['rev', 'Revenue'], ['rpsh', 'All'], ['rentsh', 'Rent'], ['mgmtsh', 'Mgmt fees'], ['margin', 'Margin'], ['sold', 'Sold'], ['ba', 'Before sale \u2192 newest'], ['landlord', 'Landlord = operator?']];
   let rk = 'rpsh', rd = -1;
   $('#rp-tbl thead').append(el('tr', {}, RC.map(c => el('th', { scope: 'col', class: ['name', 'owner', 'landlord', 'ba'].includes(c[0]) ? '' : 'num' }, c[0] === 'ba' ? c[1] : el('button', { text: c[1], 'aria-label': 'Sort by ' + c[1], onclick: () => { rd = rk === c[0] ? -rd : (['name', 'owner'].includes(c[0]) ? 1 : -1); rk = c[0]; draw(); } })))));
   function draw() {
@@ -2848,7 +2852,7 @@ function rpPanel(f) {
   }
   ['#rp-q', '#rp-sold'].forEach(s => $(s).addEventListener('input', draw)); draw();
   const nHave = R.filter(r => !r.none).length, nNone = R.length - nHave, nOld = R.filter(r => !r.none && RPB[r.id] && !RPB[r.id].from_summary).length;
-  $('#rp-note').textContent = 'Cost reports are loaded for ' + nHave + ' of the ' + R.length + ' homes on this page. ' + nOld + ' of them have reports from as early as FY2015 (the homes in the state\u2019s change-of-control records); the other ' + (nHave - nOld) + ' start in FY2021. Homes that have closed are left out. The remaining ' + nNone + ' are listed at the bottom as "No cost report data available currently": the workbook has no cost report for them yet, or they have no federal provider number. ' + 'Source: Medicare cost reports (CMS-2540-10, worksheet A-8-1 for related-party costs). A report marked "part of a year" covers less than 11 months, usually because the home changed hands during the year; its margin and shares are not comparable with a full year. "Sold" is the year of the first state-approved sale of that home on this page. The before and after columns appear only when the home has a report for the year before that sale and a later one. Individual people named in the filings are not shown. A related-party payment is not by itself improper: it shows where money went, and how much of it stayed inside the owners’ group.';
+  $('#rp-note').textContent = 'Cost reports are loaded for ' + nHave + ' of the ' + R.length + ' homes on this page. ' + nOld + ' of them have reports from as early as FY2015 (the homes in the state\u2019s change-of-control records); the other ' + (nHave - nOld) + ' start in FY2021. Homes that have closed are left out. The remaining ' + nNone + ' are listed at the bottom as "No cost report data available currently": the workbook has no cost report for them yet, or they have no federal provider number. ' + 'Source: Medicare cost reports (CMS-2540-10, worksheet A-8-1 for payments to companies the business owners also control). A report marked "part of a year" covers less than 11 months, usually because the home changed hands during the year; its margin and shares are not comparable with a full year. "Sold" is the year of the first state-approved sale of that home on this page. The before and after columns appear only when the home has a report for the year before that sale and a later one. Individual people named in the filings are not shown. A payment to a company the business owners also control is not by itself improper: it shows where money went, and how much of it stayed inside the owners’ group.';
   $('#dl-rp').addEventListener('click', () => download('ri_nursing_home_related_party_costs.csv', [['ccn', 'home', 'town', 'operator_in_report_year', 'current_owner', 'cost_report_year', 'report_covers', 'net_patient_revenue', 'related_party_costs', 'related_party_pct_of_revenue', 'rent_to_related_landlord', 'rent_pct', 'management_fees_to_related', 'management_pct', 'operating_margin_pct', 'first_sale_year', 'related_party_pct_year_before_sale', 'related_party_pct_newest_year', 'landlord_same_as_operator', 'landlord_if_pending_sale_closes', 'cost_report_status'],
     ...R.map(r => r.none ? [r.id.startsWith('cec:') ? '' : r.id, r.name, r.town, r.owner || '', r.current || '', '', '', '', '', '', '', '', '', '', '', r.sold || '', '', '', '', '', NONE_TXT] : [r.id, r.name, r.town, r.owner || '', r.current || '', r.year, r.long ? 'more than a year' : (r.partial ? 'part of a year' : 'full year'), r.rev, r.rp, r.rpsh == null ? '' : (r.rpsh * 100).toFixed(2), r.rent, r.rentsh == null ? '' : (r.rentsh * 100).toFixed(2), r.mgmt, r.mgmtsh == null ? '' : (r.mgmtsh * 100).toFixed(2), r.margin == null ? '' : (r.margin * 100).toFixed(2), r.sold || '', r.before == null ? '' : (r.before * 100).toFixed(2), r.after == null ? '' : (r.after * 100).toFixed(2), r.landlord, r.landlord_pending ? r.landlord_pending.answer : '', 'Cost report on file'])]));
 })();
@@ -2866,6 +2870,11 @@ $('#fac-q').addEventListener('input', facSearch);
 const KIND_LBL = { mgmt: 'Buyer took over management', closed: 'Closed', unclosed: 'Approved, never completed', sale: 'Sold / new operator', parent: 'Chain reorganization', internal: 'Internal restructuring', realestate: 'Real estate only', cms: 'CMS data' };
 
 /* ---------- who ran this home over time ---------- */
+function pendingMgmt(f) {
+  const pend = f.events.filter(e => e.outcome === 'Pending').concat((f.undated || []).filter(u => u.pending));
+  const mg = f.events.filter(e => e.kind === 'mgmt' && e.cec);
+  return pend.map(p => { const m = p.cec && mg.filter(e => e.cec === p.cec).sort((a, b) => a.date < b.date ? -1 : 1)[0]; return m && m.date <= D.meta.latest ? { p, m } : null; }).filter(Boolean);
+}
 function ownerEras(f) {
   const dates = D.dates, ev = f.events.slice().sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
   const notPend = e => e.outcome !== 'Pending';
@@ -2873,7 +2882,10 @@ function ownerEras(f) {
   /* When a buyer began managing the home before the sale date (Management Agreements tab), that is when its time in charge starts. */
   const mgmtBy = {}; ev.filter(e => e.kind === 'mgmt' && e.cec).forEach(e => { if (!mgmtBy[e.cec] || e.date < mgmtBy[e.cec].date) mgmtBy[e.cec] = e; });
   const starters = ev.filter(e => (e.kind === 'sale' || e.kind === 'parent') && notPend(e)).map(e => { const m = e.cec && mgmtBy[e.cec]; return (m && m.date < e.date) ? { date: m.date, approx: false, note: 'Buyer began managing the home (management agreement), before the sale date of ' + fmtDay(e.date), e } : { date: e.date, approx: false, e }; })
-    .concat((f.undated || []).filter(u => (u.kind === 'sale' || u.kind === 'parent') && !u.pending && u.year).map(u => ({ date: u.date || (u.year + '-07-01'), known: !!u.date, approx: true, year: u.year, e: u })));
+    .concat((f.undated || []).filter(u => (u.kind === 'sale' || u.kind === 'parent') && !u.pending && u.year).map(u => ({ date: u.date || (u.year + '-07-01'), known: !!u.date, approx: true, year: u.year, e: u })))
+    /* A pending buyer already managing the home under an agreement (kg's rule, as in the owner groups table): its time starts
+       on the management date and the seller's ends, before the state decides. Only when CMS's files reach that date. */
+    .concat(pendingMgmt(f).map(x => ({ date: x.m.date, approx: false, note: 'Buyer began managing the home (management agreement) while its purchase is pending with the state', e: Object.assign({}, x.p, { kind: 'sale', pending_mgmt: true, date_note: null }) })));
   if (!starters.length) return [];
   starters.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
   const groups = []; starters.forEach(x => { const g = groups[groups.length - 1]; if (g && !x.approx && !g.approx && g.date === x.date) g.evs.push(x.e); else groups.push({ date: x.date, known: x.known, approx: x.approx, year: x.year, note: x.note, evs: [x.e] }); });
@@ -2904,12 +2916,13 @@ function eraPanel(f) {
   const nApproved = f.events.filter(e => ['sale', 'parent', 'internal'].includes(e.kind) && e.outcome !== 'Pending').length + (f.undated || []).filter(u => ['sale', 'parent', 'internal'].includes(u.kind) && !u.pending).length;
   if (nApproved) wrap.append(el('p', { style: 'margin:6px 0', text: 'The state has approved ' + nApproved + (nApproved === 1 ? ' change' : ' changes') + ' of control for this home since 2007.' }));
   const pend = f.events.filter(e => e.outcome === 'Pending').concat((f.undated || []).filter(u => u.pending));
-  pend.forEach(p => wrap.append(el('div', { class: 'note' }, 'Pending with the state: ' + ([p.buyer, p.who].filter(Boolean).join(', ') || 'application not yet decided') + '. Not included in the history below until it is decided.', p.cec ? cecDetail(p.cec, 'this pending sale') : null)));
+  const pm = pendingMgmt(f);
+  pend.forEach(p => { const x = pm.find(y => y.p === p); wrap.append(el('div', { class: 'note' }, 'Pending with the state: ' + ([p.buyer, p.who].filter(Boolean).join(', ') || 'application not yet decided') + '. ' + (x ? (p.buyer || 'The buyer') + ' took over management on ' + fmtDay(x.m.date) + ' under a management agreement, so the history below counts its time from then.' : 'Not included in the history below until it is decided.'), p.cec && !x ? cecDetail(p.cec, 'this pending sale') : null)); });
   const list = el('div', { class: 'eras' }); wrap.append(list);
   eras.forEach(r => {
     const first = r.evs[0] || {}, names = r.kind === 'earlier' ? 'Earlier owner' : (first.buyer || first.who || 'New owner');
     const op = r.kind === 'earlier' ? 'Not named in the state records shown here' : r.evs.map(e => e.who).filter((x, i, a) => x && a.indexOf(x) === i && x !== names).join('; ');
-    const tag = r.kind === 'sale' ? 'Sold to a new operator' : r.kind === 'parent' ? 'Chain reorganization' : 'Before the first recorded change';
+    const tag = first.pending_mgmt ? 'Managing; purchase pending' : r.kind === 'sale' ? 'Sold to a new operator' : r.kind === 'parent' ? 'Chain reorganization' : 'Before the first recorded change';
     const NR = ' (exact date not recorded)';
     const endTxt = r.end === null ? 'still in charge as of ' + fmtMon(D.meta.latest) : 'until ' + (r.endApprox ? (r.endKnown ? fmtDay(r.end) + ' (approximate)' : r.endYear + NR) : fmtDay(r.end));
     const whenTxt = r.start === null ? 'Before ' + fmtDay(r.end) : 'From ' + (r.startApprox ? (r.startKnown ? fmtDay(r.start) + ' (approximate)' : r.year + NR) : fmtDay(r.start)) + (r.end === null ? ', ' : ' ') + endTxt;
@@ -2940,7 +2953,7 @@ function eraPanel(f) {
     else if (r.startApprox || r.endApprox) card.append(el('p', { class: 'small', style: 'margin:8px 0 0', text: 'The state record does not give an exact date, so no rating change is shown for this period.' }));
     else card.append(el('p', { class: 'small', style: 'margin:8px 0 0', text: 'Too short, or too long ago, for CMS ratings on this page to show a change (CMS files here start in ' + fmtMon(D.dates[0]) + ').' }));
     if (r.notes && r.notes.length) card.append(el('ul', { class: 'notes' }, r.notes.map(n => el('li', { text: fmtDay(n.date) + ': ' + (KIND_LBL[n.kind] || n.label) + (n.who ? ' (' + [n.buyer, n.who].filter(Boolean).join(', ') + ')' : '') }))));
-    r.evs.filter(e => e.cec).forEach(e => card.append(cecDetail(e.cec, e.kind === 'parent' ? 'this chain reorganization' : 'this sale')));
+    r.evs.filter(e => e.cec).forEach(e => card.append(cecDetail(e.cec, e.pending_mgmt ? 'this pending sale' : e.kind === 'parent' ? 'this chain reorganization' : 'this sale')));
     list.append(card);
   });
   return wrap;
@@ -2992,28 +3005,28 @@ function toProfile(smooth) { const box = $('#profile'), nav = document.querySele
   const pendingBuyers = [...new Set(D.sales.filter(r => r.outcome === 'Pending' && r.kind === 'sale' && r.buyer).map(r => r.buyer))];
   const f1 = v => v == null ? '–' : v.toFixed(1), per = (n, y, k) => y ? n / y * k : null;
   const homeLink = (fid, name) => PAGE === 'owners' ? el('a', { href: 'index.html#home=' + encodeURIComponent(fid), text: name }) : el('button', { class: 'linkbtn', text: name, onclick: () => showFacility(fid, true) });
-  const SHOW = { stars: 'Star ratings', insp: 'Immediate jeopardy and harm', fines: 'Fines' };
+  const SHOW = { stars: 'Star ratings', insp: 'Immediate jeopardy and actual harm', fines: 'Fines' };
   const WHO = { buyers: 'Buyers in sales since ' + fmtMon(D.dates[0]), all: 'Every group since April 2016, sellers included', pending: 'Buyers with a sale pending now' };
   // Columns for each view: header, value for sorting, cell, width. One table, so widths are fixed and the same every time.
   const avgCell = (t, k) => { if (!t || !t.n_stars) return el('span', { class: 'small', text: 'no rating yet' }); const few = t.n_stars < 3;
     return el('span', { class: few ? 'few' : '' }, el('b', { text: f1(t[k]) }), few && k === 'stars_end' ? el('div', { class: 'small', text: t.n_stars + (t.n_stars === 1 ? ' home' : ' homes') + ', too few to average' }) : null); };
   const COLS = {
     stars: [['Homes rated', t => t ? t.n_stars || 0 : -1, t => t ? String(t.n_stars || 0) : '–'],
-            ['Stars when it took over', t => t && t.n_stars ? t.stars_start : -1, t => avgCell(t, 'stars_start')],
+            ['Stars at the start', t => t && t.n_stars ? t.stars_start : -1, t => avgCell(t, 'stars_start')],
             ['Stars now, or when it left', t => t && t.n_stars ? t.stars_end : -1, t => avgCell(t, 'stars_end')],
             ['Change', t => t && t.n_stars ? t.stars_end - t.stars_start : 99, t => !t || !t.n_stars ? '–' : el('b', { class: t.stars_end - t.stars_start <= -0.05 ? 'bad' : '', text: (t.stars_end - t.stars_start > 0 ? '+' : t.stars_end - t.stars_start < 0 ? '−' : '') + Math.abs(t.stars_end - t.stars_start).toFixed(1) })]],
     insp:  [['Homes run (now)', t => t ? t.homes : -1, t => t ? t.homes + ' (' + (t.homes_now || 0) + ')' : '–'],
             ['Home-years counted', t => t ? t.years : -1, t => t ? String(t.years) : '–'],
             ['Immediate jeopardy', t => t ? t.ij : -1, t => t ? String(t.ij) : '–'],
             ['per 10 home-years', t => t ? per(t.ij, t.years, 10) : -1, t => t ? f1(per(t.ij, t.years, 10)) : '–'],
-            ['Harm citations', t => t ? t.harm : -1, t => t ? String(t.harm) : '–'],
-            ['per 10 home-years', t => t ? per(t.harm, t.years, 10) : -1, t => t ? f1(per(t.harm, t.years, 10)) : '–']],
+            ['Actual harm', t => t ? t.harm - t.ij : -1, t => t ? String(t.harm - t.ij) : '–'],
+            ['per 10 home-years', t => t ? per(t.harm - t.ij, t.years, 10) : -1, t => t ? f1(per(t.harm - t.ij, t.years, 10)) : '–']],
     fines: [['Homes run (now)', t => t ? t.homes : -1, t => t ? t.homes + ' (' + (t.homes_now || 0) + ')' : '–'],
             ['Home-years counted', t => t ? t.years : -1, t => t ? String(t.years) : '–'],
             ['CMS fines', t => t ? t.fines : -1, t => t ? money0(t.fines) : '–'],
             ['Fines per home-year', t => t && t.years ? t.fines / t.years : -1, t => t && t.years ? money0(t.fines / t.years) : '–']] };
-  const DESC = { stars: 'Average CMS overall stars at the last rating before the group took over each home, and at its latest rating under that group. A Special Focus Facility counts as 0 stars.',
-    insp: 'CMS citations at the immediate jeopardy level, and all harm-level citations (immediate jeopardy included). "Per 10 home-years" divides by the time in charge, so a group that ran many homes for many years can be compared with one that ran a few for a year.',
+  const DESC = { stars: 'Average CMS overall stars at the last rating before the group took over management or ownership of each home, and at its latest rating under that group. A Special Focus Facility counts as 0 stars.',
+    insp: 'CMS citations at the immediate jeopardy level (a problem that caused, or was likely to cause, serious injury, harm, impairment, or death) and at the actual harm level below it. Each citation is counted at one level only. "Per 10 home-years" divides by the time in charge, so a group that ran many homes for many years can be compared with one that ran a few for a year.',
     fines: 'Federal fines CMS imposed while the group ran each home. "Per home-year" divides by the time in charge.' };
   let show = 'insp', who = 'buyers', sortI = -1, sortDir = -1, open = new Set();
   const tabs = (box, opts, cur, set) => { box.replaceChildren(...Object.entries(opts).map(([k, v]) => el('button', { class: 'tab', 'aria-pressed': String(k === cur), text: v, onclick: () => { set(k); draw(); } }))); };
@@ -3024,10 +3037,10 @@ function toProfile(smooth) { const box = $('#profile'), nav = document.querySele
   function detail(g, n) {
     const ten = (D.tenures || []).filter(x => x.group === g).sort((a, b) => (a.start || '') < (b.start || '') ? 1 : -1), t = T[g];
     const inner = el('div', { class: 'ogdetail' });
-    if (ten.length) inner.append(el('table', {}, el('thead', {}, el('tr', {}, ['Home', 'Ran it', 'Stars: took over → now or left', 'Immediate jeopardy', 'Harm', 'Fines'].map((x, i) => el('th', { class: i > 1 ? 'num' : '', text: x })))),
+    if (ten.length) inner.append(el('table', {}, el('thead', {}, el('tr', {}, ['Home', 'Ran it', 'Stars: start → now or when it left', 'Immediate jeopardy', 'Actual harm', 'Fines'].map((x, i) => el('th', { class: i > 1 ? 'num' : '', text: x })))),
       el('tbody', {}, ten.map(x => el('tr', {}, el('td', {}, homeLink(x.fid, x.name)), el('td', { text: ranIt(x) }),
         el('td', { class: 'num' }, x.stars_start == null ? el('span', { class: 'small', text: 'before CMS ratings' }) : [chip(x.stars_start), el('span', { class: 'arrow', text: '→' }), chip(x.stars_end)]),
-        el('td', { class: 'num', text: String(x.ij) }), el('td', { class: 'num', text: String(x.harm) }), el('td', { class: 'num', text: money0(x.fines) }))))));
+        el('td', { class: 'num', text: String(x.ij) }), el('td', { class: 'num', text: String(x.harm - x.ij) }), el('td', { class: 'num', text: money0(x.fines) }))))));
     else inner.append(el('p', { class: 'small', text: 'This group has not run a Rhode Island home in CMS’s records.' }));
     const key = g.toLowerCase().replace(/,? (ltd|llc|inc)\.?$/, '').split(' / ')[0].trim();
     const internal = D.facilities.flatMap(f => (f.events || []).filter(e => e.kind === 'internal' && e.outcome !== 'Pending' && e.date && ((e.buyer || '').toLowerCase() === g.toLowerCase() || (e.who || '').toLowerCase().includes(key))));
@@ -3137,9 +3150,9 @@ const ab = $('#about-body');
  ['Big staffing changes', 'CMS updates staffing figures every 3 months. When a home\'s reported nurse hours change by more than 1 hour per resident per day in one update, the site says so next to the figure. A change that big is rare. It can be real hiring or cuts, or a change or mistake in the payroll records the home sends CMS. If the new number holds in the next update, it is more likely to be real. When it falls at the start or end of a before-and-after comparison, that comparison may be off.'],
  ['Payroll data problems', 'When a home does not send its payroll-based staffing data on time, fails a CMS staffing audit, or reports 4 or more days in a quarter with no RN, CMS gives it 1 staffing star (Five-Star Technical Users\' Guide, September 2026), and the hours it publishes can be implausibly low. Reported hours under 1.5 per resident per day, and turnover of 90% or more (CMS assigns its worst turnover score when payroll data is missing), are treated as that kind of problem and left out (gray bands on the hours and turnover charts).'],
  ['Homes without a star rating', 'CMS does not publish star ratings for homes in its Special Focus Facility program, which targets homes with a history of serious quality problems. Those months are counted as 0 stars (0 is not a CMS score) so that a home being in the program shows up in statewide averages, the share of low-rated homes, the star-mix chart (gray layer) and the sold-versus-not-sold comparison, including in the downloadable CSVs.'],
- ['Money paid to related parties', 'Each home files a Medicare cost report that lists payments to related parties: companies the same owners control, such as the landlord or a management company. Those payments are costs to the home, so a home can report thin or negative margins while its owners are paid through rent and fees. The before-and-after chart compares the same homes between the year before the sale and two years after, which is why its home counts are smaller than the ratings comparison.'],
+ ['Money paid to companies the business owners also control', 'Each home files a Medicare cost report that lists payments to companies the business owners also control (CMS calls them related parties), such as the landlord or a management company. Those payments are costs to the home, so a home can report thin or negative margins while its owners are paid through rent and fees. The before-and-after chart compares the same homes between the year before the sale and two years after, which is why its home counts are smaller than the ratings comparison.'],
  ['What buyers projected, and what happened', 'Projected figures come from Appendix A of each buyer\u2019s change in effective control application (Table 2, staff; Table 3, revenue and expenses), copied by hand from the page and listed with page numbers in pipeline/projections.json in this site\u2019s GitHub repository. Actual nurse staffing comes from CMS\u2019s Payroll Based Journal daily nurse staffing files (data.cms.gov), added up for each calendar year; money comes from the same Medicare cost reports as the table below. The limits on first-year operating costs are quoted from the conditions of approval in the adopted Health Services Council reports.'],
- ['Money paid to companies the business owners also control, by home', 'The money table and the panel on each home\u2019s page come from the same Medicare cost reports. All related-party costs is what the home reported paying companies its owners also control. Rent and management fees are the two biggest pieces; the rest is shown as other related companies (therapy, supplies, billing and similar). Only company names are shown, not the people behind them. The before and after column compares the year before a home\u2019s first sale on this page with its newest report. Margin is the operating margin the home reported.'],
+ ['Money paid to companies the business owners also control, by home', 'The money table and the panel on each home\u2019s page come from the same Medicare cost reports. The total is what the home reported paying companies the business owners also control. Rent and management fees are the two biggest pieces; the rest is shown as other (therapy, supplies, billing, and similar). Only company names are shown, not the people behind them. The before and after column compares the year before a home\u2019s first sale on this page with its newest report. Margin is the operating margin the home reported.'],
  ['"CMS records updated" dates', 'CMS\u2019s files are not updated the day a sale closes. Where a sale has one, this page shows the first monthly CMS file listing the new operator; across these sales that came a median of about eight months after the date of record. It is a reporting lag, not a second event, and it matters for two reasons: ratings in those months were still filed under the old operator\u2019s name, and a CMS operator change with no matching state record is a sign of a change that may not have gone through review.'],
  ['Management agreements and timing', 'A buyer sometimes takes over day-to-day management of a home under a management agreement before the state approves the sale, and CMS can take months to list a new operator. Where a management start date is known it is shown on the home’s timeline and beside the sale. So the last rating before a sale may already reflect the buyer\u2019s management, and the sales table shows when CMS first lists the new operator. These agreements are not published. They have been requested through APRA from RIDOH.'],
  ['The comparison line', 'Similar homes are those with no change of control or new operator from a year before to two years after each sale, and that started at the same CMS star rating as the sold home on the same date (or, for staffing hours and turnover, the 8 homes with the closest figure). They are averaged over the same calendar dates as the sold homes, so statewide trends (the pandemic, staffing rules, rating changes) appear in both lines.'],
