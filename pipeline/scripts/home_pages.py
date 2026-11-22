@@ -229,15 +229,14 @@ def tenure_html(x, latest, f):
                      + (f" The CMS files on this site have no rating from before it {tk}." if x.get("start") else "")
                      + "</p>")
     n_h, n_ij = x["harm"], x["ij"]
-    if n_h == 1:
-        cites = "1 citation for immediate jeopardy" if n_ij else "1 citation for harm to a resident"
-    elif n_h:
-        part = "none" if not n_ij else ("all" if n_ij == n_h else str(n_ij))
-        cites = f"{n_h} citations for harm to a resident or immediate jeopardy, {part} of them immediate jeopardy"
-    else:
-        cites = "no citations for harm to a resident or immediate jeopardy"
+    # Each citation is at one level: immediate jeopardy (J to L) or actual harm (G to I), never both.
+    n_a = n_h - n_ij
+    parts = [x for x in [plural(n_ij, "immediate jeopardy citation") if n_ij else None,
+                         plural(n_a, "actual harm citation") if n_a else None] if x] or ["no immediate jeopardy or actual harm citations"]
     fines = (f"{plural(x['n_fines'], 'federal fine')} totaling {money(x['fines'])}" if x.get("n_fines") else "no federal fines")
-    lines.append(f"<p><strong>While it ran the home:</strong> {cites}, and {fines}.</p>")
+    items = parts + [fines]
+    said = items[0] + " and " + items[1] if len(items) == 2 else ", ".join(items[:-1]) + ", and " + items[-1]
+    lines.append(f"<p><strong>While it ran the home:</strong> {said}.</p>")
     if x.get("counted_from") and (not x.get("start") or x["counted_from"] > x["start"]):
         lines.append(f'<p class="note">Citations and fines counted from {mon(x["counted_from"])}. The CMS files on this '
                      "site start in April 2019 and list inspections from about 3 years before that.</p>")
@@ -290,12 +289,15 @@ def home_page(D, f, tens, sales, latest):
         body.append('<p class="note">Newest first. An owner’s time starts on the date it took over management, if a '
                     "management agreement came before the sale, or otherwise the date it took over ownership. Star "
                     "ratings are from the last CMS file before that date and the latest file, or the last file before "
-                    "it left. A Special Focus Facility counts as 0 stars.</p>")
+                    "it left. A Special Focus Facility counts as 0 stars. Immediate jeopardy is CMS\u2019s most serious "
+                    "level: a problem that caused, or was likely to cause, serious injury, harm, impairment, or death. "
+                    "Actual harm is the level below it: a resident was hurt, but not at the immediate jeopardy level.</p>")
         for x in sorted(tens, key=lambda x: x.get("start") or "", reverse=True):
             body.append(tenure_html(x, latest, f))
         ij = sum(x["ij"] for x in tens if x.get("current"))
         if cur and cur.get("start") and ij:
-            desc.append(f"{plural(ij, 'immediate jeopardy citation')} since then.")
+            # Right after the "Run by ... since" sentence, so "since" can't be read as since a sale.
+            desc.insert(1, f"{plural(ij, 'immediate jeopardy citation')} since {mon(max(cur['start'], cur.get('counted_from') or cur['start']))}.")
     body.append(f'<p><a class="btn" href="{full}">See the full record, with charts and documents</a></p>')
 
     # Sales and other changes of control.
@@ -445,7 +447,12 @@ def main():
         pages[f"{SITE}/home/{fid}/"] = home_page(D, f, tens_by.get(fid, []), sales_by.get(fid, []), latest)
         closed = f.get("active") is False or str(f.get("status") or "").lower().startswith("closed")
         cur = next((x["group"] for x in tens_by.get(fid, []) if x.get("current") and x.get("group")), None)
-        entries.append((f, f["status"] if closed else (cur or f.get("owner_group"))))
+        appr = [s_ for s_ in sales_by.get(fid, []) if s_.get("kind") == "sale" and s_.get("outcome") != "Pending"
+                and s_.get("date") and s_["date"] > latest and not any(x.get("cec") == s_.get("cec") for x in tens_by.get(fid, []))]
+        label = f["status"] if closed else (cur or f.get("owner_group"))
+        if appr and label:
+            label += f"; sale to {appr[0].get('buyer') or appr[0].get('who')} approved {mon(appr[0]['date'])}"
+        entries.append((f, label))
     pages[f"{SITE}/home/"] = index_page(entries, latest)
     out = os.path.join(ROOT, "home")
     if os.path.isdir(out):
