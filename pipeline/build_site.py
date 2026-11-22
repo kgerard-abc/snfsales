@@ -79,4 +79,7 @@ feed = dict(built=D["meta"].get("built"), source="https://snfsales.abc-ri.org/",
 with open(os.path.join(ROOT, "sales.json"), "w", encoding="utf-8") as f:
     json.dump(feed, f, ensure_ascii=False, separators=(",", ":"))
 print(f"Wrote sales.json ({len(homes)} homes).")
+# A plain page per home (home/CCN/), the A to Z list, sitemap.xml, and robots.txt, so search engines can find each home.
+import subprocess
+subprocess.run([sys.executable, os.path.join(ROOT, "pipeline", "scripts", "home_pages.py")], check=True)
 print("Built index.html and the workbook.")
