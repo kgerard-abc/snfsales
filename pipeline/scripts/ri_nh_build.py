@@ -1953,6 +1953,7 @@ PAGE_TEMPLATE = r'''<!DOCTYPE html>
 <meta property="og:image:alt" content="ABC-RI logo">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="favicon.ico" sizes="any"><link rel="icon" type="image/png" href="favicon.png"><link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="sitemap" type="application/xml" href="sitemap.xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap">
@@ -2225,6 +2226,7 @@ footer a{color:var(--fg)}
 <section id="about"><h2>About the data</h2>
 <div class="panel" id="about-body"></div>
 <div class="row"><button class="btn" id="dl-monthly">Download monthly home-level data (CSV)</button></div>
+<p><a href="/home/">Every home, A to Z</a>: one page for each home, with who has run it and what happened under each owner.</p>
 </section>
 <footer id="foot"></footer>
 </main>
@@ -3149,7 +3151,7 @@ const ab = $('#about-body');
 /* The same footer as the other two ABC-RI sites: who we are, the three sites, where the data comes from, and where to send corrections. */
 $('#foot').append(
   el('p', {}, el('b', {}, el('a', { href: 'https://www.abc-ri.org/', text: 'Advocates for Better Care in\u00A0Rhode\u00A0Island (ABC-RI)' })), ' is an independent advocacy organization dedicated to protecting the rights and improving the care of long-term care residents in\u00A0Rhode\u00A0Island.'),
-  el('p', {}, 'Our public data sites: ', el('a', { href: 'https://snfdashboard.abc-ri.org/', text: 'Nursing home dashboard' }), ' \u00B7 ', el('b', { text: 'Nursing home sales (this site)' }), ' \u00B7 ', el('a', { href: 'https://alinspections.abc-ri.org/', text: 'Assisted living inspections' })),
+  el('p', {}, 'Our public data sites: ', el('a', { href: 'https://snfdashboard.abc-ri.org/', text: 'Nursing home dashboard' }), ' \u00B7 ', el('b', { text: 'Nursing home sales (this site)' }), ' \u00B7 ', el('a', { href: 'https://alinspections.abc-ri.org/', text: 'Assisted living inspections' }), ' \u00B7 ', el('a', { href: '/home/', text: 'Every home, A to Z' })),
   el('p', {}, [D.meta.credit, 'Data through ' + D.meta.updated + '. Page built ' + D.meta.built + '.'].filter(Boolean).join(' \u00B7 '), D.meta.contact ? [' \u00B7 Corrections: ', el('a', { href: 'mailto:' + D.meta.contact, text: D.meta.contact })] : null));
 function download(name, rows) { const esc = v => { v = v == null ? '' : String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }; const blob = new Blob([rows.map(r => r.map(esc).join(',')).join('\n')], { type: 'text/csv' }); const a = el('a', { href: URL.createObjectURL(blob), download: name }); document.body.append(a); a.click(); a.remove(); }
 $('#dl-sales').addEventListener('click', () => download('ri_nursing_home_sales.csv', [['cec_id', 'date', 'date_source', 'home', 'town', 'type', 'outcome', 'buyer_group', 'applicant', 'stars_before', 'stars_1yr', 'stars_2yr', 'nurse_hrs_before', 'nurse_hrs_1yr', 'serious_cites_before', 'serious_cites_after', 'fines_before', 'fines_after', 'conditions_beyond_standard', 'conditions_triggered', 'documents']].concat(D.sales.map(r => [r.cec, r.date, r.date_note, r.name, r.town, r.label, r.outcome, r.buyer, r.who, r.m.overall.before, r.m.overall.y1, r.m.overall.y2, r.m.hours.before, r.m.hours.y1, r.ser.before, r.ser.y1, r.fines.before, r.fines.y1, (CD[r.cec] || {}).extra || (CD[r.cec] || {}).cond || '', (CD[r.cec] || {}).trig || '', ((CD[r.cec] || {}).links || []).map(l => l.role + ': ' + l.url).join(' | ')]))));
