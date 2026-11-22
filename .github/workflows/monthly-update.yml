@@ -107,7 +107,7 @@ jobs:
           rm -rf pipeline/out
           git config user.name "abc-ri-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add -A index.html owners.html sales.json pipeline/history pipeline/cms_chains.csv pipeline/pbj_quarters.csv
+          git add -A index.html owners.html sales.json home sitemap.xml robots.txt pipeline/history pipeline/cms_chains.csv pipeline/pbj_quarters.csv
           if git diff --cached --quiet; then echo "No changes."; exit 0; fi
           git commit -m "Monthly CMS update"
           git push
