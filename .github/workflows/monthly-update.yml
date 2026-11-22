@@ -76,7 +76,9 @@ jobs:
           old, new = D('pipeline/index.previous.html'), D('index.html')
           bad = []
           if new['meta']['latest'] < old['meta']['latest']: bad.append(f"latest date went backwards: {old['meta']['latest']} to {new['meta']['latest']}")
-          if len(new['facilities']) < len(old['facilities']): bad.append(f"facilities dropped from {len(old['facilities'])} to {len(new['facilities'])}")
+          # Tavares Pediatric Center is left out on purpose (EXCLUDE_FACILITY in ri_nh_build.py), so it doesn't count as a drop.
+          n_old = len([f for f in old['facilities'] if 'Tavares' not in f.get('name', '')])
+          if len(new['facilities']) < n_old: bad.append(f"facilities dropped from {n_old} to {len(new['facilities'])}")
           dated = [s for s in old['sales'] if s.get('date') and s.get('kind') != 'closed']      # undated sales are no longer listed, and closures are no longer rows in the sales table
           # A sale may leave the table on purpose: an Event Overrides row marks it "not completed" (approved, never closed),
           # "closure" or "not a sale". That is allowed only when the CEC now shows on its home's timeline as such.
