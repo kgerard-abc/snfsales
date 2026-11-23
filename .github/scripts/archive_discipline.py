@@ -35,9 +35,10 @@ for name, path in todo.items():
     for attempt in range(3):
         try:
             r = item.upload(files={name: path}, metadata=(MD if first else None), access_key=access, secret_key=secret,
-                            retries=8, retries_sleep=30, verbose=False, validate_identifier=True)
+                            retries=8, retries_sleep=30, verbose=False, validate_identifier=True,
+                            queue_derive=False)
             if r and all(x.status_code == 200 for x in r):
-                ok += 1; first = False; break
+                ok += 1; first = False; time.sleep(3); break
             raise RuntimeError(",".join(str(x.status_code) for x in r))
         except Exception as e:
             print("retry", name, str(e)[:120], flush=True); time.sleep(20)
