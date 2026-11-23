@@ -1,0 +1,21 @@
+name: Archive RIDOH discipline orders to the Internet Archive
+# One-time job on a scratch branch. Runs when go.txt is pushed. Needs IA_ACCESS and IA_SECRET.
+on:
+  push:
+    branches: [archive-discipline-orders]
+    paths: [go.txt]
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -q internetarchive
+      - name: Upload
+        env:
+          IA_ACCESS: ${{ secrets.IA_ACCESS }}
+          IA_SECRET: ${{ secrets.IA_SECRET }}
+        run: python3 .github/scripts/archive_discipline.py
