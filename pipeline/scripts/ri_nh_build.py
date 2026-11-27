@@ -12,7 +12,7 @@ DEFAULT_CONFIG = dict(
     sff_as_zero=True,               # months CMS leaves a home unrated because it is a Special Focus Facility (footnote 18) count as 0 stars
     min_plausible_hprd=1.5,         # reported nurse hours per resident per day below this are treated as a payroll-reporting problem (blanked, flagged)
     event_overrides_seed=[          # (CEC ID, treat as, date, public label, note) - written to the Event Overrides tab the first time only
-        ('CEC-077', 'closure', '2021-09-01', 'Closed September 2021', 'Per ABC-RI's notes, this home closed in September 2021 and was not sold. Not counted as a sale.'),
+        ('CEC-077', 'closure', '2021-09-01', 'Closed September 2021', 'According to ABC-RI, this home closed in September 2021 and was not sold. Not counted as a sale.'),
     ],
     max_plausible_turnover=90,      # nursing staff turnover (%) at or above this is CMS's 'lowest possible score' for missing payroll data: blanked and flagged
     ccn_notes_seed={'Pawtuxet Village Care and Rehabilitation Center': 'Closed April 2012. No CCN exists.'},   # notes added to the CCN Map the first time a name appears
@@ -23,7 +23,7 @@ DEFAULT_CONFIG = dict(
     page_credit='Built and maintained by ABC-RI from CMS and RIDOH public records',   # shown in the page footer
     page_contact='corrections@abc-ri.org',   # shown on the page for corrections
     data_cautions=[                 # (title, text) shown on the workbook Read Me
-        ('AdviniaCare Orchard, LLC (CCN 415059)', 'CMS average residents per day falls from 126.5 in the June 2026 file to 30.1 in the July 2026 file and stays there, so its latest occupancy shows as 18%. Per ABC-RI's notes, the facility temporarily evacuated most floors, so this reflects that event rather than a reporting change.'),
+        ('AdviniaCare Orchard, LLC (CCN 415059)', 'CMS average residents per day falls from 126.5 in the June 2026 file to 30.1 in the July 2026 file and stays there, so its latest occupancy shows as 18%. According to ABC-RI, the facility temporarily evacuated most floors, so this reflects that event rather than a reporting change.'),
     ],
     public_show_principals=False,   # False: public page shows companies only (drops names in parentheses and after the arrow)
     public_include_types=('Ownership/operator change', 'Corporate parent change (multi-facility deal)'),
