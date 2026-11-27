@@ -302,6 +302,38 @@ def check_live(kind):
             err(f"could not load {url}: {e}")
 
 
+MATCH = {"sales": ("index.html", "owners.html", "sales.json")}
+
+
+def check_match(kind):
+    """The published copy of each file should be the same as the copy here."""
+    import time
+    base = LIVE[kind][0]
+
+    def differing():
+        out = []
+        for name in MATCH.get(kind, ()):
+            try:
+                req = urllib.request.Request(base + name + "?t=%d" % time.time(), headers={"User-Agent": "abc-ri-site-check", "Cache-Control": "no-cache"})
+                with urllib.request.urlopen(req, timeout=60) as r:
+                    live = r.read()
+            except Exception as e:
+                out.append(f"{name} (could not load: {e})")
+                continue
+            with open(name, "rb") as f:
+                if f.read() != live:
+                    out.append(name)
+        return out
+
+    diff = differing()
+    if diff:
+        print("Published copy differs for: " + ", ".join(diff) + ". Looking again in 12 minutes.")
+        time.sleep(720)
+        diff = differing()
+    if diff:
+        err("the published site does not match this repository: " + ", ".join(diff))
+
+
 def detect():
     if os.path.exists("data.js"):
         return "snf"
@@ -322,6 +354,8 @@ def main():
     {"snf": check_snf, "sales": check_sales, "alf": check_alf}[kind]()
     if "--live" in sys.argv:
         check_live(kind)
+    if "--match" in sys.argv:
+        check_match(kind)
     print(f"Site: {kind}   Date: {TODAY}")
     for w in warns:
         print("WARNING:", w)

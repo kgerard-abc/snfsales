@@ -29,6 +29,8 @@ jobs:
   update:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    outputs:
+      pushed: ${{ steps.commit.outputs.pushed }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -92,17 +94,20 @@ jobs:
               sys.exit(1)
           PY
           python3 .github/scripts/check_site.py || echo "::warning::Site check reported problems (see log). Known: 9 sales without dates."
+          python3 .github/scripts/assemble_site.py "$RUNNER_TEMP/site_test"
 
       - name: Save the build for download
         if: steps.fetch.outputs.new == 'yes'
         uses: actions/upload-artifact@v4
         with:
           name: sales-build
+          retention-days: 7
           path: |
             index.html
             pipeline/out/RI_Nursing_Homes_CMS_and_CEC.xlsx
 
       - name: Publish (commit the new page and history)
+        id: commit
         if: steps.fetch.outputs.new == 'yes' && !(github.event_name == 'workflow_dispatch' && inputs.test_only)
         run: |
           rm -f pipeline/index.previous.html
@@ -112,4 +117,14 @@ jobs:
           git add -A index.html owners.html sales.json home sitemap.xml robots.txt pipeline/history pipeline/cms_chains.csv pipeline/pbj_quarters.csv
           if git diff --cached --quiet; then echo "No changes."; exit 0; fi
           git commit -m "Monthly CMS update"
-          git push
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+          echo "pushed=yes" >> "$GITHUB_OUTPUT"
+
+  publish:
+    needs: update
+    if: needs.update.outputs.pushed == 'yes' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/publish.yml
+    secrets: inherit

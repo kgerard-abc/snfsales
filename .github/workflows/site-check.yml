@@ -3,6 +3,7 @@ name: Site health check
 on:
   push:
     branches: [main]
+  pull_request:
   schedule:
     - cron: '0 12 * * 2'   # every Tuesday, 8 AM Eastern (daylight time)
   workflow_dispatch:        # lets you run it by hand from the Actions tab
@@ -17,6 +18,8 @@ jobs:
           python-version: '3.12'
       - name: Check the data in this repo
         run: python3 .github/scripts/check_site.py
-      - name: Check the published site is up
-        if: github.event_name != 'push'
-        run: python3 .github/scripts/check_site.py --live
+      - name: Check the site files can be gathered
+        run: python3 .github/scripts/assemble_site.py "$RUNNER_TEMP/site_test"
+      - name: Check the published site is up and current
+        if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+        run: python3 .github/scripts/check_site.py --live --match

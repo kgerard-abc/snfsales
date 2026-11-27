@@ -1,14 +1,14 @@
 name: Watch RIDOH's list of reviews
 
 # RIDOH's "Annual Report of Reviews" sheet is the source for where each pending application stands.
-# This checks it every few hours. When a Change in Effective Control row is added or changed, it saves the new copy
+# This checks it once a day. When a Change in Effective Control row is added or changed, it saves the new copy
 # and starts the sales page rebuild, so the page follows RIDOH without anyone having to ask.
 # It also checks the CEC Log tab of the INTERNAL Google Sheet. When a row is added or edited there (by the weekly
 # CEC Log check, or by kg filling in a buyer group or principals), it starts the same rebuild.
 
 on:
   schedule:
-    - cron: '23 */4 * * *'
+    - cron: '23 10 * * *'
   workflow_dispatch:
 
 permissions:
