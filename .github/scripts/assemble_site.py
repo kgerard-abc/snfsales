@@ -12,7 +12,8 @@ NOT_SITE = {".github", ".gitignore", "pipeline", "CNAME", "LICENSE"}
 CUSTOM_DOMAIN = ""
 
 # Every tracked top-level file or folder must be listed above, one way or the other.
-tracked = subprocess.run(["git", "ls-files"], capture_output=True, text=True, check=True).stdout.split("\n")
+tracked = subprocess.run(["git", "ls-files", "--cached", "--others", "--exclude-standard"], capture_output=True, text=True, check=True).stdout.split("\n")
+tracked = [p for p in tracked if p and os.path.exists(p)]
 top = {p.split("/")[0] for p in tracked if p}
 unlisted = sorted(top - {f.split("/")[0] for f in FILES} - set(DIRS) - NOT_SITE)
 if unlisted:
