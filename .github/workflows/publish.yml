@@ -1,0 +1,61 @@
+name: Publish site
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  workflow_call:
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SITE_REPO: kgerard-abc/snfsales-site
+      SITE_TOKEN: ${{ secrets.SITE_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Skip until set up
+        id: ready
+        run: |
+          if [ -z "$SITE_TOKEN" ]; then echo "Not set up yet."; echo "go=no" >> "$GITHUB_OUTPUT"; else echo "go=yes" >> "$GITHUB_OUTPUT"; fi
+      - name: Gather the site files
+        if: steps.ready.outputs.go == 'yes'
+        run: python3 .github/scripts/assemble_site.py "$RUNNER_TEMP/site_out"
+      - name: Publish
+        if: steps.ready.outputs.go == 'yes'
+        run: |
+          set -euo pipefail
+          URL="https://x-access-token:${SITE_TOKEN}@github.com/${SITE_REPO}.git"
+          OUT="$RUNNER_TEMP/site_out"
+          NOW="$RUNNER_TEMP/site_now"
+          OLD="$(git ls-remote "$URL" refs/heads/main | cut -f1)"
+          if [ -n "$OLD" ]; then
+            git clone -q --depth 1 --branch main "$URL" "$NOW"
+            OLD="$(git -C "$NOW" rev-parse HEAD)"
+            if [ -f "$NOW/CNAME" ] && ! cmp -s "$NOW/CNAME" "$OUT/CNAME"; then
+              echo "::error::The site has a custom domain file and this copy does not have the same one. Not publishing."
+              exit 1
+            fi
+            if diff -qr -x .git "$NOW" "$OUT" > /dev/null; then echo "No change."; exit 0; fi
+          fi
+          cd "$OUT"
+          git init -q -b main
+          git config user.name "abc-ri-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Update site"
+          if [ -n "$OLD" ]; then
+            git push -q --force-with-lease="main:${OLD}" "$URL" HEAD:main
+          else
+            git push -q "$URL" HEAD:main
+          fi
