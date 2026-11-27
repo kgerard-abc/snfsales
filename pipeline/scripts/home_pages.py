@@ -176,6 +176,7 @@ def page(title, desc, canonical, body):
 <p>Our public data sites: <a href="https://snfdashboard.abc-ri.org/">Nursing home dashboard</a> &middot; <a href="/">Nursing home sales</a> &middot; <a href="https://alinspections.abc-ri.org/">Assisted living inspections</a> &middot; <a href="/home/">Every home, A to Z</a></p>
 <p>Built and maintained by ABC-RI from CMS and RIDOH public records. It is not produced, reviewed, or endorsed by CMS, the {RI} Department of Health (RIDOH), or any state agency.</p>
 <p>Spotted an error? Email <strong>corrections@abc-ri.org</strong>.</p>
+<p><a href="https://snfdashboard.abc-ri.org/#privacy">About this information and your privacy</a></p>
 </footer>
 </div>
 <script data-goatcounter="https://abc-ri-snfsales.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
