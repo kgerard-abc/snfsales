@@ -1031,7 +1031,7 @@ def build_public_data(M, S, val, cec, mp, ccn_of, fn, cfg):
         if ovr and ovr['treat'] == 'sale': rtype = 'Ownership/operator change'
         if ovr and ovr['treat'] == 'parent company change': rtype = 'Corporate parent change (multi-facility deal)'
         if ovr and ovr['treat'] == 'not completed':   # approved by the state but the sale never closed: on the home's timeline only, never counted as a sale
-            ev_add(key, dict(date=_d(d), kind='unclosed', cec=r.cec, label=nz(ovr.get('label')) or 'Approved but never completed', who='', buyer=None, outcome=None, src='RIDOH Change in Effective Control record ' + r.cec + '; the sale never closed (note from the workbook owner)', date_note='RIDOH decision date'))
+            ev_add(key, dict(date=_d(d), kind='unclosed', cec=r.cec, label=nz(ovr.get('label')) or 'Approved but never completed', who='', buyer=None, outcome=None, src='RIDOH Change in Effective Control record ' + r.cec + '; the sale never closed (ABC-RI note)', date_note='RIDOH decision date'))
             continue
         if ovr and ovr['treat'] in ('closure', 'not a sale'):
             ev_add(key, dict(date=_d(d), kind='closed', cec=r.cec, label=nz(ovr.get('label')) or 'Closed (not a sale)', who='', buyer=None, outcome=None, src='ABC-RI note (state review record ' + r.cec + ' exists)', date_note='Date from the workbook note'))
