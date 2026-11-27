@@ -3,7 +3,7 @@ import os, re, shutil, subprocess, sys
 
 OUT = sys.argv[1] if len(sys.argv) > 1 else "_site_out"
 FILES = [
-    "index.html", "owners.html", "sales.json",
+    "index.html", "owners.html", "sales.json", "projected-figures.csv",
     "sitemap.xml", "robots.txt",
     "favicon.ico", "favicon.png", "apple-touch-icon.png", "abcri-logo.png",
 ]
