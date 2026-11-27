@@ -12,7 +12,7 @@ DEFAULT_CONFIG = dict(
     sff_as_zero=True,               # months CMS leaves a home unrated because it is a Special Focus Facility (footnote 18) count as 0 stars
     min_plausible_hprd=1.5,         # reported nurse hours per resident per day below this are treated as a payroll-reporting problem (blanked, flagged)
     event_overrides_seed=[          # (CEC ID, treat as, date, public label, note) - written to the Event Overrides tab the first time only
-        ('CEC-077', 'closure', '2021-09-01', 'Closed September 2021', 'Per the workbook owner, this home closed in September 2021 and was not sold. Not counted as a sale.'),
+        ('CEC-077', 'closure', '2021-09-01', 'Closed September 2021', 'Per ABC-RI's notes, this home closed in September 2021 and was not sold. Not counted as a sale.'),
     ],
     max_plausible_turnover=90,      # nursing staff turnover (%) at or above this is CMS's 'lowest possible score' for missing payroll data: blanked and flagged
     ccn_notes_seed={'Pawtuxet Village Care and Rehabilitation Center': 'Closed April 2012. No CCN exists.'},   # notes added to the CCN Map the first time a name appears
@@ -23,7 +23,7 @@ DEFAULT_CONFIG = dict(
     page_credit='Built and maintained by ABC-RI from CMS and RIDOH public records',   # shown in the page footer
     page_contact='corrections@abc-ri.org',   # shown on the page for corrections
     data_cautions=[                 # (title, text) shown on the workbook Read Me
-        ('AdviniaCare Orchard, LLC (CCN 415059)', 'CMS average residents per day falls from 126.5 in the June 2026 file to 30.1 in the July 2026 file and stays there, so its latest occupancy shows as 18%. Per the workbook owner, the facility temporarily evacuated most floors, so this reflects that event rather than a reporting change.'),
+        ('AdviniaCare Orchard, LLC (CCN 415059)', 'CMS average residents per day falls from 126.5 in the June 2026 file to 30.1 in the July 2026 file and stays there, so its latest occupancy shows as 18%. Per ABC-RI's notes, the facility temporarily evacuated most floors, so this reflects that event rather than a reporting change.'),
     ],
     public_show_principals=False,   # False: public page shows companies only (drops names in parentheses and after the arrow)
     public_include_types=('Ownership/operator change', 'Corporate parent change (multi-facility deal)'),
@@ -1034,7 +1034,7 @@ def build_public_data(M, S, val, cec, mp, ccn_of, fn, cfg):
             ev_add(key, dict(date=_d(d), kind='unclosed', cec=r.cec, label=nz(ovr.get('label')) or 'Approved but never completed', who='', buyer=None, outcome=None, src='RIDOH Change in Effective Control record ' + r.cec + '; the sale never closed (note from the workbook owner)', date_note='RIDOH decision date'))
             continue
         if ovr and ovr['treat'] in ('closure', 'not a sale'):
-            ev_add(key, dict(date=_d(d), kind='closed', cec=r.cec, label=nz(ovr.get('label')) or 'Closed (not a sale)', who='', buyer=None, outcome=None, src='Note from the workbook owner (state review record ' + r.cec + ' exists)', date_note='Date from the workbook note'))
+            ev_add(key, dict(date=_d(d), kind='closed', cec=r.cec, label=nz(ovr.get('label')) or 'Closed (not a sale)', who='', buyer=None, outcome=None, src='ABC-RI note (state review record ' + r.cec + ' exists)', date_note='Date from the workbook note'))
             continue
         kind = 'sale' if rtype in ('Ownership/operator change',) else ('parent' if rtype == 'Corporate parent change (multi-facility deal)' else ('internal' if rtype == 'Estate / internal ownership restructuring' else 'realestate'))
         who = pubtxt(r.applicant, True) or ''
@@ -1049,7 +1049,7 @@ def build_public_data(M, S, val, cec, mp, ccn_of, fn, cfg):
     for c_, (lab_c, d_c, yo_c) in closed_map.items():
         if yo_c: continue   # no month known, so no dated timeline event; the status still says "Closed <Year>"
         if c_ in fac.index and not any(e['kind'] == 'closed' for e in events_by.get(c_, [])):
-            ev_add(c_, dict(date=d_c, kind='closed', cec='', label=lab_c, who='', buyer=None, outcome=None, src='Note from the workbook owner', date_note='Month from the workbook note'))
+            ev_add(c_, dict(date=d_c, kind='closed', cec='', label=lab_c, who='', buyer=None, outcome=None, src='ABC-RI note', date_note='Month from the workbook note'))
     hu, pu = M['hu'], M['pu']
     facs = []; cur = fac
     for c in M['order']:
@@ -1223,7 +1223,7 @@ def build_public_data(M, S, val, cec, mp, ccn_of, fn, cfg):
         lr = log[log.cec == cid]
         if not len(lr): continue
         key = cec_ccn.get(lr.iloc[0].facility) or ('cec:' + str(lr.iloc[0].facility))
-        ev_add(key, dict(date=_d(m['start']), kind='mgmt', cec=cid, label='Buyer took over management', who=pubtxt(m.get('who')) or '', buyer=None, outcome=None, src=nz(m.get('src')) or ('Management agreement noted for ' + cid), date_note='Management agreement start'))
+        ev_add(key, dict(date=_d(m['start']), kind='mgmt', cec=cid, label='Buyer took over management', who=pubtxt(m.get('who')) or '', buyer=None, outcome=None, src='Management agreement', date_note='Management agreement start'))
     for f_ in facs: f_['events'] = sorted(events_by.get(f_['id'], f_['events']), key=lambda e: e['date'], reverse=True)
     for r in rows: r['mgmt_start'] = (_d(MG[r['cec']]['start']) if (r['cec'] in MG and T(MG[r['cec']].get('start'))) else None)
     # same-home levels before vs after (for the before/after chart)
@@ -1995,6 +1995,7 @@ h3{font-size:1.15rem;margin:22px 0 8px}
 .card .cmp{font-size:.88rem;margin-top:6px}
 .panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:12px 0}
 .tabs{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 10px}
+a.btn{display:inline-block;text-decoration:none}
 button.tab,.btn{font:inherit;font-size:.92rem;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer}
 button.tab[aria-pressed="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) button.tab[aria-pressed="true"]{background:#3a5a97;color:#fff;border-color:#3a5a97}}
@@ -2202,7 +2203,7 @@ footer a{color:var(--fg)}
 <p class="lede finding" id="proj-finding"></p>
 <ul class="small notes" id="proj-points"></ul>
 <div class="tblwrap stack"><table id="proj-tbl"><caption>One row for each year the buyer ran the home for the whole year. Each cell shows what the application projected, then what the home reported. A dash means the figure is not in the application or not reported yet.</caption><thead></thead><tbody></tbody></table></div>
-<div class="row"><button class="btn" id="dl-proj">Download this table (CSV)</button></div>
+<div class="row"><button class="btn" id="dl-proj">Download this table (CSV)</button> <a class="btn" href="projected-figures.csv" download>Download the projected figures with page numbers (CSV)</a></div>
 <div class="panel" id="proj-caps-panel"><h3 style="margin-top:0;font-size:1rem">Limits on first-year operating costs in the state’s approval</h3>
 <p class="small" style="margin-top:0">For some sales, the Health Services Council’s adopted report made a limit on operating costs in the buyer’s first full year a condition of approval. This compares each limit with the operating expenses the home reported on its Medicare cost report for its first whole year under the buyer.</p>
 <div class="tblwrap stack"><table id="proj-caps"><thead></thead><tbody></tbody></table></div></div>
@@ -2885,7 +2886,7 @@ function ownerEras(f) {
   const mgmtBy = {}; ev.filter(e => e.kind === 'mgmt' && e.cec).forEach(e => { if (!mgmtBy[e.cec] || e.date < mgmtBy[e.cec].date) mgmtBy[e.cec] = e; });
   const starters = ev.filter(e => (e.kind === 'sale' || e.kind === 'parent') && notPend(e)).map(e => { const m = e.cec && mgmtBy[e.cec]; return (m && m.date < e.date) ? { date: m.date, approx: false, note: 'Buyer began managing the home (management agreement), before the sale date of ' + fmtDay(e.date), e } : { date: e.date, approx: false, e }; })
     .concat((f.undated || []).filter(u => (u.kind === 'sale' || u.kind === 'parent') && !u.pending && u.year).map(u => ({ date: u.date || (u.year + '-07-01'), known: !!u.date, approx: true, year: u.year, e: u })))
-    /* A pending buyer already managing the home under an agreement (kg's rule, as in the owner groups table): its time starts
+    /* A pending buyer already managing the home under an agreement (as in the owner groups table): its time starts
        on the management date and the seller's ends, before the state decides. Only when CMS's files reach that date. */
     .concat(pendingMgmt(f).map(x => ({ date: x.m.date, approx: false, note: 'Buyer began managing the home (management agreement) while its purchase is pending with the state', e: Object.assign({}, x.p, { kind: 'sale', pending_mgmt: true, date_note: null }) })));
   if (!starters.length) return [];
@@ -3153,7 +3154,7 @@ const ab = $('#about-body');
  ['Payroll data problems', 'When a home does not send its payroll-based staffing data on time, fails a CMS staffing audit, or reports 4 or more days in a quarter with no RN, CMS gives it 1 staffing star (Five-Star Technical Users\' Guide, September 2026), and the hours it publishes can be implausibly low. Reported hours under 1.5 per resident per day, and turnover of 90% or more (CMS assigns its worst turnover score when payroll data is missing), are treated as that kind of problem and left out (gray bands on the hours and turnover charts).'],
  ['Homes without a star rating', 'CMS does not publish star ratings for homes in its Special Focus Facility program, which targets homes with a history of serious quality problems. Those months are counted as 0 stars (0 is not a CMS score) so that a home being in the program shows up in statewide averages, the share of low-rated homes, the star-mix chart (gray layer) and the sold-versus-not-sold comparison, including in the downloadable CSVs.'],
  ['Money paid to companies the business owners also control', 'Each home files a Medicare cost report that lists payments to companies the business owners also control (CMS calls them related parties), such as the landlord or a management company. Those payments are costs to the home, so a home can report thin or negative margins while its owners are paid through rent and fees. The before-and-after chart compares the same homes between the year before the sale and two years after, which is why its home counts are smaller than the ratings comparison.'],
- ['What buyers projected, and what happened', 'Projected figures come from Appendix A of each buyer\u2019s change in effective control application (Table 2, staff; Table 3, revenue and expenses), copied by hand from the page and listed with page numbers in pipeline/projections.json in this site\u2019s GitHub repository. Actual nurse staffing comes from CMS\u2019s Payroll Based Journal daily nurse staffing files (data.cms.gov), added up for each calendar year; money comes from the same Medicare cost reports as the table below. The limits on first-year operating costs are quoted from the conditions of approval in the adopted Health Services Council reports.'],
+ ['What buyers projected, and what happened', 'Projected figures come from Appendix A of each buyer\u2019s change in effective control application (Table 2, staff; Table 3, revenue and expenses), copied by hand from the page. The projected figures, with the document and page number for each, can be downloaded under that table. Actual nurse staffing comes from CMS\u2019s Payroll Based Journal daily nurse staffing files (data.cms.gov), added up for each calendar year; money comes from the same Medicare cost reports as the table below. The limits on first-year operating costs are quoted from the conditions of approval in the adopted Health Services Council reports.'],
  ['Money paid to companies the business owners also control, by home', 'The money table and the panel on each home\u2019s page come from the same Medicare cost reports. The total is what the home reported paying companies the business owners also control. Rent and management fees are the two biggest pieces; the rest is shown as other (therapy, supplies, billing, and similar). Only company names are shown, not the people behind them. The before and after column compares the year before a home\u2019s first sale on this page with its newest report. Margin is the operating margin the home reported.'],
  ['"CMS records updated" dates', 'CMS\u2019s files are not updated the day a sale closes. Where a sale has one, this page shows the first monthly CMS file listing the new operator; across these sales that came a median of about eight months after the date of record. It is a reporting lag, not a second event, and it matters for two reasons: ratings in those months were still filed under the old operator\u2019s name, and a CMS operator change with no matching state record is a sign of a change that may not have gone through review.'],
  ['Management agreements and timing', 'A buyer sometimes takes over day-to-day management of a home under a management agreement before the state approves the sale, and CMS can take months to list a new operator. Where a management start date is known it is shown on the home’s timeline and beside the sale. So the last rating before a sale may already reflect the buyer\u2019s management, and the sales table shows when CMS first lists the new operator. These agreements are not published. They have been requested through APRA from RIDOH.'],
